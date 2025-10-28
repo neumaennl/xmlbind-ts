@@ -47,7 +47,7 @@ export function generateFromXsd(xsdText: string, outDir: string) {
     const className = name;
     const lines: string[] = [];
     lines.push(
-      "import { XmlRoot, XmlElement, XmlAttribute, XmlText } from '../decorators';"
+      "import { XmlRoot, XmlElement, XmlAttribute, XmlText } from '@neumaennl/xmlbind-ts';"
     );
     lines.push("");
     lines.push(
