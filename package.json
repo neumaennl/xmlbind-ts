@@ -1,11 +1,21 @@
 {
-  "name": "xmlbind-ts",
+  "name": "@neumaennl/xmlbind-ts",
   "version": "0.1.0",
-  "description": "JAXB-like XML binding for TypeScript (scaffold)",
+  "description": "JAXB-like XML binding for TypeScript",
+  "author": "Martin Neumann <neumaennl@gmx.net>",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/neumaennl/xmlbind-ts#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neumaennl/xmlbind-ts.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "xsd2ts": "dist/cli.js"
+    "xsd2ts": "dist/xsd/cli.js"
   },
   "scripts": {
     "build": "tsc",
