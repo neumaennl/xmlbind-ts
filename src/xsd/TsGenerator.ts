@@ -8,16 +8,16 @@ function typeMapping(xsdType: string) {
   const local = xsdType.includes(":") ? xsdType.split(":")[1] : xsdType;
   switch (local) {
     case "string":
-      return "string";
+      return "String";
     case "boolean":
-      return "boolean";
+      return "Boolean";
     case "int":
     case "integer":
     case "long":
     case "short":
     case "byte":
     case "decimal":
-      return "number";
+      return "Number";
     case "date":
     case "dateTime":
       return "Date";
@@ -33,7 +33,7 @@ export function generateFromXsd(xsdText: string, outDir: string) {
   const targetNs = schema.getAttribute("targetNamespace") ?? undefined;
 
   const ctElements: XmldomElement[] = Array.from(
-    schema.getElementsByTagName("xsd:complexType"),
+    schema.getElementsByTagName("xsd:complexType")
   ).concat(Array.from(schema.getElementsByTagName("complexType")));
   const complexTypesMap = new Map<string, XmldomElement>();
   for (const ct of ctElements) {
@@ -47,17 +47,17 @@ export function generateFromXsd(xsdText: string, outDir: string) {
     const className = name;
     const lines: string[] = [];
     lines.push(
-      "import { XmlRoot, XmlElement, XmlAttribute, XmlText } from '../decorators';",
+      "import { XmlRoot, XmlElement, XmlAttribute, XmlText } from '../decorators';"
     );
     lines.push("");
     lines.push(
-      `@XmlRoot('${name}'${targetNs ? `, { namespace: '${targetNs}' }` : ""})`,
+      `@XmlRoot('${name}'${targetNs ? `, { namespace: '${targetNs}' }` : ""})`
     );
     lines.push(`export class ${className} {`);
 
     // attributes
     const attrs: XmldomElement[] = Array.from(
-      ct.getElementsByTagName("xsd:attribute"),
+      ct.getElementsByTagName("xsd:attribute")
     ).concat(Array.from(ct.getElementsByTagName("attribute")));
     for (const a of attrs) {
       const an = a.getAttribute("name")!;
@@ -70,11 +70,11 @@ export function generateFromXsd(xsdText: string, outDir: string) {
 
     // sequences
     const seqs: XmldomElement[] = Array.from(
-      ct.getElementsByTagName("xsd:sequence"),
+      ct.getElementsByTagName("xsd:sequence")
     ).concat(Array.from(ct.getElementsByTagName("sequence")));
     for (const seq of seqs) {
       const elems: XmldomElement[] = Array.from(
-        seq.getElementsByTagName("xsd:element"),
+        seq.getElementsByTagName("xsd:element")
       ).concat(Array.from(seq.getElementsByTagName("element")));
       for (const e of elems) {
         const en = e.getAttribute("name")!;
@@ -83,10 +83,12 @@ export function generateFromXsd(xsdText: string, outDir: string) {
         const tsType = typeMapping(et || "any");
         const isArray = max === "unbounded" || Number(max) > 1;
         lines.push(
-          `  @XmlElement('${en}', { type: ${tsType}, array: ${isArray} })`,
+          `  @XmlElement('${en}', { type: ${tsType}${
+            isArray ? ", array: true" : ""
+          } })`
         );
         lines.push(
-          `  ${en}${isArray ? "?: " + tsType + "[];" : "?: " + tsType + ";"}`,
+          `  ${en}${isArray ? "?: " + tsType + "[];" : "?: " + tsType + ";"}`
         );
         lines.push("");
       }
@@ -94,11 +96,11 @@ export function generateFromXsd(xsdText: string, outDir: string) {
 
     // choices
     const choices: XmldomElement[] = Array.from(
-      ct.getElementsByTagName("xsd:choice"),
+      ct.getElementsByTagName("xsd:choice")
     ).concat(Array.from(ct.getElementsByTagName("choice")));
     for (const choice of choices) {
       const elems: XmldomElement[] = Array.from(
-        choice.getElementsByTagName("xsd:element"),
+        choice.getElementsByTagName("xsd:element")
       ).concat(Array.from(choice.getElementsByTagName("element")));
       for (const e of elems) {
         const en = e.getAttribute("name")!;
