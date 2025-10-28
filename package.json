@@ -29,8 +29,8 @@
     "ts-jest": "^29.0.0",
     "jest-junit": "^13.0.0",
     "eslint": "^8.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0"
+    "@typescript-eslint/parser": "^8.46.2",
+    "@typescript-eslint/eslint-plugin": "^8.46.2"
   },
   "jest-junit": {
     "outputDirectory": "test-results",
