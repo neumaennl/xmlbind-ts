@@ -11,8 +11,10 @@ export interface FieldMeta {
   nillable?: boolean;
 }
 
+export type Constructor<T = any> = new (...args: any[]) => T;
+
 export interface ClassMeta {
-  ctor: Function;
+  ctor: Constructor;
   rootName?: string;
   namespace?: string | null;
   fields: FieldMeta[];

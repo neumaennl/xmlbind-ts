@@ -59,6 +59,9 @@ pids/
 # Generated XSD/TS artifacts (if used)
 generated/
 
+# Test outputs
+test-results/
+
 # Docker
 .env.local
 .dockerignore
