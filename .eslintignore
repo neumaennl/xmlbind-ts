@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+generated/
+.vscode/
+.test-results/
+test-results/
+.eslintrc.cjs

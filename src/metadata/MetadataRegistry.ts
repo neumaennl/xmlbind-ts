@@ -1,8 +1,8 @@
-import { ClassMeta } from "../types";
+import { ClassMeta, Constructor } from "../types";
 
-const META = new WeakMap<Function, ClassMeta>();
+const META = new WeakMap<Constructor, ClassMeta>();
 
-export function ensureMeta(ctor: Function): ClassMeta {
+export function ensureMeta(ctor: Constructor): ClassMeta {
   let m = META.get(ctor);
   if (!m) {
     m = { ctor, fields: [] };
@@ -11,7 +11,7 @@ export function ensureMeta(ctor: Function): ClassMeta {
   return m;
 }
 
-export function getMeta(ctor: Function): ClassMeta | undefined {
+export function getMeta(ctor: Constructor): ClassMeta | undefined {
   return META.get(ctor);
 }
 
