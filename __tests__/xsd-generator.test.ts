@@ -27,16 +27,16 @@ describe("XSD Generator", () => {
 
       // Check @XmlElement decorators for elements
       expect(gen).toMatch(
-        /@XmlElement\('name',\s*\{\s*type:\s*String\s*\}\)\s+name\?: String/
+        /@XmlElement\('name',\s*\{\s*type:\s*String,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+name\?: String/
       );
 
       expect(gen).toMatch(
-        /@XmlElement\('age',\s*\{\s*type:\s*Number\s*\}\)\s+age\?: Number/
+        /@XmlElement\('age',\s*\{\s*type:\s*Number,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+age\?: Number/
       );
 
       // Check @XmlElement decorator with array option for alias
       expect(gen).toMatch(
-        /@XmlElement\('alias',\s*\{\s*type:\s*String,\s*array:\s*true\s*\}\)\s+alias\?: String\[\]/
+        /@XmlElement\('alias',\s*\{\s*type:\s*String,\s*array:\s*true,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+alias\?: String\[\]/
       );
     } finally {
       // cleanup generated files
