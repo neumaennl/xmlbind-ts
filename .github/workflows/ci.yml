@@ -33,12 +33,11 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run tests (with coverage + Jest JUnit + JSON results)
-        # produce coverage/, test-results/jest-junit.xml and test-results/jest-results.json for uploads
+      - name: Run tests (coverage + JSON; JUnit via config)
+        # coverage/ and test-results/jest-results.json are created here; JUnit is configured in jest.config.cjs
         run: |
           mkdir -p test-results
-          npm test -- --coverage --runInBand --json --outputFile=test-results/jest-results.json \
-            --reporters=default --reporters=jest-junit
+          npm test -- --coverage --runInBand --json --outputFile=test-results/jest-results.json --coverageReporters=json-summary
 
       - name: Summarize coverage in job summary
         if: always()
@@ -50,7 +49,7 @@ jobs:
           if (!out) { console.log('GITHUB_STEP_SUMMARY not set; skipping summary'); process.exit(0); }
           if (fs.existsSync(p)) {
             const d = JSON.parse(fs.readFileSync(p));
-            let summary = '| Metric | % |\n|---|---|\n';
+            let summary = '## Coverage report\n\n| Metric | % |\n|---|---|\n';
             for (const k in d.total) {
               summary += `| ${k} | ${d.total[k].pct}% |\n`;
             }
@@ -58,6 +57,7 @@ jobs:
           }
           EOF
       - name: Publish JUnit test report to GitHub Checks
+        if: always()
         uses: dorny/test-reporter@v2
         with:
           name: Jest
