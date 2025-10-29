@@ -17,5 +17,6 @@ export interface ClassMeta {
   ctor: Constructor;
   rootName?: string;
   namespace?: string | null;
+  prefixes?: Record<string, string> | undefined;
   fields: FieldMeta[];
 }

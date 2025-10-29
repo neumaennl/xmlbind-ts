@@ -106,7 +106,7 @@ Maps a class property to an XML element.
 **Parameters:**
 
 - `name` (optional): The XML element name. Defaults to the property name.
-- `options.type` (optional): The type constructor (String, Number, Boolean, or a custom class).
+- `options.type` (optional): The type constructor (String, Number, Boolean, or a custom class/enum).
 - `options.array` (optional): If true, the property represents an array of elements.
 - `options.namespace` (optional): The XML namespace for this element.
 - `options.nillable` (optional): If true, allows null/nil values.
@@ -302,6 +302,87 @@ The library automatically handles type conversions between XML and TypeScript:
 | xsd:float, xsd:double, xsd:decimal | Number          |
 | xsd:boolean                        | Boolean         |
 | xsd:date, xsd:dateTime             | Date            |
+
+## Enum Support
+
+The library supports XML enumerations through XSD simpleType restrictions. When generating TypeScript from XSD, enum types are automatically created and used in the generated classes.
+
+### Using Enums with XSD
+
+When you have an XSD with enumeration restrictions:
+
+```xml
+<xsd:simpleType name="ColorType">
+  <xsd:restriction base="xsd:string">
+    <xsd:enumeration value="red"/>
+    <xsd:enumeration value="green"/>
+    <xsd:enumeration value="blue"/>
+  </xsd:restriction>
+</xsd:simpleType>
+
+<xsd:complexType name="Product">
+  <xsd:sequence>
+    <xsd:element name="name" type="xsd:string"/>
+    <xsd:element name="color" type="ColorType"/>
+  </xsd:sequence>
+</xsd:complexType>
+```
+
+The generator will create:
+
+```typescript
+// ColorType.ts
+export enum ColorType {
+  red = "red",
+  green = "green",
+  blue = "blue",
+}
+
+// Product.ts
+import { ColorType } from "./ColorType";
+
+@XmlRoot("Product")
+export class Product {
+  @XmlElement("name", { type: String })
+  name?: String;
+
+  @XmlElement("color", { type: ColorType })
+  color?: ColorType;
+}
+```
+
+### Manual Enum Usage
+
+You can also use enums manually in your code:
+
+```typescript
+enum StatusEnum {
+  pending = "pending",
+  approved = "approved",
+  rejected = "rejected",
+}
+
+@XmlRoot("Task")
+class Task {
+  @XmlElement("status", { type: String })
+  status?: StatusEnum;
+}
+
+const task = new Task();
+task.status = StatusEnum.approved;
+
+const xml = marshal(task); // <Task><status>approved</status></Task>
+const unmarshalled = unmarshal(Task, xml);
+console.log(unmarshalled.status); // "approved"
+```
+
+### Features
+
+- **Named enums**: Defined as top-level `xsd:simpleType` with restrictions
+- **Inline enums**: Anonymous enums defined within elements
+- **Enum arrays**: Support for `maxOccurs="unbounded"` with enum types
+- **Special characters**: Enum values with special characters are handled (keys are sanitized, values preserved)
+- **Marshalling/Unmarshalling**: Enum values are properly serialized to and from XML strings
 
 ## License
 
