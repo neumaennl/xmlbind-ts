@@ -41,9 +41,5 @@
     "eslint": "^9.38.0",
     "@typescript-eslint/parser": "^8.46.2",
     "@typescript-eslint/eslint-plugin": "^8.46.2"
-  },
-  "jest-junit": {
-    "outputDirectory": "test-results",
-    "outputName": "jest-junit.xml"
   }
 }
