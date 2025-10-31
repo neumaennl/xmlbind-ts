@@ -1,5 +1,10 @@
 // shared simple types
-export type FieldKind = "element" | "attribute" | "text";
+export type FieldKind =
+  | "element"
+  | "attribute"
+  | "text"
+  | "anyElement"
+  | "anyAttribute";
 
 export interface FieldMeta {
   key: string;
@@ -9,6 +14,8 @@ export interface FieldMeta {
   isArray?: boolean;
   namespace?: string | null;
   nillable?: boolean;
+  // For wildcards, we may later add filter info (e.g., namespaces, processContents)
+  // For now, they act as catch-alls without filtering.
 }
 
 export type Constructor<T = any> = new (...args: any[]) => T;

@@ -2,6 +2,13 @@ import { ClassMeta, Constructor, FieldMeta } from "../types";
 
 const META = new WeakMap<Constructor, ClassMeta>();
 
+/**
+ * Ensures that metadata exists for a class constructor, creating it if necessary.
+ * This is called by decorators to initialize or retrieve metadata for a class.
+ *
+ * @param ctor - The class constructor
+ * @returns The class metadata, either existing or newly created
+ */
 export function ensureMeta(ctor: Constructor): ClassMeta {
   let m = META.get(ctor);
   if (!m) {
@@ -11,10 +18,23 @@ export function ensureMeta(ctor: Constructor): ClassMeta {
   return m;
 }
 
+/**
+ * Retrieves metadata for a class constructor if it exists.
+ *
+ * @param ctor - The class constructor
+ * @returns The class metadata, or undefined if no metadata has been registered
+ */
 export function getMeta(ctor: Constructor): ClassMeta | undefined {
   return META.get(ctor);
 }
 
+/**
+ * Returns all registered class metadata.
+ * Note: WeakMap isn't directly iterable, so this returns an empty array.
+ * This function is kept for API compatibility but has limited functionality.
+ *
+ * @returns An array of all ClassMeta entries (currently always empty)
+ */
 export function allMeta(): ClassMeta[] {
   const arr: ClassMeta[] = [];
   // WeakMap isn't easily iterable; keep API minimal.
@@ -24,8 +44,12 @@ export function allMeta(): ClassMeta[] {
 export { META };
 
 /**
- * Collects FieldMeta entries for a class including its ancestors.
- * Derived-class fields override base-class fields with the same key.
+ * Collects all field metadata for a class, including inherited fields from base classes.
+ * Traverses the prototype chain and merges fields, with derived class fields
+ * overriding base class fields that have the same key.
+ *
+ * @param ctor - The class constructor
+ * @returns An array of all field metadata entries for the class and its ancestors
  */
 export function getAllFields(ctor: Constructor): FieldMeta[] {
   const ctors: Constructor[] = [];

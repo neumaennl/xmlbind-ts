@@ -1,3 +1,14 @@
+/**
+ * Casts a value to the specified type, handling primitives, enums, and custom types.
+ *
+ * Performs type coercion for String, Number, Boolean, and Date types.
+ * For enum types (objects with enum values), attempts to match the value or key.
+ * Returns the value unchanged for unrecognized types.
+ *
+ * @param val - The value to cast (can be any type)
+ * @param type - The target type constructor or enum object (optional)
+ * @returns The casted value, or the original value if no casting is needed
+ */
 export function castValue(val: any, type?: any) {
   if (val === null || val === undefined) return val;
   if (!type) return val;
@@ -20,6 +31,16 @@ export function castValue(val: any, type?: any) {
   return val;
 }
 
+/**
+ * Serializes a primitive value to its XML string representation.
+ *
+ * Handles special formatting for Date (ISO string) and Boolean (lowercase string).
+ * For other types including enums, converts to string.
+ *
+ * @param val - The value to serialize
+ * @param type - The type constructor (optional, used for Date detection)
+ * @returns The serialized string representation
+ */
 export function serializePrimitive(val: any, type?: any) {
   if (type === Date && val instanceof Date) return val.toISOString();
   if (typeof val === "boolean") return val ? "true" : "false";

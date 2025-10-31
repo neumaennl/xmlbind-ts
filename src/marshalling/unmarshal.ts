@@ -8,8 +8,8 @@ import { castValue } from "../util/valueCasting";
 import {
   ParsedXmlNode,
   ParsedXmlValue,
-  PrimitiveConstructor,
   isParsedXmlNode,
+  isPrimitiveCtor,
 } from "./types";
 
 const parser = new XMLParser({
@@ -18,12 +18,16 @@ const parser = new XMLParser({
   textNodeName: "#text",
 });
 
-function isPrimitiveCtor(fn: unknown): fn is PrimitiveConstructor {
-  return fn === String || fn === Number || fn === Boolean || fn === Date;
-}
-
 type NsMap = { [prefix: string]: string };
 
+/**
+ * Collects namespace declarations from an XML node, inheriting from parent context.
+ * Scans for xmlns and xmlns:prefix attributes to build a prefix-to-URI mapping.
+ *
+ * @param node - The XML node to scan for namespace declarations
+ * @param parent - The parent namespace map to inherit from (optional)
+ * @returns A map of namespace prefixes to URIs
+ */
 function collectNs(node: ParsedXmlNode, parent: NsMap | undefined): NsMap {
   const map: NsMap = parent ? { ...parent } : {};
   for (const k of Object.keys(node)) {
@@ -39,6 +43,16 @@ function collectNs(node: ParsedXmlNode, parent: NsMap | undefined): NsMap {
   return map;
 }
 
+/**
+ * Finds an element key in the parsed XML node that matches the given local name and namespace.
+ * Handles both prefixed and unprefixed element names.
+ *
+ * @param node - The parsed XML node
+ * @param local - The local name of the element
+ * @param ns - The expected namespace URI (optional)
+ * @param nsMap - The namespace prefix mapping
+ * @returns The matching key from the node, or undefined if not found
+ */
 function matchElementKey(
   node: ParsedXmlNode,
   local: string,
@@ -60,6 +74,16 @@ function matchElementKey(
   return undefined;
 }
 
+/**
+ * Finds an attribute key in the parsed XML node that matches the given local name and namespace.
+ * Note: Default namespace doesn't apply to attributes; they must be explicitly prefixed.
+ *
+ * @param node - The parsed XML node
+ * @param local - The local name of the attribute
+ * @param ns - The expected namespace URI (optional)
+ * @param nsMap - The namespace prefix mapping
+ * @returns The matching attribute key from the node (with @_ prefix), or undefined if not found
+ */
 function matchAttributeKey(
   node: ParsedXmlNode,
   local: string,
@@ -86,6 +110,80 @@ function matchAttributeKey(
   return undefined;
 }
 
+/**
+ * Collects wildcard attributes that were not already bound to explicit fields.
+ *
+ * @param node - The parsed XML node
+ * @param fields - All fields from the class metadata
+ * @param nsMap - The namespace prefix mapping
+ * @returns A record of unbound attribute names to values
+ */
+function collectWildcardAttributes(
+  node: ParsedXmlNode,
+  fields: any[],
+  nsMap: NsMap
+): Record<string, string> {
+  const boundAttrKeys = new Set<string>();
+  for (const f of fields.filter((f) => f.kind === "attribute")) {
+    const k = matchAttributeKey(
+      node,
+      f.name || f.key,
+      f.namespace ?? undefined,
+      nsMap
+    );
+    if (k) boundAttrKeys.add(k);
+  }
+  const collected: Record<string, string> = {};
+  for (const key of Object.keys(node)) {
+    if (!key.startsWith("@_")) continue;
+    if (boundAttrKeys.has(key)) continue;
+    const v = (node as any)[key];
+    if (v !== undefined) collected[key.substring(2)] = String(v);
+  }
+  return collected;
+}
+
+/**
+ * Collects wildcard elements that were not already bound to explicit fields.
+ *
+ * @param node - The parsed XML node
+ * @param fields - All fields from the class metadata
+ * @param nsMap - The namespace prefix mapping
+ * @returns An array of unbound element values
+ */
+function collectWildcardElements(
+  node: ParsedXmlNode,
+  fields: any[],
+  nsMap: NsMap
+): any[] {
+  const boundElemKeys = new Set<string>();
+  for (const f of fields.filter((f) => f.kind === "element")) {
+    const k = matchElementKey(
+      node,
+      f.name || f.key,
+      f.namespace ?? undefined,
+      nsMap
+    );
+    if (k) boundElemKeys.add(k);
+  }
+  const collected: any[] = [];
+  for (const key of Object.keys(node)) {
+    if (key.startsWith("@_") || key === "#text") continue;
+    if (boundElemKeys.has(key)) continue;
+    collected.push((node as any)[key]);
+  }
+  return collected;
+}
+
+/**
+ * Converts a parsed XML value to a typed JavaScript object.
+ * Recursively processes nested elements, attributes, text nodes, and wildcard fields.
+ *
+ * @param node - The parsed XML value (primitive or node)
+ * @param cls - The target class constructor
+ * @param nsMap - The namespace prefix mapping
+ * @returns An instance of the target class populated with XML data
+ */
 function xmlValueToObject<T>(
   node: ParsedXmlValue,
   cls: new () => T,
@@ -108,6 +206,7 @@ function xmlValueToObject<T>(
   const hereNs = collectNs(node, nsMap);
 
   const fields = getAllFields(cls);
+  // First, bind explicit attributes and elements
   for (const f of fields) {
     if (f.kind === "attribute") {
       const k = matchAttributeKey(
@@ -139,6 +238,26 @@ function xmlValueToObject<T>(
     }
   }
 
+  // Wildcard attributes: collect any attributes not already bound
+  const anyAttrField = fields.find((f) => f.kind === "anyAttribute");
+  if (anyAttrField) {
+    (target as any)[anyAttrField.key] = collectWildcardAttributes(
+      node,
+      fields,
+      hereNs
+    );
+  }
+
+  // Wildcard elements: collect any child elements not already bound
+  const anyElemField = fields.find((f) => f.kind === "anyElement");
+  if (anyElemField) {
+    (target as any)[anyElemField.key] = collectWildcardElements(
+      node,
+      fields,
+      hereNs
+    );
+  }
+
   const textField = fields.find((f) => f.kind === "text");
   if (textField && node["#text"] !== undefined) {
     target[textField.key] = castValue(node["#text"], textField.type);
@@ -147,6 +266,19 @@ function xmlValueToObject<T>(
   return inst;
 }
 
+/**
+ * Unmarshals an XML string to a typed JavaScript object.
+ *
+ * The target class must have @XmlRoot metadata defined. The XML root element
+ * must match the root name specified in the metadata. All decorated properties
+ * will be populated from the corresponding XML elements and attributes.
+ * Handles namespaces, arrays, nested objects, null values, and wildcard elements/attributes.
+ *
+ * @param cls - The target class constructor (must have @XmlRoot decorator)
+ * @param xml - The XML string to unmarshal
+ * @returns An instance of the target class populated with XML data
+ * @throws {Error} If the class has no XmlRoot metadata or if the root element is not found
+ */
 export function unmarshal<T>(cls: new () => T, xml: string): T {
   const parsed = parser.parse(xml) as ParsedXmlNode;
   const meta = getMeta(cls);
@@ -185,6 +317,8 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
   const nsMap = collectNs(node, undefined);
 
   const fields = getAllFields(cls);
+
+  // Bind attributes
   for (const f of fields.filter((f) => f.kind === "attribute")) {
     const k = matchAttributeKey(node, f.name, f.namespace ?? undefined, nsMap);
     if (k) {
@@ -193,6 +327,7 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     }
   }
 
+  // Bind elements
   for (const f of fields.filter((f) => f.kind === "element")) {
     const k = matchElementKey(node, f.name, f.namespace ?? undefined, nsMap);
     if (!k) continue;
@@ -206,6 +341,22 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     } else {
       target[f.key] = xmlValueToObject(val, f.type, nsMap);
     }
+  }
+
+  // Collect wildcard attributes
+  const anyAttr = fields.find((f) => f.kind === "anyAttribute");
+  if (anyAttr) {
+    (target as any)[anyAttr.key] = collectWildcardAttributes(
+      node,
+      fields,
+      nsMap
+    );
+  }
+
+  // Collect wildcard elements
+  const anyElem = fields.find((f) => f.kind === "anyElement");
+  if (anyElem) {
+    (target as any)[anyElem.key] = collectWildcardElements(node, fields, nsMap);
   }
 
   const textField = fields.find((f) => f.kind === "text");

@@ -1,16 +1,13 @@
 import { XMLBuilder } from "fast-xml-parser";
 import { getMeta, getAllFields } from "../metadata/MetadataRegistry";
 import { serializePrimitive } from "../util/valueCasting";
+import { isPrimitiveCtor } from "./types";
 
 const builder = new XMLBuilder({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   textNodeName: "#text",
 });
-
-function isPrimitiveCtor(fn: any) {
-  return fn === String || fn === Number || fn === Boolean || fn === Date;
-}
 
 type NsContext = {
   defaultNs?: string;
@@ -23,6 +20,14 @@ type NsContext = {
   counter: number;
 };
 
+/**
+ * Ensures a namespace prefix exists for the given namespace URI.
+ * If no prefix exists, generates a new one and declares it on the root element.
+ *
+ * @param ns - The namespace URI
+ * @param ctx - The namespace context containing prefix mappings
+ * @returns The prefix for the given namespace
+ */
 function ensurePrefix(ns: string, ctx: NsContext): string {
   let p = ctx.uriToPrefix.get(ns);
   if (p) return p;
@@ -36,6 +41,16 @@ function ensurePrefix(ns: string, ctx: NsContext): string {
   return p;
 }
 
+/**
+ * Constructs a qualified XML name (QName) with the appropriate namespace prefix.
+ * Handles default namespace and special rules for attributes (which don't use default namespace).
+ *
+ * @param local - The local name of the element or attribute
+ * @param ns - The namespace URI (optional)
+ * @param ctx - The namespace context
+ * @param isAttribute - Whether this is an attribute name (default: false)
+ * @returns The qualified name with prefix, or just the local name if no namespace
+ */
 function qName(
   local: string,
   ns: string | undefined,
@@ -51,6 +66,55 @@ function qName(
   return `${prefix}:${local}`;
 }
 
+/**
+ * Adds a child element to a node, handling multiple elements with the same name.
+ * If a child with the same key already exists, converts it to an array.
+ *
+ * @param node - The parent node
+ * @param key - The element key/name
+ * @param value - The value to add
+ */
+function addChild(node: any, key: string, value: any) {
+  const existing = node[key];
+  if (existing === undefined) {
+    node[key] = value;
+  } else if (Array.isArray(existing)) {
+    existing.push(value);
+  } else {
+    node[key] = [existing, value];
+  }
+}
+
+/**
+ * Writes wildcard elements (xs:any) to a node.
+ * Merges object properties as child elements directly into the parent node.
+ *
+ * @param node - The parent node to add elements to
+ * @param anyArr - Array of wildcard elements (objects or primitives)
+ */
+function writeAnyElements(node: any, anyArr: unknown[]) {
+  if (!Array.isArray(anyArr)) return;
+  for (const item of anyArr) {
+    if (item == null) continue;
+    if (typeof item === "object" && !Array.isArray(item)) {
+      const obj = item as Record<string, any>;
+      for (const k of Object.keys(obj)) {
+        addChild(node, k, obj[k]);
+      }
+    }
+    // primitives are ignored because we don't know the element name
+  }
+}
+
+/**
+ * Converts a JavaScript value to its XML representation.
+ * Handles primitives, complex objects with metadata, and nested structures.
+ *
+ * @param val - The value to convert
+ * @param type - The type constructor (String, Number, custom class, etc.)
+ * @param ctx - The namespace context
+ * @returns The XML representation of the value
+ */
 function elementToXmlValue(val: any, type: any, ctx: NsContext) {
   if (val === null || val === undefined) return null;
   if (isPrimitiveCtor(type) || typeof val !== "object")
@@ -74,12 +138,39 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
       nestedNode[key] = v.map((el: any) => elementToXmlValue(el, nf.type, ctx));
     else nestedNode[key] = elementToXmlValue(v, nf.type, ctx);
   }
+  // wildcard attributes on nested objects
+  const anyAttrF = nestedFields.find((ff: any) => ff.kind === "anyAttribute");
+  if (anyAttrF) {
+    const map = val[anyAttrF.key];
+    if (map && typeof map === "object") {
+      for (const [k, v] of Object.entries(map)) {
+        nestedNode[`@_${k}`] = String(v as any);
+      }
+    }
+  }
+  // wildcard elements on nested objects
+  const anyElemF = nestedFields.find((ff: any) => ff.kind === "anyElement");
+  if (anyElemF) {
+    const arr = val[anyElemF.key];
+    if (arr) writeAnyElements(nestedNode, arr);
+  }
   const textF = nestedFields.find((ff: any) => ff.kind === "text");
   if (textF && val[textF.key] !== undefined && val[textF.key] !== null)
     nestedNode["#text"] = String(val[textF.key]);
   return nestedNode;
 }
 
+/**
+ * Marshals a JavaScript object to an XML string.
+ *
+ * The object must have @XmlRoot metadata defined. All decorated properties
+ * (@XmlElement, @XmlAttribute, @XmlText, etc.) will be serialized to XML.
+ * Handles namespaces, prefixes, arrays, nested objects, and wildcard elements/attributes.
+ *
+ * @param obj - The object to marshal (must have @XmlRoot decorator)
+ * @returns The XML string representation
+ * @throws {Error} If the object has no XmlRoot metadata
+ */
 export function marshal(obj: any): string {
   if (!obj) return "";
   const ctor = obj.constructor;
@@ -145,6 +236,24 @@ export function marshal(obj: any): string {
         }
       }
     }
+  }
+
+  // wildcard attributes on root
+  const anyAttrField = fields.find((f: any) => f.kind === "anyAttribute");
+  if (anyAttrField) {
+    const map = (obj as any)[anyAttrField.key];
+    if (map && typeof map === "object") {
+      for (const [k, v] of Object.entries(map)) {
+        node[`@_${k}`] = String(v as any);
+      }
+    }
+  }
+
+  // wildcard elements on root
+  const anyElemField = fields.find((f: any) => f.kind === "anyElement");
+  if (anyElemField) {
+    const arr = (obj as any)[anyElemField.key];
+    if (arr) writeAnyElements(node, arr);
   }
 
   const textField = fields.find((f: any) => f.kind === "text");

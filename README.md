@@ -171,6 +171,52 @@ class Comment {
 // Produces: <Comment author="John">This is a comment</Comment>
 ```
 
+### @XmlAnyElement
+
+Maps a class property to capture wildcard XML elements (xs:any).
+
+```typescript
+@XmlAnyElement()
+```
+
+This property will capture any XML child elements that are not explicitly mapped by other @XmlElement decorators. The property should be typed as `unknown[]`.
+
+**Example:**
+
+```typescript
+@XmlRoot("FlexibleContainer")
+class FlexibleContainer {
+  @XmlElement("knownField", { type: String })
+  knownField?: string;
+
+  @XmlAnyElement()
+  additionalElements?: unknown[];
+}
+```
+
+### @XmlAnyAttribute
+
+Maps a class property to capture wildcard XML attributes (xs:anyAttribute).
+
+```typescript
+@XmlAnyAttribute()
+```
+
+This property will capture any XML attributes that are not explicitly mapped by other @XmlAttribute decorators. The property should be typed as `{ [name: string]: string }`.
+
+**Example:**
+
+```typescript
+@XmlRoot("FlexibleElement")
+class FlexibleElement {
+  @XmlAttribute("id")
+  id?: string;
+
+  @XmlAnyAttribute()
+  additionalAttributes?: { [name: string]: string };
+}
+```
+
 ## Marshalling and Unmarshalling
 
 ### marshal
@@ -290,6 +336,35 @@ const xsd = `<?xml version="1.0" encoding="utf-8"?>
 generateFromXsd(xsd, "./output");
 // Generates Person.ts with appropriate decorators
 ```
+
+### Supported XSD Features
+
+The XSD generator supports a comprehensive set of XML Schema features:
+
+#### Core Features
+
+- **Complex Types**: Full support for named and anonymous complex types
+- **Simple Types**: Enumerations, restrictions, unions, and lists
+- **Elements and Attributes**: With references, namespaces, and form qualifications
+- **Compositors**: `xs:sequence`, `xs:choice`, and `xs:all`
+- **Content Models**: simpleContent, complexContent, mixed content
+
+#### Advanced Features
+
+- **Groups**: `xs:group` and `xs:attributeGroup` references with proper expansion
+- **Wildcards**: `xs:any` (generates `@XmlAnyElement()`) and `xs:anyAttribute` (generates `@XmlAnyAttribute()`)
+- **References**: Element and attribute references with proper namespace handling
+- **Type Derivation**: Extension and restriction of complex types
+- **Union Types**: Generates TypeScript union types (`string | number`)
+- **List Types**: Generates TypeScript array types (`string[]`)
+- **Imports**: Basic support for schema imports with namespace prefixes
+
+#### Special Handling
+
+- **Reserved Words**: Automatically sanitizes TypeScript reserved keywords with `_` suffix
+- **Namespace Prefixes**: Automatically detects and handles namespace prefixes
+- **Collision Avoidance**: Resolves naming conflicts between types and elements
+- **Mixed Content**: Generates `@XmlText()` properties for elements with mixed content
 
 ## Type Mapping
 
