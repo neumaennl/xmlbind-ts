@@ -55,12 +55,18 @@ export function setupGeneratedRuntime(outDir: string, xsds: string[]): void {
       "const XmlText = require('" +
       projectRoot +
       "/src/decorators/XmlText.ts').XmlText;\n" +
-      "module.exports = { XmlRoot, XmlElement, XmlAttribute, XmlText };\n",
+      "const XmlAnyElement = require('" +
+      projectRoot +
+      "/src/decorators/XmlAnyElement.ts').XmlAnyElement;\n" +
+      "const XmlAnyAttribute = require('" +
+      projectRoot +
+      "/src/decorators/XmlAnyAttribute.ts').XmlAnyAttribute;\n" +
+      "module.exports = { XmlRoot, XmlElement, XmlAttribute, XmlText, XmlAnyElement, XmlAnyAttribute };\n",
     "utf8"
   );
   writeFileSync(
     path.join(stubPkgDir, "index.d.ts"),
-    "export const XmlRoot: any;\nexport const XmlElement: any;\nexport const XmlAttribute: any;\nexport const XmlText: any;\n",
+    "export const XmlRoot: any;\nexport const XmlElement: any;\nexport const XmlAttribute: any;\nexport const XmlText: any;\nexport const XmlAnyElement: any;\nexport const XmlAnyAttribute: any;\n",
     "utf8"
   );
 }

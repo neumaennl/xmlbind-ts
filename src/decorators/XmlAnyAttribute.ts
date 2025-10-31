@@ -1,26 +1,26 @@
 import { ensureMeta } from "../metadata/MetadataRegistry";
 
 /**
- * Decorator to mark a property as containing the text content of an XML element.
+ * Decorator to mark a property as a wildcard attribute container (xs:anyAttribute).
  *
- * This is used for elements that have text content, possibly along with attributes.
- * Only one property per class should have this decorator.
+ * This property will capture any XML attributes that are not explicitly
+ * mapped by other @XmlAttribute decorators. The property should be typed as
+ * { [name: string]: string }.
  *
  * @returns A property decorator function
  *
  * @example
  * ```typescript
- * class Comment {
- *   @XmlAttribute('author')
- *   author?: string;
+ * class FlexibleElement {
+ *   @XmlAttribute('id')
+ *   id?: string;
  *
- *   @XmlText()
- *   text?: string;
+ *   @XmlAnyAttribute()
+ *   additionalAttributes?: { [name: string]: string };
  * }
- * // Maps to: <Comment author="John">Hello World</Comment>
  * ```
  */
-export function XmlText() {
+export function XmlAnyAttribute() {
   return function (contextOrTarget: any, propertyKey?: string | symbol) {
     if (typeof propertyKey === "string" || typeof propertyKey === "symbol") {
       const target = contextOrTarget as any;
@@ -28,10 +28,9 @@ export function XmlText() {
       const m = ensureMeta(ctor);
       m.fields.push({
         key: propertyKey.toString(),
-        name: propertyKey.toString(),
-        kind: "text",
-        namespace: null,
-      });
+        name: "*",
+        kind: "anyAttribute",
+      } as any);
       return;
     }
     return function (target: any, prop: string | symbol) {
@@ -39,10 +38,9 @@ export function XmlText() {
       const m = ensureMeta(ctor);
       m.fields.push({
         key: prop.toString(),
-        name: prop.toString(),
-        kind: "text",
-        namespace: null,
-      });
+        name: "*",
+        kind: "anyAttribute",
+      } as any);
     };
   } as any;
 }

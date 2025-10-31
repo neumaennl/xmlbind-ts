@@ -13,10 +13,9 @@ describe("XSD Generator", () => {
       const target = path.join(tmpDir, "Person.ts");
       const gen = readFileSync(target, "utf8");
 
-      // Check for imports
-      expect(gen).toContain(
-        "import { XmlRoot, XmlElement, XmlAttribute, XmlText }"
-      );
+      // Check for imports - now dynamically imports only what's used
+      expect(gen).toContain("import { XmlRoot, XmlElement, XmlAttribute }");
+      expect(gen).toContain("from '@neumaennl/xmlbind-ts'");
 
       // Check @XmlRoot decorator with namespace
       expect(gen).toContain("@XmlRoot('Person'");
