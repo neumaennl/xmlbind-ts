@@ -3,16 +3,30 @@ import { localName, getChildByLocalName } from "./utils";
 import { typeMapping, sanitizeTypeName, isBuiltinType } from "./types";
 import type { SchemaContext } from "./schema";
 
+/**
+ * A generation unit representing the code and dependencies for a single class or type.
+ */
 export interface GenUnit {
+  /** The generated TypeScript code lines for the class */
   lines: string[];
+  /** Set of type names that this class depends on (for import statements) */
   deps: Set<string>;
 }
 
+/**
+ * The global state shared across the code generation process.
+ * Contains schema information, reserved words, and output maps.
+ */
 export interface GeneratorState {
+  /** The indexed schema context with all type definitions */
   schemaContext: SchemaContext;
+  /** The XSD namespace prefix (e.g., "xs" or "xsd") */
   xsdPrefix: string;
+  /** Set of JavaScript/TypeScript reserved keywords to avoid */
   reservedWords: Set<string>;
+  /** Map of generated enum names to their code */
   generatedEnums: Map<string, string>;
+  /** Map of generated class names to their generation units */
   generated: Map<string, GenUnit>;
 }
 

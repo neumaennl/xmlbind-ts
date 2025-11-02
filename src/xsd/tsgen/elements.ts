@@ -144,7 +144,8 @@ function processElementContainer(
           lines,
           unit,
           state,
-          ensureClass
+          ensureClass,
+          containerType === "choice"
         );
       } else if (localN === "group") {
         processGroup(childNode as XmldomElement);
@@ -164,19 +165,21 @@ function processElementContainer(
  * @param unit - The generation unit
  * @param state - The generator state
  * @param ensureClass - Callback to ensure classes are generated
+ * @param insideChoice - Whether this element is inside an xs:choice (affects optionality)
  */
 export function emitElement(
   e: XmldomElement,
   lines: string[],
   unit: GenUnit,
   state: GeneratorState,
-  ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit
+  ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
+  insideChoice: boolean
 ): void {
   const en = e.getAttribute("name");
   const refAttr = e.getAttribute("ref");
 
   if (refAttr && !en) {
-    emitElementRef(e, refAttr, lines, unit, state);
+    emitElementRef(e, refAttr, lines, unit, state, insideChoice);
     return;
   }
 
@@ -186,6 +189,8 @@ export function emitElement(
   const max = e.getAttribute("maxOccurs") ?? "1";
   const isArray = max === "unbounded" || Number(max) > 1;
   const nillable = e.getAttribute("nillable") === "true";
+  const min = e.getAttribute("minOccurs") ?? "1";
+  const makeRequired = !insideChoice && Number(min) >= 1;
   const ens = elementNamespaceFor(
     e,
     false,
@@ -201,20 +206,43 @@ export function emitElement(
     tsType = handleInlineType(e, en, unit, state, ensureClass);
   }
 
-  emitElementDecorator(en, tsType, isArray, nillable, ens, lines, state);
+  emitElementDecorator(
+    en,
+    tsType,
+    isArray,
+    nillable,
+    ens,
+    lines,
+    state,
+    makeRequired
+  );
 }
 
+/**
+ * Emits code for an element reference (ref attribute).
+ * Looks up the referenced element definition and generates the property.
+ *
+ * @param e - The XSD element with ref attribute
+ * @param refAttr - The reference attribute value (QName)
+ * @param lines - The output lines array
+ * @param unit - The generation unit
+ * @param state - The generator state
+ * @param insideChoice - Whether this element is inside an xs:choice (affects optionality)
+ */
 function emitElementRef(
   e: XmldomElement,
   refAttr: string,
   lines: string[],
   unit: GenUnit,
-  state: GeneratorState
+  state: GeneratorState,
+  insideChoice: boolean
 ): void {
   const refLocalName = localName(refAttr)!;
   const max = e.getAttribute("maxOccurs") ?? "1";
   const isArray = max === "unbounded" || Number(max) > 1;
   const nillable = e.getAttribute("nillable") === "true";
+  const min = e.getAttribute("minOccurs") ?? "1";
+  const makeRequired = !insideChoice && Number(min) >= 1;
 
   const referencedElement = state.schemaContext.topLevelElements.find(
     (el) => el.getAttribute("name") === refLocalName
@@ -257,11 +285,22 @@ function emitElementRef(
         ? `  @XmlElement('${refLocalName}', ${decoratorBody})`
         : `  @XmlElement('${refLocalName}')`
     );
-    lines.push(`  ${propName}?: ${tsType}${isArray ? "[]" : ""};`);
+      lines.push(
+        `  ${propName}${makeRequired ? "!" : "?"}: ${tsType}${isArray ? "[]" : ""};`
+      );
     lines.push("");
   }
 }
 
+/**
+ * Resolves an XSD type reference for an element to a TypeScript type.
+ * Handles enums, built-in types, and user-defined types.
+ *
+ * @param typeAttr - The XSD type attribute value
+ * @param unit - The generation unit for tracking dependencies
+ * @param state - The generator state
+ * @returns The TypeScript type name
+ */
 function resolveElementType(
   typeAttr: string,
   unit: GenUnit,
@@ -281,6 +320,17 @@ function resolveElementType(
   }
 }
 
+/**
+ * Handles inline type definitions within an element.
+ * Generates anonymous classes or enums for inline complex or simple types.
+ *
+ * @param e - The XSD element containing the inline type
+ * @param en - The element name
+ * @param unit - The generation unit
+ * @param state - The generator state
+ * @param ensureClass - Callback to ensure classes are generated
+ * @returns The TypeScript type name for the inline type
+ */
 function handleInlineType(
   e: XmldomElement,
   en: string,
@@ -302,6 +352,16 @@ function handleInlineType(
   return "any";
 }
 
+/**
+ * Handles inline simpleType definitions within an element.
+ * Generates enums for restrictions or maps unions/lists to TypeScript types.
+ *
+ * @param inlineST - The inline simpleType element
+ * @param en - The element name (used for generating anonymous enum names)
+ * @param unit - The generation unit
+ * @param state - The generator state
+ * @returns The TypeScript type name for the simple type
+ */
 function handleInlineSimpleType(
   inlineST: XmldomElement,
   en: string,
@@ -343,6 +403,13 @@ function handleInlineSimpleType(
   return "any";
 }
 
+/**
+ * Handles inline union types within a simpleType.
+ * Generates TypeScript union types from XSD union member types.
+ *
+ * @param union - The XSD union element
+ * @returns A TypeScript union type string (e.g., "string | number")
+ */
 function handleInlineUnion(union: XmldomElement): string {
   let memberTypes: string[] = [];
   const memberTypesAttr = union.getAttribute("memberTypes");
@@ -360,6 +427,19 @@ function handleInlineUnion(union: XmldomElement): string {
   return "any";
 }
 
+/**
+ * Emits the @XmlElement decorator and property declaration for an element.
+ * Handles decorator options (type, array, nillable, namespace) and property optionality.
+ *
+ * @param en - The XML element name
+ * @param tsType - The TypeScript type for the property
+ * @param isArray - Whether the property is an array
+ * @param nillable - Whether the element can be nil
+ * @param ens - The XML namespace for the element (optional)
+ * @param lines - The output lines array
+ * @param state - The generator state
+ * @param makeRequired - Whether the property should be non-optional (use ! instead of ?)
+ */
 function emitElementDecorator(
   en: string,
   tsType: string,
@@ -367,7 +447,8 @@ function emitElementDecorator(
   nillable: boolean,
   ens: string | undefined,
   lines: string[],
-  state: GeneratorState
+  state: GeneratorState,
+  makeRequired: boolean
 ): void {
   const propName = toPropertyName(en, state.reservedWords);
   const decoratorOpts: string[] = [];
@@ -387,6 +468,8 @@ function emitElementDecorator(
       ? `  @XmlElement('${en}', ${decoratorBody})`
       : `  @XmlElement('${en}')`
   );
-  lines.push(`  ${propName}?: ${tsType}${isArray ? "[]" : ""};`);
+  lines.push(
+    `  ${propName}${makeRequired ? "!" : "?"}: ${tsType}${isArray ? "[]" : ""};`
+  );
   lines.push("");
 }

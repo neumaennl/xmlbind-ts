@@ -61,10 +61,10 @@ describe("XSD Generator - Reserved Word Handling", () => {
       const configFile = path.join(dir, "Config.ts");
       const content = fs.readFileSync(configFile, "utf-8");
 
-      // Property names should be sanitized
-      expect(content).toContain("class_?:");
-      expect(content).toContain("public_?:");
-      expect(content).toContain("default_?:");
+  // Property names should be sanitized; required elements are non-optional
+  expect(content).toMatch(/\bclass_!?:/);
+  expect(content).toMatch(/\bpublic_!?:/);
+  expect(content).toMatch(/\bdefault_!?:/);
     });
   });
 
@@ -135,12 +135,15 @@ describe("XSD Generator - Reserved Word Handling", () => {
       const exportContent = fs.readFileSync(exportFile, "utf-8");
       const interfaceContent = fs.readFileSync(interfaceFile, "utf-8");
 
-      expect(exportContent).toContain("export class export_");
-      expect(exportContent).toContain("const_?:");
-      expect(exportContent).toContain("static_?:");
+  expect(exportContent).toContain("export class export_");
+  // element is required -> non-optional
+  expect(exportContent).toMatch(/\bconst_!?:/);
+  // attribute is optional by default -> remains optional
+  expect(exportContent).toContain("static_?:");
 
-      expect(interfaceContent).toContain("export class interface_");
-      expect(interfaceContent).toContain("extends_?:");
+  expect(interfaceContent).toContain("export class interface_");
+  // element required -> non-optional
+  expect(interfaceContent).toMatch(/\bextends_!?:/);
     });
   });
 });

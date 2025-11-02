@@ -35,16 +35,16 @@ import {
 @XmlRoot("Person", { namespace: "http://example.com/ns" })
 class Person {
   @XmlAttribute("id")
-  id?: number;
+  id!: number;
 
   @XmlElement("name", { type: String })
-  name?: string;
+  name!: string;
 
   @XmlElement("age", { type: Number })
-  age?: number;
+  age!: number;
 
   @XmlElement("alias", { type: String, array: true })
-  alias?: string[];
+  alias!: string[];
 }
 
 // Unmarshal XML to object
@@ -73,13 +73,14 @@ console.log(xmlOutput);
 Marks a class as an XML root element.
 
 ```typescript
-@XmlRoot(name?: string, options?: { namespace?: string })
+@XmlRoot(name?: string, options?: { namespace?: string; prefixes?: Record<string, string> })
 ```
 
 **Parameters:**
 
 - `name` (optional): The XML element name. Defaults to the class name.
 - `options.namespace` (optional): The XML namespace URI.
+- `options.prefixes` (optional): Map of namespace URIs to preferred prefixes
 
 **Example:**
 
@@ -144,7 +145,7 @@ class Book {
   isbn?: string;
 
   @XmlAttribute("id")
-  id?: number;
+  id!: number;
 }
 ```
 
@@ -260,22 +261,22 @@ Here's a more complex example with nested objects:
 @XmlRoot("Address")
 class Address {
   @XmlElement("street", { type: String })
-  street?: string;
+  street!: string;
 
   @XmlElement("city", { type: String })
-  city?: string;
+  city!: string;
 
   @XmlElement("zipCode", { type: String })
-  zipCode?: string;
+  zipCode!: string;
 }
 
 @XmlRoot("Person", { namespace: "http://example.com/ns" })
 class Person {
   @XmlAttribute("id")
-  id?: number;
+  id!: number;
 
   @XmlElement("name", { type: String })
-  name?: string;
+  name!: string;
 
   @XmlElement("age", { type: Number })
   age?: number;
@@ -366,6 +367,50 @@ The XSD generator supports a comprehensive set of XML Schema features:
 - **Collision Avoidance**: Resolves naming conflicts between types and elements
 - **Mixed Content**: Generates `@XmlText()` properties for elements with mixed content
 
+### Property Requiredness in Generated Code
+
+**Important**: The XSD generator reflects XSD requiredness in generated TypeScript properties:
+
+- **Required elements** (default `minOccurs="1"`) generate **non-optional** properties with definite assignment assertion (`prop!: Type`)
+- **Optional elements** (`minOccurs="0"`) generate **optional** properties (`prop?: Type`)
+- **Required attributes** (`use="required"`) generate **non-optional** properties (`prop!: Type`)
+- **Optional attributes** (default or `use="optional"`) generate **optional** properties (`prop?: Type`)
+- **Elements inside xs:choice** are always optional, regardless of `minOccurs`
+- **Arrays** (`maxOccurs > 1`) remain arrays; optionality is based on `minOccurs`
+
+Example:
+
+```xml
+<xsd:complexType name="Example">
+  <xsd:sequence>
+    <xsd:element name="required" type="xsd:string"/>
+    <xsd:element name="optional" type="xsd:string" minOccurs="0"/>
+  </xsd:sequence>
+  <xsd:attribute name="requiredAttr" type="xsd:string" use="required"/>
+  <xsd:attribute name="optionalAttr" type="xsd:string"/>
+</xsd:complexType>
+```
+
+Generates:
+
+```typescript
+export class Example {
+  @XmlAttribute('requiredAttr')
+  requiredAttr!: String;  // Non-optional (use="required")
+
+  @XmlAttribute('optionalAttr')
+  optionalAttr?: String;  // Optional (default)
+
+  @XmlElement('required', { type: String, namespace: '...' })
+  required!: String;  // Non-optional (minOccurs=1 by default)
+
+  @XmlElement('optional', { type: String, namespace: '...' })
+  optional?: String;  // Optional (minOccurs=0)
+}
+```
+
+The definite assignment assertion (`!`) tells TypeScript that the property will be initialized by the unmarshalling framework, avoiding `strictPropertyInitialization` errors.
+
 ## Type Mapping
 
 The library automatically handles type conversions between XML and TypeScript:
@@ -419,10 +464,10 @@ import { ColorType } from "./ColorType";
 @XmlRoot("Product")
 export class Product {
   @XmlElement("name", { type: String })
-  name?: String;
+  name!: String;
 
   @XmlElement("color", { type: ColorType })
-  color?: ColorType;
+  color!: ColorType;
 }
 ```
 

@@ -40,7 +40,7 @@ describe("XSD Generator advanced features", () => {
       expect(person).toMatch(
         /@XmlElement\('address',\s*\{\s*type:\s*Address,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
       );
-      expect(person).toMatch(/address\?:\s*Address;/);
+      expect(person).toMatch(/address!?:\s*Address;/);
     });
   });
 
@@ -65,6 +65,7 @@ describe("XSD Generator advanced features", () => {
       expect(book).toMatch(
         /@XmlElement\('title',\s*\{\s*type:\s*String,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
       );
+      expect(book).toMatch(/title!?: String/);
     });
   });
 

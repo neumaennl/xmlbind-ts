@@ -24,13 +24,13 @@ describe("XSD Generator", () => {
       // Check @XmlAttribute decorator for id
       expect(gen).toMatch(/@XmlAttribute\('id'\)\s+id\?: Number/);
 
-      // Check @XmlElement decorators for elements
+      // Check @XmlElement decorators for required elements (now non-optional)
       expect(gen).toMatch(
-        /@XmlElement\('name',\s*\{\s*type:\s*String,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+name\?: String/
+        /@XmlElement\('name',\s*\{\s*type:\s*String,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+name!?: String/
       );
 
       expect(gen).toMatch(
-        /@XmlElement\('age',\s*\{\s*type:\s*Number,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+age\?: Number/
+        /@XmlElement\('age',\s*\{\s*type:\s*Number,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+age!?: Number/
       );
 
       // Check @XmlElement decorator with array option for alias
