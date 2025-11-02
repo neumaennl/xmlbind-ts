@@ -30,6 +30,8 @@ export function setupGeneratedRuntime(outDir: string, xsds: string[]): void {
   mkdirSync(stubPkgDir, { recursive: true });
 
   const projectRoot = process.cwd();
+  // Escape backslashes for use inside JS string literals on Windows
+  const rootForRequire = projectRoot.replace(/\\/g, "\\\\");
 
   // CommonJS stub that re-exports decorators from project source
   writeFileSync(
@@ -44,22 +46,22 @@ export function setupGeneratedRuntime(outDir: string, xsds: string[]): void {
   writeFileSync(
     path.join(stubPkgDir, "index.js"),
     "const XmlRoot = require('" +
-      projectRoot +
+      rootForRequire +
       "/src/decorators/XmlRoot.ts').XmlRoot;\n" +
       "const XmlElement = require('" +
-      projectRoot +
+      rootForRequire +
       "/src/decorators/XmlElement.ts').XmlElement;\n" +
       "const XmlAttribute = require('" +
-      projectRoot +
+      rootForRequire +
       "/src/decorators/XmlAttribute.ts').XmlAttribute;\n" +
       "const XmlText = require('" +
-      projectRoot +
+      rootForRequire +
       "/src/decorators/XmlText.ts').XmlText;\n" +
       "const XmlAnyElement = require('" +
-      projectRoot +
+      rootForRequire +
       "/src/decorators/XmlAnyElement.ts').XmlAnyElement;\n" +
       "const XmlAnyAttribute = require('" +
-      projectRoot +
+      rootForRequire +
       "/src/decorators/XmlAnyAttribute.ts').XmlAnyAttribute;\n" +
       "module.exports = { XmlRoot, XmlElement, XmlAttribute, XmlText, XmlAnyElement, XmlAnyAttribute };\n",
     "utf8"

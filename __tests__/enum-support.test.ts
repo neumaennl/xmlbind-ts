@@ -57,7 +57,7 @@ describe("Enum support", () => {
       expect(productContent).toMatch(
         /@XmlElement\('color',\s*\{\s*type:\s*ColorType,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
       );
-      expect(productContent).toMatch(/color\?:\s*ColorType;/);
+      expect(productContent).toMatch(/color!?:\s*ColorType;/);
     });
   });
 
@@ -98,7 +98,7 @@ describe("Enum support", () => {
       expect(orderContent).toContain(
         "import { statusEnum } from './statusEnum';"
       );
-      expect(orderContent).toMatch(/status\?:\s*statusEnum;/);
+  expect(orderContent).toMatch(/status!?:\s*statusEnum;/);
     });
   });
 
@@ -225,7 +225,7 @@ describe("Enum support", () => {
       expect(taskContent).toMatch(
         /@XmlElement\('tags',\s*\{\s*type:\s*TagType,\s*array:\s*true,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
       );
-      expect(taskContent).toMatch(/tags\?:\s*TagType\[\];/);
+  expect(taskContent).toMatch(/tags\?:\s*TagType\[\];/);
     });
   });
 });

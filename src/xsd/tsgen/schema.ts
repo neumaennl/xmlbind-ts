@@ -3,17 +3,32 @@ import { directChildren } from "./xmlutils";
 import { getChildByLocalName } from "./utils";
 import { extractEnumValues } from "./enum";
 
+/**
+ * Container for all indexed components from an XSD schema.
+ * This structure provides efficient lookup of types, elements, groups, and namespace information.
+ */
 export interface SchemaContext {
+  /** The target namespace URI of the schema */
   targetNs?: string;
+  /** Whether elements are qualified by default ("qualified" or "unqualified") */
   elementFormDefault: string;
+  /** Whether attributes are qualified by default ("qualified" or "unqualified") */
   attributeFormDefault: string;
+  /** Map of named complex type definitions */
   complexTypesMap: Map<string, XmldomElement>;
+  /** Map of named simple type definitions */
   simpleTypesMap: Map<string, XmldomElement>;
+  /** Map of enumeration type names to their allowed values */
   enumTypesMap: Map<string, string[]>;
+  /** Map of named group definitions */
   groupDefs: Map<string, XmldomElement>;
+  /** Map of named attribute group definitions */
   attributeGroupDefs: Map<string, XmldomElement>;
+  /** Map of top-level attribute definitions */
   topLevelAttributes: Map<string, XmldomElement>;
+  /** Array of top-level element declarations */
   topLevelElements: XmldomElement[];
+  /** Map of namespace URIs to their preferred prefixes */
   schemaPrefixes: Map<string, string>;
 }
 

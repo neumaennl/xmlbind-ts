@@ -57,7 +57,8 @@ export function emitAttrs(
     // Handle attribute references
     const refAttr = a.getAttribute("ref");
     if (refAttr && !a.getAttribute("name")) {
-      emitAttributeRef(refAttr, lines, state);
+      const use = a.getAttribute("use");
+      emitAttributeRef(refAttr, lines, state, use || undefined);
       continue;
     }
 
@@ -76,7 +77,11 @@ export function emitAttrs(
         ? `  @XmlAttribute('${an}', { namespace: '${ans}' })`
         : `  @XmlAttribute('${an}')`
     );
-    lines.push(`  ${propName}?: ${tsType};`);
+    const use = a.getAttribute("use");
+    const makeRequired = use === "required";
+    lines.push(
+      `  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`
+    );
     lines.push("");
   }
 
@@ -102,7 +107,8 @@ export function emitAttrs(
 function emitAttributeRef(
   refAttr: string,
   lines: string[],
-  state: GeneratorState
+  state: GeneratorState,
+  referencingUse?: string
 ): void {
   const refLocal = localName(refAttr)!;
   const refDef = state.schemaContext.topLevelAttributes.get(refLocal);
@@ -122,7 +128,11 @@ function emitAttributeRef(
           ? `  @XmlAttribute('${an}', { namespace: '${ans}' })`
           : `  @XmlAttribute('${an}')`
       );
-      lines.push(`  ${propName}?: ${tsType};`);
+      const use = referencingUse || refDef.getAttribute("use");
+      const makeRequired = use === "required";
+      lines.push(
+        `  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`
+      );
       lines.push("");
     }
   }

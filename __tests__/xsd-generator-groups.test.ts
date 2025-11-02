@@ -51,12 +51,12 @@ describe("XSD Generator - Groups", () => {
       expect(content).toContain("@XmlElement('zipCode'");
       expect(content).toContain("@XmlElement('phone'");
 
-      // Should have properties for all elements
-      expect(content).toContain("name?:");
-      expect(content).toContain("street?:");
-      expect(content).toContain("city?:");
-      expect(content).toContain("zipCode?:");
-      expect(content).toContain("phone?:");
+  // Required group elements are non-optional; optional phone stays optional
+  expect(content).toMatch(/\bname!?:/);
+  expect(content).toMatch(/\bstreet!?:/);
+  expect(content).toMatch(/\bcity!?:/);
+  expect(content).toMatch(/\bzipCode!?:/);
+  expect(content).toContain("phone?:");
     });
   });
 

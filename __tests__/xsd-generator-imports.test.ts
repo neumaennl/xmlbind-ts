@@ -65,7 +65,8 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
       expect(personFile).toMatch(
         /@XmlElement\('homeAddress',\s*\{\s*type:\s*Address/
       );
-      expect(personFile).toMatch(/homeAddress\?:\s*Address;/);
+        expect(personFile).toMatch(/homeAddress!?:\s*Address;/);
+
       // Check that imported namespace prefix is included
       expect(personFile).toContain("'http://example.com/address': 'addr'");
     });
@@ -131,15 +132,15 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
       expect(deptFile).toContain("export class Department");
       expect(deptFile).toContain("import { Email } from './Email';");
       expect(deptFile).toContain("import { Phone } from './Phone';");
-      expect(deptFile).toMatch(/contactEmail\?:\s*Email;/);
-      expect(deptFile).toMatch(/contactPhone\?:\s*Phone;/);
+  expect(deptFile).toMatch(/contactEmail!?:\s*Email;/);
+  expect(deptFile).toMatch(/contactPhone!?:\s*Phone;/);
 
       const companyFile = readFileSync(path.join(tmp, "Company.ts"), "utf8");
       expect(companyFile).toContain("export class Company");
       expect(companyFile).toContain(
         "import { Department } from './Department';"
       );
-      expect(companyFile).toMatch(/departments\?:\s*Department\[\];/);
+  expect(companyFile).toMatch(/departments!?:\s*Department\[\];/);
     });
   });
 
@@ -210,8 +211,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
       expect(metadataFile).toContain(
         "import { Identifier } from './Identifier';"
       );
-      expect(metadataFile).toMatch(/identifier\?:\s*Identifier;/);
-
+      expect(metadataFile).toMatch(/identifier!?:\s*Identifier;/);
       // Generate document types
       generateFromXsd(DOCUMENT_XSD, tmp);
 
@@ -234,9 +234,8 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
       expect(documentTypeFile).toContain(
         "import { Metadata } from './Metadata';"
       );
-      expect(documentTypeFile).toMatch(/docId\?:\s*Identifier;/);
-      expect(documentTypeFile).toMatch(/meta\?:\s*Metadata;/);
-
+      expect(documentTypeFile).toMatch(/docId!?:\s*Identifier;/);
+      expect(documentTypeFile).toMatch(/meta!?:\s*Metadata;/);
       // DocumentElement wraps the Document type
       const documentElementFile = readFileSync(
         path.join(tmp, "DocumentElement.ts"),
@@ -307,9 +306,9 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
         path.join(tmp, "Message.ts"),
         "utf8"
       );
-      expect(messageTypeFile).toContain("export class Message");
-      expect(messageTypeFile).toContain("import { Status } from './Status';");
-      expect(messageTypeFile).toMatch(/status\?:\s*Status;/);
+  expect(messageTypeFile).toContain("export class Message");
+  expect(messageTypeFile).toContain("import { Status } from './Status';");
+  expect(messageTypeFile).toMatch(/status!?:\s*Status;/);
     });
   });
 

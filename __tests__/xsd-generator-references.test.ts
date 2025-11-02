@@ -39,11 +39,11 @@ describe("XSD Generator - Element and Attribute References", () => {
 
       // Should have the referenced element
       expect(content).toContain("@XmlElement('Title'");
-      expect(content).toContain("Title?: String");
+  expect(content).toMatch(/\bTitle!?:\s*String/);
 
       // And the direct element
       expect(content).toContain("@XmlElement('content'");
-      expect(content).toContain("content?: String");
+  expect(content).toMatch(/\bcontent!?:\s*String/);
     });
   });
 
@@ -104,7 +104,7 @@ describe("XSD Generator - Element and Attribute References", () => {
       const content = fs.readFileSync(listFile, "utf-8");
 
       // Should generate an array
-      expect(content).toContain("Item?: String[]");
+  expect(content).toMatch(/\bItem!?:\s*String\[\]/);
       expect(content).toContain("array: true");
     });
   });

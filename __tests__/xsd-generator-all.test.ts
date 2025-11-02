@@ -41,9 +41,10 @@ describe("XSD Generator - xs:all Compositor", () => {
       expect(content).toContain("@XmlElement('lastName'");
       expect(content).toContain("@XmlElement('email'");
 
-      expect(content).toContain("firstName?: String");
-      expect(content).toContain("lastName?: String");
-      expect(content).toContain("email?: String");
+  // Elements in xs:all are required by default -> non-optional
+  expect(content).toMatch(/firstName!?:\s*String/);
+  expect(content).toMatch(/lastName!?:\s*String/);
+  expect(content).toMatch(/email!?:\s*String/);
     });
   });
 
