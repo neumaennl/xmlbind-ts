@@ -1,6 +1,6 @@
-[![CI](https://github.com/neumaennl/xmlbind-ts/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/neumaennl/xmlbind-ts/actions/workflows/ci.yml)
-
 # xmlbind-ts
+
+[![CI](https://github.com/neumaennl/xmlbind-ts/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/neumaennl/xmlbind-ts/actions/workflows/ci.yml)
 
 JAXB-like XML binding for TypeScript.
 
@@ -395,17 +395,17 @@ Generates:
 
 ```typescript
 export class Example {
-  @XmlAttribute('requiredAttr')
-  requiredAttr!: String;  // Non-optional (use="required")
+  @XmlAttribute("requiredAttr")
+  requiredAttr!: String; // Non-optional (use="required")
 
-  @XmlAttribute('optionalAttr')
-  optionalAttr?: String;  // Optional (default)
+  @XmlAttribute("optionalAttr")
+  optionalAttr?: String; // Optional (default)
 
-  @XmlElement('required', { type: String, namespace: '...' })
-  required!: String;  // Non-optional (minOccurs=1 by default)
+  @XmlElement("required", { type: String, namespace: "..." })
+  required!: String; // Non-optional (minOccurs=1 by default)
 
-  @XmlElement('optional', { type: String, namespace: '...' })
-  optional?: String;  // Optional (minOccurs=0)
+  @XmlElement("optional", { type: String, namespace: "..." })
+  optional?: String; // Optional (minOccurs=0)
 }
 ```
 

@@ -87,4 +87,155 @@ describe("XSD Generator - Union Types", () => {
       expect(content).toContain("export type FlexibleType");
     });
   });
+
+  describe("Inline union types in elements", () => {
+    test("handles inline simpleType union with memberTypes", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="UnionType">
+    <xsd:sequence>
+      <xsd:element name="value">
+        <xsd:simpleType>
+          <xsd:union memberTypes="xsd:string xsd:integer xsd:boolean"/>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:element name="UnionType" type="UnionType"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = fs.readFileSync(path.join(tmp, "UnionType.ts"), "utf8");
+
+        expect(content).toContain("String | Number | Boolean");
+      });
+    });
+
+    test("handles inline simpleType union with inline member types", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="ComplexUnion">
+    <xsd:sequence>
+      <xsd:element name="value">
+        <xsd:simpleType>
+          <xsd:union>
+            <xsd:simpleType>
+              <xsd:restriction base="xsd:string">
+                <xsd:pattern value="[A-Z]+"/>
+              </xsd:restriction>
+            </xsd:simpleType>
+            <xsd:simpleType>
+              <xsd:restriction base="xsd:integer">
+                <xsd:minInclusive value="0"/>
+              </xsd:restriction>
+            </xsd:simpleType>
+          </xsd:union>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:element name="ComplexUnion" type="ComplexUnion"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = fs.readFileSync(
+          path.join(tmp, "ComplexUnion.ts"),
+          "utf8"
+        );
+
+        expect(content).toContain("String");
+      });
+    });
+
+    test("handles empty union", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="EmptyUnion">
+    <xsd:sequence>
+      <xsd:element name="value">
+        <xsd:simpleType>
+          <xsd:union/>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:element name="EmptyUnion" type="EmptyUnion"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = fs.readFileSync(
+          path.join(tmp, "EmptyUnion.ts"),
+          "utf8"
+        );
+
+        expect(content).toContain("value!: any");
+      });
+    });
+  });
+
+  describe("Inline restrictions in elements", () => {
+    test("handles inline simpleType restriction without enumeration", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="RestrictedString">
+    <xsd:sequence>
+      <xsd:element name="value">
+        <xsd:simpleType>
+          <xsd:restriction base="xsd:string">
+            <xsd:maxLength value="10"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:element name="RestrictedString" type="RestrictedString"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = fs.readFileSync(
+          path.join(tmp, "RestrictedString.ts"),
+          "utf8"
+        );
+
+        expect(content).toContain("value!: String");
+      });
+    });
+
+    test("handles inline simpleType restriction without base", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="UnbasedRestriction">
+    <xsd:sequence>
+      <xsd:element name="field">
+        <xsd:simpleType>
+          <xsd:restriction>
+            <xsd:pattern value="[A-Z]+"/>
+          </xsd:restriction>
+        </xsd:simpleType>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:element name="UnbasedRestriction" type="UnbasedRestriction"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = fs.readFileSync(
+          path.join(tmp, "UnbasedRestriction.ts"),
+          "utf8"
+        );
+
+        expect(content).toContain("field!: String");
+      });
+    });
+  });
 });

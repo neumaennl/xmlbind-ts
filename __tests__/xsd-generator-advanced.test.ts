@@ -140,4 +140,401 @@ describe("XSD Generator advanced features", () => {
       );
     });
   });
+
+  describe("simpleContent", () => {
+    test("generates class with @XmlText for simpleContent with extension", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="ShoeSize">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:integer">
+        <xsd:attribute name="country" type="xsd:string"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  <xsd:element name="ShoeSize" type="ShoeSize"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(path.join(tmp, "ShoeSize.ts"), "utf8");
+
+        expect(content).toContain("@XmlText()");
+        expect(content).toContain("value?: Number;");
+
+        expect(content).toContain("@XmlAttribute('country')");
+        expect(content).toContain("country?: String;");
+      });
+    });
+
+    test("generates class with @XmlText for simpleContent with restriction", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="PostalCode">
+    <xsd:simpleContent>
+      <xsd:restriction base="xsd:string">
+        <xsd:attribute name="region" type="xsd:string"/>
+      </xsd:restriction>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  <xsd:element name="PostalCode" type="PostalCode"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(path.join(tmp, "PostalCode.ts"), "utf8");
+
+        expect(content).toContain("@XmlText()");
+        expect(content).toContain("value?: String;");
+
+        expect(content).toContain("@XmlAttribute('region')");
+      });
+    });
+
+    test("generates class with @XmlText without base type", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="SimpleValue">
+    <xsd:simpleContent>
+      <xsd:extension>
+        <xsd:attribute name="id" type="xsd:int"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  <xsd:element name="SimpleValue" type="SimpleValue"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(path.join(tmp, "SimpleValue.ts"), "utf8");
+
+        expect(content).toContain("@XmlText()");
+        expect(content).toContain("value?: String;");
+      });
+    });
+
+    test("maps various base types correctly in simpleContent", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="BooleanValue">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:boolean">
+        <xsd:attribute name="id" type="xsd:int"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  <xsd:complexType name="DateValue">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:date">
+        <xsd:attribute name="id" type="xsd:int"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  <xsd:element name="BooleanValue" type="BooleanValue"/>
+  <xsd:element name="DateValue" type="DateValue"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+
+        const boolContent = readFileSync(
+          path.join(tmp, "BooleanValue.ts"),
+          "utf8"
+        );
+        expect(boolContent).toContain("value?: Boolean;");
+
+        const dateContent = readFileSync(
+          path.join(tmp, "DateValue.ts"),
+          "utf8"
+        );
+        expect(dateContent).toContain("value?: Date;");
+      });
+    });
+  });
+
+  describe("complexContent restriction", () => {
+    test("generates class for complexContent with restriction", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="BaseType">
+    <xsd:sequence>
+      <xsd:element name="name" type="xsd:string"/>
+      <xsd:element name="age" type="xsd:int"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="RestrictedType">
+    <xsd:complexContent>
+      <xsd:restriction base="BaseType">
+        <xsd:sequence>
+          <xsd:element name="name" type="xsd:string"/>
+        </xsd:sequence>
+        <xsd:attribute name="id" type="xsd:int"/>
+      </xsd:restriction>
+    </xsd:complexContent>
+  </xsd:complexType>
+  <xsd:element name="RestrictedType" type="RestrictedType"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(
+          path.join(tmp, "RestrictedType.ts"),
+          "utf8"
+        );
+
+        expect(content).not.toContain("extends BaseType");
+
+        expect(content).toContain("@XmlElement('name'");
+        expect(content).toContain("@XmlAttribute('id')");
+      });
+    });
+
+    test("generates class for complexContent restriction without base type", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="EmptyRestriction">
+    <xsd:complexContent>
+      <xsd:restriction>
+        <xsd:sequence>
+          <xsd:element name="field" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:restriction>
+    </xsd:complexContent>
+  </xsd:complexType>
+  <xsd:element name="EmptyRestriction" type="EmptyRestriction"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(
+          path.join(tmp, "EmptyRestriction.ts"),
+          "utf8"
+        );
+
+        expect(content).toContain("export class EmptyRestriction {");
+        expect(content).toContain("@XmlElement('field'");
+      });
+    });
+  });
+
+  describe("mixed content", () => {
+    test("generates @XmlText for mixed content in complexType", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="MixedContent" mixed="true">
+    <xsd:sequence>
+      <xsd:element name="bold" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xsd:element name="italic" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:element name="MixedContent" type="MixedContent"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(path.join(tmp, "MixedContent.ts"), "utf8");
+
+        expect(content).toContain("@XmlText()");
+        expect(content).toContain("value?: String;");
+
+        expect(content).toContain("@XmlElement('bold'");
+        expect(content).toContain("@XmlElement('italic'");
+      });
+    });
+
+    test("generates @XmlText for mixed content with extension", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="BaseType">
+    <xsd:sequence>
+      <xsd:element name="name" type="xsd:string"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="MixedExtension" mixed="true">
+    <xsd:complexContent>
+      <xsd:extension base="BaseType">
+        <xsd:sequence>
+          <xsd:element name="description" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+  <xsd:element name="MixedExtension" type="MixedExtension"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(
+          path.join(tmp, "MixedExtension.ts"),
+          "utf8"
+        );
+
+        expect(content).toContain("extends BaseType");
+
+        expect(content).toContain("@XmlText()");
+        expect(content).toContain("value?: String;");
+
+        expect(content).toContain("@XmlElement('description'");
+      });
+    });
+
+    test("generates @XmlText for mixed content with restriction", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="BaseType">
+    <xsd:sequence>
+      <xsd:element name="name" type="xsd:string"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="MixedRestriction" mixed="true">
+    <xsd:complexContent>
+      <xsd:restriction base="BaseType">
+        <xsd:sequence>
+          <xsd:element name="name" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:restriction>
+    </xsd:complexContent>
+  </xsd:complexType>
+  <xsd:element name="MixedRestriction" type="MixedRestriction"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(
+          path.join(tmp, "MixedRestriction.ts"),
+          "utf8"
+        );
+
+        expect(content).not.toContain("extends BaseType");
+
+        expect(content).toContain("@XmlText()");
+        expect(content).toContain("value?: String;");
+      });
+    });
+  });
+
+  describe("complexContent extension edge cases", () => {
+    test("does not extend when base is builtin type", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="ExtendedString">
+    <xsd:complexContent>
+      <xsd:extension base="xsd:string">
+        <xsd:sequence>
+          <xsd:element name="metadata" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+  <xsd:element name="ExtendedString" type="ExtendedString"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(
+          path.join(tmp, "ExtendedString.ts"),
+          "utf8"
+        );
+
+        expect(content).not.toContain("extends");
+        expect(content).toContain("export class ExtendedString {");
+      });
+    });
+
+    test("handles extension without base attribute", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="NoBaseExtension">
+    <xsd:complexContent>
+      <xsd:extension>
+        <xsd:sequence>
+          <xsd:element name="field" type="xsd:string"/>
+        </xsd:sequence>
+      </xsd:extension>
+    </xsd:complexContent>
+  </xsd:complexType>
+  <xsd:element name="NoBaseExtension" type="NoBaseExtension"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(
+          path.join(tmp, "NoBaseExtension.ts"),
+          "utf8"
+        );
+
+        expect(content).not.toContain("extends");
+        expect(content).toContain("export class NoBaseExtension {");
+      });
+    });
+  });
+
+  describe("namespace handling in @XmlRoot", () => {
+    test("includes namespace and prefixes in @XmlRoot decorator", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+            xmlns:ns="http://example.com/ns"
+            targetNamespace="http://example.com/target">
+  <xsd:complexType name="NamespacedType">
+    <xsd:sequence>
+      <xsd:element name="field" type="xsd:string"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:element name="NamespacedType" type="NamespacedType"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(
+          path.join(tmp, "NamespacedType.ts"),
+          "utf8"
+        );
+
+        expect(content).toContain("namespace: 'http://example.com/target'");
+      });
+    });
+
+    test("@XmlRoot without namespace when no targetNamespace", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="NoNamespace">
+    <xsd:sequence>
+      <xsd:element name="field" type="xsd:string"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:element name="NoNamespace" type="NoNamespace"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(path.join(tmp, "NoNamespace.ts"), "utf8");
+
+        expect(content).not.toContain("namespace:");
+        expect(content).toContain("@XmlRoot('NoNamespace')");
+      });
+    });
+  });
+
+  describe("empty complexContent", () => {
+    test("handles complexContent with neither extension nor restriction", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="EmptyComplexContent">
+    <xsd:complexContent>
+    </xsd:complexContent>
+  </xsd:complexType>
+  <xsd:element name="EmptyComplexContent" type="EmptyComplexContent"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(
+          path.join(tmp, "EmptyComplexContent.ts"),
+          "utf8"
+        );
+
+        expect(content).toContain("export class EmptyComplexContent {");
+      });
+    });
+  });
 });

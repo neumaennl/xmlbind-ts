@@ -51,4 +51,60 @@ describe("XSD Generator - Wildcards", () => {
       expect(content).toContain("_anyAttributes?: { [name: string]: string }");
     });
   });
+
+  describe("Wildcard edge cases", () => {
+    test("does not duplicate @XmlAnyElement", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:complexType name="MultipleAny">
+    <xsd:sequence>
+      <xsd:any minOccurs="0" maxOccurs="unbounded"/>
+      <xsd:any minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:element name="MultipleAny" type="MultipleAny"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = fs.readFileSync(
+          path.join(tmp, "MultipleAny.ts"),
+          "utf8"
+        );
+
+        const matches = content.match(/@XmlAnyElement\(\)/g);
+        expect(matches).toHaveLength(1);
+      });
+    });
+  });
+
+  describe("Group references", () => {
+    test("handles direct group as child of complexType", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:group name="DirectGroup">
+    <xsd:sequence>
+      <xsd:element name="field" type="xsd:string"/>
+    </xsd:sequence>
+  </xsd:group>
+  
+  <xsd:complexType name="DirectGroupUsage">
+    <xsd:group ref="DirectGroup"/>
+  </xsd:complexType>
+  
+  <xsd:element name="DirectGroupUsage" type="DirectGroupUsage"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = fs.readFileSync(
+          path.join(tmp, "DirectGroupUsage.ts"),
+          "utf8"
+        );
+
+        expect(content).toContain("@XmlElement('field'");
+      });
+    });
+  });
 });
