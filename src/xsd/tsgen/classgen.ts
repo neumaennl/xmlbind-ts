@@ -26,7 +26,7 @@ export function ensureClass(
 ): GenUnit {
   if (state.generated.has(name)) return state.generated.get(name)!;
 
-  const unit: GenUnit = { lines: [], deps: new Set() };
+  const unit: GenUnit = { lines: [], deps: new Set(), className: name };
   state.generated.set(name, unit);
 
   const lines = unit.lines;
@@ -46,7 +46,7 @@ export function ensureClass(
   emitRootDecorator(rootName, state, lines);
 
   if (simpleContent) {
-    handleSimpleContent(name, simpleContent, lines, state);
+    handleSimpleContent(name, simpleContent, lines, unit, state);
     return unit;
   }
 
@@ -64,7 +64,7 @@ export function ensureClass(
 
   // Default: complexType with sequence/choice/attributes
   lines.push(`export class ${name} {`);
-  emitAttrs(el, lines, state);
+  emitAttrs(el, lines, unit, state);
   emitElements(el, lines, unit, state, (n, e, x) =>
     ensureClass(n, e, state, x)
   );
@@ -109,12 +109,14 @@ function emitRootDecorator(
  * @param name - The class name
  * @param simpleContent - The XSD simpleContent element
  * @param lines - The output lines array
+ * @param unit - The generation unit for tracking dependencies
  * @param state - The generator state
  */
 function handleSimpleContent(
   name: string,
   simpleContent: XmldomElement,
   lines: string[],
+  unit: GenUnit,
   state: GeneratorState
 ): void {
   const ext =
@@ -129,7 +131,7 @@ function handleSimpleContent(
   lines.push(`  @XmlText()`);
   lines.push(`  value?: ${textTs};`);
   lines.push("");
-  if (ext) emitAttrs(ext as any, lines, state);
+  if (ext) emitAttrs(ext as any, lines, unit, state);
   lines.push("}");
 }
 
@@ -205,7 +207,7 @@ function handleExtension(
   lines.push(
     `export class ${name}${extendsBase ? ` extends ${extendsBase}` : ""} {`
   );
-  emitAttrs(ext as any, lines, state);
+  emitAttrs(ext as any, lines, unit, state);
   emitElements(ext as any, lines, unit, state, (n, e, x) =>
     ensureClass(n, e, state, x)
   );
@@ -235,7 +237,7 @@ function handleRestriction(
   mixed: boolean
 ): void {
   lines.push(`export class ${name} {`);
-  emitAttrs(rest as any, lines, state);
+  emitAttrs(rest as any, lines, unit, state);
   emitElements(rest as any, lines, unit, state, (n, e, x) =>
     ensureClass(n, e, state, x)
   );
