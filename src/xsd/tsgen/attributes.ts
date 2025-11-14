@@ -69,17 +69,21 @@ export function emitAttrs(
     if (!an) continue;
     const at = a.getAttribute("type");
     const tsType = resolveType(at, state);
-    
-    // Track enum dependencies for attributes
-    if (at) {
+
+    // Track enum dependencies for attributes - only add if tsType is actually using the custom type
+    if (
+      at &&
+      tsType !== "String" &&
+      tsType !== "Number" &&
+      tsType !== "Boolean"
+    ) {
       const local = localName(at);
-      if (local && (state.schemaContext.enumTypesMap.has(local) || state.generatedEnums.has(sanitizeTypeName(local)))) {
-        unit.deps.add(sanitizeTypeName(local));
-      } else if (local && !isBuiltinType(at)) {
-        unit.deps.add(sanitizeTypeName(local));
+      const sanitized = sanitizeTypeName(local!);
+      if (local && tsType === sanitized) {
+        unit.deps.add(sanitized);
       }
     }
-    
+
     const ans = attributeNamespaceFor(
       a,
       state.schemaContext.targetNs,
@@ -93,9 +97,7 @@ export function emitAttrs(
     );
     const use = a.getAttribute("use");
     const makeRequired = use === "required";
-    lines.push(
-      `  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`
-    );
+    lines.push(`  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`);
     lines.push("");
   }
 
@@ -132,17 +134,21 @@ function emitAttributeRef(
     const an = refDef.getAttribute("name");
     const at = refDef.getAttribute("type");
     const tsType = resolveType(at, state);
-    
-    // Track enum dependencies for referenced attributes
-    if (at) {
+
+    // Track enum dependencies for referenced attributes - only add if tsType is actually using the custom type
+    if (
+      at &&
+      tsType !== "String" &&
+      tsType !== "Number" &&
+      tsType !== "Boolean"
+    ) {
       const local = localName(at);
-      if (local && (state.schemaContext.enumTypesMap.has(local) || state.generatedEnums.has(sanitizeTypeName(local)))) {
-        unit.deps.add(sanitizeTypeName(local));
-      } else if (local && !isBuiltinType(at)) {
-        unit.deps.add(sanitizeTypeName(local));
+      const sanitized = sanitizeTypeName(local!);
+      if (local && tsType === sanitized) {
+        unit.deps.add(sanitized);
       }
     }
-    
+
     const ans = attributeNamespaceFor(
       refDef,
       state.schemaContext.targetNs,
@@ -157,9 +163,7 @@ function emitAttributeRef(
       );
       const use = referencingUse || refDef.getAttribute("use");
       const makeRequired = use === "required";
-      lines.push(
-        `  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`
-      );
+      lines.push(`  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`);
       lines.push("");
     }
   }
