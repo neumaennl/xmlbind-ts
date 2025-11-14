@@ -2,7 +2,7 @@ import type { Element as XmldomElement } from "@xmldom/xmldom";
 import { localName, getChildrenByLocalName } from "./utils";
 import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
-import { sanitizeTypeName, isBuiltinType } from "./types";
+import { sanitizeTypeName } from "./types";
 
 /**
  * Emits @XmlAttribute decorators and properties for all attributes in an XSD element.
