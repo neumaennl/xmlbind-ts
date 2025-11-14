@@ -4,7 +4,7 @@ import {
   getChildByLocalName,
   getChildrenByLocalName,
 } from "./utils";
-import { typeMapping, sanitizeTypeName, isBuiltinType } from "./types";
+import { typeMapping, sanitizeTypeName } from "./types";
 import { extractEnumValues, generateEnumCode } from "./enum";
 import { toPropertyName, toClassName, elementNamespaceFor } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
@@ -258,13 +258,20 @@ function emitElementRef(
     let tsType = "any";
     if (refType) {
       const local = localName(refType)!;
+      const sanitized = sanitizeTypeName(local);
       if (state.schemaContext.enumTypesMap.has(local)) {
-        tsType = sanitizeTypeName(local);
-        unit.deps.add(sanitizeTypeName(local));
+        tsType = sanitized;
+        unit.deps.add(sanitized);
       } else {
         tsType = typeMapping(refType);
-        if (!isBuiltinType(refType)) {
-          unit.deps.add(sanitizeTypeName(local));
+        // Only add dependency if the resolved type is actually the custom type (not a built-in)
+        if (
+          tsType !== "String" &&
+          tsType !== "Number" &&
+          tsType !== "Boolean" &&
+          tsType === sanitized
+        ) {
+          unit.deps.add(sanitized);
         }
       }
     }
@@ -328,7 +335,13 @@ function resolveElementType(
     return tsType;
   } else {
     const tsType = typeMapping(typeAttr);
-    if (!isBuiltinType(typeAttr)) {
+    // Only add dependency if the resolved type is actually the custom type (not a built-in)
+    if (
+      tsType !== "String" &&
+      tsType !== "Number" &&
+      tsType !== "Boolean" &&
+      tsType === sanitized
+    ) {
       // Don't add self-references to deps
       if (sanitized !== unit.className) {
         unit.deps.add(sanitized);
