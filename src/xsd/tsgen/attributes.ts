@@ -1,7 +1,8 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
 import { localName, getChildrenByLocalName } from "./utils";
 import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen";
-import type { GeneratorState } from "./codegen";
+import type { GeneratorState, GenUnit } from "./codegen";
+import { sanitizeTypeName, isBuiltinType } from "./types";
 
 /**
  * Emits @XmlAttribute decorators and properties for all attributes in an XSD element.
@@ -11,11 +12,13 @@ import type { GeneratorState } from "./codegen";
  *
  * @param targetEl - The XSD element containing attribute definitions
  * @param lines - The output lines array
+ * @param unit - The generation unit for tracking dependencies
  * @param state - The generator state
  */
 export function emitAttrs(
   targetEl: XmldomElement,
   lines: string[],
+  unit: GenUnit,
   state: GeneratorState
 ): void {
   let attrs: XmldomElement[] = getChildrenByLocalName(
@@ -58,7 +61,7 @@ export function emitAttrs(
     const refAttr = a.getAttribute("ref");
     if (refAttr && !a.getAttribute("name")) {
       const use = a.getAttribute("use");
-      emitAttributeRef(refAttr, lines, state, use || undefined);
+      emitAttributeRef(refAttr, lines, unit, state, use || undefined);
       continue;
     }
 
@@ -66,6 +69,17 @@ export function emitAttrs(
     if (!an) continue;
     const at = a.getAttribute("type");
     const tsType = resolveType(at, state);
+    
+    // Track enum dependencies for attributes
+    if (at) {
+      const local = localName(at);
+      if (local && (state.schemaContext.enumTypesMap.has(local) || state.generatedEnums.has(sanitizeTypeName(local)))) {
+        unit.deps.add(sanitizeTypeName(local));
+      } else if (local && !isBuiltinType(at)) {
+        unit.deps.add(sanitizeTypeName(local));
+      }
+    }
+    
     const ans = attributeNamespaceFor(
       a,
       state.schemaContext.targetNs,
@@ -102,11 +116,13 @@ export function emitAttrs(
  *
  * @param refAttr - The attribute reference (QName)
  * @param lines - The output lines array
+ * @param unit - The generation unit for tracking dependencies
  * @param state - The generator state
  */
 function emitAttributeRef(
   refAttr: string,
   lines: string[],
+  unit: GenUnit,
   state: GeneratorState,
   referencingUse?: string
 ): void {
@@ -116,6 +132,17 @@ function emitAttributeRef(
     const an = refDef.getAttribute("name");
     const at = refDef.getAttribute("type");
     const tsType = resolveType(at, state);
+    
+    // Track enum dependencies for referenced attributes
+    if (at) {
+      const local = localName(at);
+      if (local && (state.schemaContext.enumTypesMap.has(local) || state.generatedEnums.has(sanitizeTypeName(local)))) {
+        unit.deps.add(sanitizeTypeName(local));
+      } else if (local && !isBuiltinType(at)) {
+        unit.deps.add(sanitizeTypeName(local));
+      }
+    }
+    
     const ans = attributeNamespaceFor(
       refDef,
       state.schemaContext.targetNs,

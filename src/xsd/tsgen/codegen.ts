@@ -11,6 +11,8 @@ export interface GenUnit {
   lines: string[];
   /** Set of type names that this class depends on (for import statements) */
   deps: Set<string>;
+  /** The name of the class being generated (for detecting self-references) */
+  className?: string;
 }
 
 /**

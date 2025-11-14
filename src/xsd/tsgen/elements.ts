@@ -213,6 +213,7 @@ export function emitElement(
     nillable,
     ens,
     lines,
+    unit,
     state,
     makeRequired
   );
@@ -307,14 +308,22 @@ function resolveElementType(
   state: GeneratorState
 ): string {
   const local = localName(typeAttr)!;
+  const sanitized = sanitizeTypeName(local);
+  
   if (state.schemaContext.enumTypesMap.has(local)) {
-    const tsType = sanitizeTypeName(local);
-    unit.deps.add(tsType);
+    const tsType = sanitized;
+    // Don't add self-references to deps
+    if (tsType !== unit.className) {
+      unit.deps.add(tsType);
+    }
     return tsType;
   } else {
     const tsType = typeMapping(typeAttr);
     if (!isBuiltinType(typeAttr)) {
-      unit.deps.add(sanitizeTypeName(local));
+      // Don't add self-references to deps
+      if (sanitized !== unit.className) {
+        unit.deps.add(sanitized);
+      }
     }
     return tsType;
   }
@@ -447,13 +456,16 @@ function emitElementDecorator(
   nillable: boolean,
   ens: string | undefined,
   lines: string[],
+  unit: GenUnit,
   state: GeneratorState,
   makeRequired: boolean
 ): void {
   const propName = toPropertyName(en, state.reservedWords);
   const decoratorOpts: string[] = [];
 
-  if (tsType && tsType !== "any" && /^[A-Za-z0-9_]+$/.test(tsType)) {
+  // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)
+  const isSelfReference = tsType === unit.className;
+  if (tsType && tsType !== "any" && /^[A-Za-z0-9_]+$/.test(tsType) && !isSelfReference) {
     decoratorOpts.push(`type: ${tsType}`);
   }
   if (isArray) decoratorOpts.push("array: true");
