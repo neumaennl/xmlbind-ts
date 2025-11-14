@@ -271,7 +271,14 @@ function emitElementRef(
 
     const propName = toPropertyName(refLocalName, state.reservedWords);
     const decoratorOpts: string[] = [];
-    if (tsType && tsType !== "any" && /^[A-Za-z0-9_]+$/.test(tsType)) {
+    // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)
+    const isSelfReference = tsType === unit.className;
+    if (
+      tsType &&
+      tsType !== "any" &&
+      /^[A-Za-z0-9_]+$/.test(tsType) &&
+      !isSelfReference
+    ) {
       decoratorOpts.push(`type: ${tsType}`);
     }
     if (isArray) decoratorOpts.push("array: true");
@@ -286,9 +293,11 @@ function emitElementRef(
         ? `  @XmlElement('${refLocalName}', ${decoratorBody})`
         : `  @XmlElement('${refLocalName}')`
     );
-      lines.push(
-        `  ${propName}${makeRequired ? "!" : "?"}: ${tsType}${isArray ? "[]" : ""};`
-      );
+    lines.push(
+      `  ${propName}${makeRequired ? "!" : "?"}: ${tsType}${
+        isArray ? "[]" : ""
+      };`
+    );
     lines.push("");
   }
 }
@@ -309,7 +318,7 @@ function resolveElementType(
 ): string {
   const local = localName(typeAttr)!;
   const sanitized = sanitizeTypeName(local);
-  
+
   if (state.schemaContext.enumTypesMap.has(local)) {
     const tsType = sanitized;
     // Don't add self-references to deps
@@ -465,7 +474,12 @@ function emitElementDecorator(
 
   // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)
   const isSelfReference = tsType === unit.className;
-  if (tsType && tsType !== "any" && /^[A-Za-z0-9_]+$/.test(tsType) && !isSelfReference) {
+  if (
+    tsType &&
+    tsType !== "any" &&
+    /^[A-Za-z0-9_]+$/.test(tsType) &&
+    !isSelfReference
+  ) {
     decoratorOpts.push(`type: ${tsType}`);
   }
   if (isArray) decoratorOpts.push("array: true");

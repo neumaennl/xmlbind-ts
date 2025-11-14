@@ -405,8 +405,20 @@ describe("XSD Generator", () => {
             "utf8"
           );
 
-          // RestrictedString restriction should resolve to xsd:string -> String
-          expect(content).toContain("code?: String");
+          // RestrictedString should be generated as a type alias and used in the property
+          expect(content).toContain("code?: RestrictedString");
+          expect(content).toContain(
+            "import { RestrictedString } from './RestrictedString'"
+          );
+
+          // RestrictedString.ts should be a type alias to String
+          const restrictedContent = readFileSync(
+            path.join(tmp, "RestrictedString.ts"),
+            "utf8"
+          );
+          expect(restrictedContent).toContain(
+            "export type RestrictedString = String"
+          );
         });
       });
     });

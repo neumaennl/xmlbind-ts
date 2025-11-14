@@ -29,14 +29,27 @@ export function processSimpleTypes(
   for (const [name, st] of schemaContext.simpleTypesMap.entries()) {
     const typeName = toClassName(name, reservedWords);
 
+    // Skip if this is already an enum type
+    if (schemaContext.enumTypesMap.has(name)) {
+      continue;
+    }
+
     const union = getChildByLocalName(st, "union", xsdPrefix);
     if (union) {
       processUnion(union, typeName, xsdPrefix, generatedEnums);
+      continue;
     }
 
     const list = getChildByLocalName(st, "list", xsdPrefix);
     if (list) {
       processList(list, typeName, generatedEnums);
+      continue;
+    }
+
+    // Handle restriction-based simpleTypes that aren't enums
+    const restriction = getChildByLocalName(st, "restriction", xsdPrefix);
+    if (restriction) {
+      processRestriction(restriction, typeName, generatedEnums);
     }
   }
 }
@@ -57,12 +70,27 @@ function processUnion(
 ): void {
   const memberTypesAttr = union.getAttribute("memberTypes");
   let memberTypes: string[] = [];
+  const imports: string[] = [];
 
   if (memberTypesAttr) {
     memberTypes = memberTypesAttr
       .split(/\s+/)
       .map(localName)
       .filter((t): t is string => !!t);
+
+    // Collect imports for non-builtin types
+    for (const memberType of memberTypes) {
+      const mapped = typeMapping(memberType);
+      // If the mapped type is the same as the member type, it's a custom type that needs importing
+      if (
+        mapped === sanitizeTypeName(memberType) &&
+        mapped !== "String" &&
+        mapped !== "Number" &&
+        mapped !== "Boolean"
+      ) {
+        imports.push(`import { ${mapped} } from './${mapped}';`);
+      }
+    }
   }
 
   const inlineMembers = getChildrenByLocalName(union, "simpleType", xsdPrefix);
@@ -70,7 +98,11 @@ function processUnion(
 
   if (memberTypes.length > 0) {
     const tsType = memberTypes.map(typeMapping).join(" | ");
-    generatedEnums.set(typeName, `export type ${typeName} = ${tsType};`);
+    const importLines = imports.length > 0 ? imports.join("\n") + "\n" : "";
+    generatedEnums.set(
+      typeName,
+      `${importLines}export type ${typeName} = ${tsType};`
+    );
   }
 }
 
@@ -88,10 +120,67 @@ function processList(
 ): void {
   const itemType = list.getAttribute("itemType");
   if (itemType) {
+    const itemLocal = localName(itemType);
     const tsType = typeMapping(itemType);
-    generatedEnums.set(typeName, `export type ${typeName} = ${tsType}[];`);
+
+    // Add import if it's a custom type
+    let importLine = "";
+    if (
+      itemLocal &&
+      tsType === sanitizeTypeName(itemLocal) &&
+      tsType !== "String" &&
+      tsType !== "Number" &&
+      tsType !== "Boolean"
+    ) {
+      importLine = `import { ${tsType} } from './${tsType}';\n`;
+    }
+
+    generatedEnums.set(
+      typeName,
+      `${importLine}export type ${typeName} = ${tsType}[];`
+    );
   } else {
     generatedEnums.set(typeName, `export type ${typeName} = string[];`);
+  }
+}
+
+/**
+ * Processes an XSD restriction type, generating a TypeScript type alias.
+ * Creates an alias to the base type for restrictions that aren't enumerations.
+ *
+ * @param restriction - The XSD restriction element
+ * @param typeName - The TypeScript type name
+ * @param generatedEnums - Map to store the generated type alias
+ */
+function processRestriction(
+  restriction: XmldomElement,
+  typeName: string,
+  generatedEnums: Map<string, string>
+): void {
+  const base = restriction.getAttribute("base");
+  if (base) {
+    const baseLocal = localName(base);
+    const tsType = typeMapping(base);
+
+    // Add import if it's a custom type
+    let importLine = "";
+    if (
+      baseLocal &&
+      tsType === sanitizeTypeName(baseLocal) &&
+      tsType !== "String" &&
+      tsType !== "Number" &&
+      tsType !== "Boolean"
+    ) {
+      importLine = `import { ${tsType} } from './${tsType}';\n`;
+    }
+
+    generatedEnums.set(
+      typeName,
+      `${importLine}export type ${typeName} = ${tsType};`
+    );
+  } else {
+    // No base specified, default to string
+    generatedEnums.set(typeName, `export type ${typeName} = string;`);
   }
 }
 
