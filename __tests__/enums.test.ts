@@ -300,19 +300,18 @@ describe("Enums", () => {
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
 
-        const colorTypeFile = path.join(tmp, "ColorType.ts");
-        expect(readFileSync(colorTypeFile, "utf8")).toContain(
-          "export enum ColorType"
-        );
-        const colorTypeContent = readFileSync(colorTypeFile, "utf8");
-        expect(colorTypeContent).toContain('red = "red"');
-        expect(colorTypeContent).toContain('green = "green"');
-        expect(colorTypeContent).toContain('blue = "blue"');
+        // Enums are now in consolidated enums.ts file
+        const enumsFile = path.join(tmp, "enums.ts");
+        const enumsContent = readFileSync(enumsFile, "utf8");
+        expect(enumsContent).toContain("export enum ColorType");
+        expect(enumsContent).toContain('red = "red"');
+        expect(enumsContent).toContain('green = "green"');
+        expect(enumsContent).toContain('blue = "blue"');
 
         const productFile = path.join(tmp, "Product.ts");
         const productContent = readFileSync(productFile, "utf8");
         expect(productContent).toContain(
-          "import { ColorType } from './ColorType';"
+          "import { ColorType } from './enums';"
         );
         expect(productContent).toMatch(
           /@XmlElement\('color',\s*\{\s*type:\s*ColorType,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
@@ -342,20 +341,17 @@ describe("Enums", () => {
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
 
-        const statusEnumFile = path.join(tmp, "statusEnum.ts");
-        expect(readFileSync(statusEnumFile, "utf8")).toContain(
-          "export enum statusEnum"
-        );
-        const statusEnumContent = readFileSync(statusEnumFile, "utf8");
-        expect(statusEnumContent).toContain('pending = "pending"');
-        expect(statusEnumContent).toContain('shipped = "shipped"');
-        expect(statusEnumContent).toContain('delivered = "delivered"');
+        // Enums are now in consolidated enums.ts file
+        const enumsFile = path.join(tmp, "enums.ts");
+        const enumsContent = readFileSync(enumsFile, "utf8");
+        expect(enumsContent).toContain("export enum statusEnum");
+        expect(enumsContent).toContain('pending = "pending"');
+        expect(enumsContent).toContain('shipped = "shipped"');
+        expect(enumsContent).toContain('delivered = "delivered"');
 
         const orderFile = path.join(tmp, "Order.ts");
         const orderContent = readFileSync(orderFile, "utf8");
-        expect(orderContent).toContain(
-          "import { statusEnum } from './statusEnum';"
-        );
+        expect(orderContent).toContain("import { statusEnum } from './enums';");
         expect(orderContent).toMatch(/status!?:\s*statusEnum;/);
       });
     });
@@ -376,14 +372,15 @@ describe("Enums", () => {
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
 
-        const sizeTypeFile = path.join(tmp, "SizeType.ts");
-        expect(readFileSync(sizeTypeFile, "utf8")).toContain(
+        // Enums are now in consolidated enums.ts file
+        const enumsFile = path.join(tmp, "enums.ts");
+        expect(readFileSync(enumsFile, "utf8")).toContain(
           "export enum SizeType"
         );
 
         const sizeFile = path.join(tmp, "Size.ts");
         const sizeContent = readFileSync(sizeFile, "utf8");
-        expect(sizeContent).toContain("import { SizeType } from './SizeType';");
+        expect(sizeContent).toContain("import { SizeType } from './enums';");
         expect(sizeContent).toMatch(/@XmlRoot\('Size'/);
         expect(sizeContent).toContain("@XmlText()");
         expect(sizeContent).toMatch(/value\?:\s*SizeType;/);
@@ -407,19 +404,18 @@ describe("Enums", () => {
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
 
-        const priorityEnumFile = path.join(tmp, "PriorityEnum.ts");
-        expect(readFileSync(priorityEnumFile, "utf8")).toContain(
-          "export enum PriorityEnum"
-        );
-        const priorityEnumContent = readFileSync(priorityEnumFile, "utf8");
-        expect(priorityEnumContent).toContain('low = "low"');
-        expect(priorityEnumContent).toContain('medium = "medium"');
-        expect(priorityEnumContent).toContain('high = "high"');
+        // Enums are now in consolidated enums.ts file
+        const enumsFile = path.join(tmp, "enums.ts");
+        const enumsContent = readFileSync(enumsFile, "utf8");
+        expect(enumsContent).toContain("export enum PriorityEnum");
+        expect(enumsContent).toContain('low = "low"');
+        expect(enumsContent).toContain('medium = "medium"');
+        expect(enumsContent).toContain('high = "high"');
 
         const priorityFile = path.join(tmp, "Priority.ts");
         const priorityContent = readFileSync(priorityFile, "utf8");
         expect(priorityContent).toContain(
-          "import { PriorityEnum } from './PriorityEnum';"
+          "import { PriorityEnum } from './enums';"
         );
         expect(priorityContent).toMatch(/@XmlRoot\('Priority'/);
         expect(priorityContent).toMatch(/value\?:\s*PriorityEnum;/);
@@ -441,8 +437,9 @@ describe("Enums", () => {
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
 
-        const specialTypeFile = path.join(tmp, "SpecialType.ts");
-        const content = readFileSync(specialTypeFile, "utf8");
+        // Enums are now in consolidated enums.ts file
+        const enumsFile = path.join(tmp, "enums.ts");
+        const content = readFileSync(enumsFile, "utf8");
 
         expect(content).toContain('value_with_dash = "value-with-dash"');
         expect(content).toContain('value_with_dot = "value.with.dot"');
@@ -474,7 +471,7 @@ describe("Enums", () => {
         const taskFile = path.join(tmp, "Task.ts");
         const taskContent = readFileSync(taskFile, "utf8");
 
-        expect(taskContent).toContain("import { TagType } from './TagType';");
+        expect(taskContent).toContain("import { TagType } from './enums';");
         expect(taskContent).toMatch(
           /@XmlElement\('tags',\s*\{\s*type:\s*TagType,\s*array:\s*true,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
         );

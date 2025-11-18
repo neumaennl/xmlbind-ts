@@ -61,10 +61,10 @@ describe("XSD Generator - Reserved Word Handling", () => {
       const configFile = path.join(dir, "Config.ts");
       const content = fs.readFileSync(configFile, "utf-8");
 
-  // Property names should be sanitized; required elements are non-optional
-  expect(content).toMatch(/\bclass_!?:/);
-  expect(content).toMatch(/\bpublic_!?:/);
-  expect(content).toMatch(/\bdefault_!?:/);
+      // Property names should be sanitized; required elements are non-optional
+      expect(content).toMatch(/\bclass_!?:/);
+      expect(content).toMatch(/\bpublic_!?:/);
+      expect(content).toMatch(/\bdefault_!?:/);
     });
   });
 
@@ -85,20 +85,20 @@ describe("XSD Generator - Reserved Word Handling", () => {
     withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
-      // Enum filename is sanitized to avoid reserved word collisions
-      const voidEnumFile = path.join(dir, "void_.ts");
-      expect(fs.existsSync(voidEnumFile)).toBe(true);
+      // Enums are now in consolidated enums.ts file
+      const enumsFile = path.join(dir, "enums.ts");
+      expect(fs.existsSync(enumsFile)).toBe(true);
 
-      const enumContent = fs.readFileSync(voidEnumFile, "utf-8");
+      const enumContent = fs.readFileSync(enumsFile, "utf-8");
 
       // Should have sanitized enum name inside
       expect(enumContent).toContain("export enum void_");
 
-      // And the referencing class should import from './void_'
+      // And the referencing class should import from './enums'
       const voidTypeFile = path.join(dir, "VoidType.ts");
       expect(fs.existsSync(voidTypeFile)).toBe(true);
       const classContent = fs.readFileSync(voidTypeFile, "utf-8");
-      expect(classContent).toContain("import { void_ } from './void_';");
+      expect(classContent).toContain("import { void_ } from './enums';");
     });
   });
 
@@ -135,15 +135,15 @@ describe("XSD Generator - Reserved Word Handling", () => {
       const exportContent = fs.readFileSync(exportFile, "utf-8");
       const interfaceContent = fs.readFileSync(interfaceFile, "utf-8");
 
-  expect(exportContent).toContain("export class export_");
-  // element is required -> non-optional
-  expect(exportContent).toMatch(/\bconst_!?:/);
-  // attribute is optional by default -> remains optional
-  expect(exportContent).toContain("static_?:");
+      expect(exportContent).toContain("export class export_");
+      // element is required -> non-optional
+      expect(exportContent).toMatch(/\bconst_!?:/);
+      // attribute is optional by default -> remains optional
+      expect(exportContent).toContain("static_?:");
 
-  expect(interfaceContent).toContain("export class interface_");
-  // element required -> non-optional
-  expect(interfaceContent).toMatch(/\bextends_!?:/);
+      expect(interfaceContent).toContain("export class interface_");
+      // element required -> non-optional
+      expect(interfaceContent).toMatch(/\bextends_!?:/);
     });
   });
 });

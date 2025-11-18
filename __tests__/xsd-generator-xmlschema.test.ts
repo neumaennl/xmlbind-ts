@@ -96,13 +96,19 @@ describe("XSD Generator - XML Schema XSD", () => {
         "attribute.ts",
         "complexType.ts",
         "simpleType.ts",
-        "formChoice.ts", // enum
-        "derivationSet.ts", // enum
+        "enums.ts", // consolidated enums file
+        "types.ts", // consolidated types file
+        "index.ts", // barrel export
       ];
 
       for (const expectedFile of expectedFiles) {
         expect(files).toContain(expectedFile);
       }
+
+      // Verify enums are in the consolidated enums.ts file
+      const enumsContent = readFileSync(path.join(tmpDir, "enums.ts"), "utf8");
+      expect(enumsContent).toContain("export enum formChoice");
+      expect(enumsContent).toContain("export enum derivationSet");
 
       console.log(
         "Successfully generated TypeScript classes from XML Schema XSD"
