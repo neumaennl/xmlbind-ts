@@ -1,6 +1,6 @@
 {
   "name": "@neumaennl/xmlbind-ts",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "JAXB-like XML binding for TypeScript",
   "author": "Martin Neumann <neumaennl@gmx.net>",
   "license": "GPL-3.0-only",
