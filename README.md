@@ -19,6 +19,41 @@ JAXB-like XML binding for TypeScript.
 npm install @neumaennl/xmlbind-ts
 ```
 
+## TypeScript Decorator Support
+
+This library supports both **legacy decorators** (TypeScript's experimental decorators) and **Stage 3 decorators** (the TC39 standard):
+
+- **Legacy decorators**: Used when `experimentalDecorators: true` is set in your `tsconfig.json`
+- **Stage 3 decorators**: Used when `experimentalDecorators` is not enabled (TypeScript 5.0+)
+
+Both decorator formats are fully supported and the library automatically detects which format is being used. You can use either configuration:
+
+### With Legacy Decorators (experimentalDecorators)
+
+```json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    // ... other options
+  }
+}
+```
+
+### With Stage 3 Decorators (no experimentalDecorators)
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    // ... other options
+    // Note: experimentalDecorators is NOT set
+  }
+}
+```
+
+Both configurations work seamlessly with all decorators (`@XmlRoot`, `@XmlElement`, `@XmlAttribute`, etc.).
+
 ## Quick Start
 
 Here's a simple example of defining a class and marshalling/unmarshalling XML:
