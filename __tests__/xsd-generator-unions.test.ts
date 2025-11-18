@@ -27,7 +27,8 @@ describe("XSD Generator - Union Types", () => {
     withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
-      const typeFile = path.join(dir, "StringOrNumber.ts");
+      // Types are now in consolidated types.ts file
+      const typeFile = path.join(dir, "types.ts");
       expect(fs.existsSync(typeFile)).toBe(true);
 
       const content = fs.readFileSync(typeFile, "utf-8");
@@ -52,7 +53,8 @@ describe("XSD Generator - Union Types", () => {
     withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
-      const typeFile = path.join(dir, "MixedType.ts");
+      // Types are now in consolidated types.ts file
+      const typeFile = path.join(dir, "types.ts");
       const content = fs.readFileSync(typeFile, "utf-8");
 
       expect(content).toContain("String | Number | Boolean | Date");
@@ -80,7 +82,8 @@ describe("XSD Generator - Union Types", () => {
     withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
-      const typeFile = path.join(dir, "FlexibleType.ts");
+      // Types are now in consolidated types.ts file
+      const typeFile = path.join(dir, "types.ts");
       expect(fs.existsSync(typeFile)).toBe(true);
 
       const content = fs.readFileSync(typeFile, "utf-8");

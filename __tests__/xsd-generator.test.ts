@@ -81,9 +81,7 @@ describe("XSD Generator", () => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "Record.ts"), "utf8");
 
-          expect(content).toContain(
-            "import { StatusEnum } from './StatusEnum'"
-          );
+          expect(content).toContain("import { StatusEnum } from './enums'");
           expect(content).toContain("type: StatusEnum");
         });
       });
@@ -408,15 +406,12 @@ describe("XSD Generator", () => {
           // RestrictedString should be generated as a type alias and used in the property
           expect(content).toContain("code?: RestrictedString");
           expect(content).toContain(
-            "import { RestrictedString } from './RestrictedString'"
+            "import type { RestrictedString } from './types'"
           );
 
-          // RestrictedString.ts should be a type alias to String
-          const restrictedContent = readFileSync(
-            path.join(tmp, "RestrictedString.ts"),
-            "utf8"
-          );
-          expect(restrictedContent).toContain(
+          // RestrictedString should be a type alias in types.ts
+          const typesContent = readFileSync(path.join(tmp, "types.ts"), "utf8");
+          expect(typesContent).toContain(
             "export type RestrictedString = String"
           );
         });

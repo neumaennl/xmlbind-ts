@@ -27,7 +27,8 @@ describe("XSD Generator - List Types", () => {
     withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
-      const typeFile = path.join(dir, "StringList.ts");
+      // Types are now in consolidated types.ts file
+      const typeFile = path.join(dir, "types.ts");
       expect(fs.existsSync(typeFile)).toBe(true);
 
       const content = fs.readFileSync(typeFile, "utf-8");
@@ -52,7 +53,8 @@ describe("XSD Generator - List Types", () => {
     withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
-      const typeFile = path.join(dir, "NumberList.ts");
+      // Types are now in consolidated types.ts file
+      const typeFile = path.join(dir, "types.ts");
       const content = fs.readFileSync(typeFile, "utf-8");
 
       expect(content).toContain("Number[]");
@@ -79,10 +81,12 @@ describe("XSD Generator - List Types", () => {
     withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
-      const typeFile = path.join(dir, "RestrictedList.ts");
+      // Types are now in consolidated types.ts file
+      const typeFile = path.join(dir, "types.ts");
       expect(fs.existsSync(typeFile)).toBe(true);
 
       const content = fs.readFileSync(typeFile, "utf-8");
+      expect(content).toContain("RestrictedList");
       expect(content).toContain("string[]");
     });
   });
