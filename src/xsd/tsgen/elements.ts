@@ -129,29 +129,76 @@ function processElementContainer(
   for (const container of containers) {
     if ((container.parentNode as any) !== ctx) continue;
 
-    const children = Array.from((container as any).childNodes || []);
-    for (const child of children) {
-      const childNode = child as any;
-      if (!childNode || childNode.nodeType !== 1) continue;
-      const localN =
-        childNode.localName ||
-        childNode.tagName?.split(":")[1] ||
-        childNode.tagName;
+    processCompositorChildren(
+      container,
+      lines,
+      unit,
+      state,
+      ensureClass,
+      processGroup,
+      ensureAnyElement,
+      containerType === "choice"
+    );
+  }
+}
 
-      if (localN === "element") {
-        emitElement(
-          childNode as XmldomElement,
-          lines,
-          unit,
-          state,
-          ensureClass,
-          containerType === "choice"
-        );
-      } else if (localN === "group") {
-        processGroup(childNode as XmldomElement);
-      } else if (localN === "any") {
-        ensureAnyElement(lines);
-      }
+/**
+ * Processes the children of a compositor element (sequence, choice, or all).
+ * Handles element, group, any, and nested compositor children.
+ *
+ * @param compositor - The compositor element to process
+ * @param lines - The output lines array
+ * @param unit - The generation unit
+ * @param state - The generator state
+ * @param ensureClass - Callback to ensure classes are generated
+ * @param processGroup - Callback to process group references
+ * @param ensureAnyElement - Callback to ensure any element wildcard
+ * @param insideChoice - Whether we're inside a choice (affects optionality)
+ */
+function processCompositorChildren(
+  compositor: XmldomElement,
+  lines: string[],
+  unit: GenUnit,
+  state: GeneratorState,
+  ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
+  processGroup: (grp: XmldomElement) => void,
+  ensureAnyElement: (lines: string[]) => void,
+  insideChoice: boolean
+): void {
+  const children = Array.from((compositor as any).childNodes || []);
+  for (const child of children) {
+    const childNode = child as any;
+    if (!childNode || childNode.nodeType !== 1) continue;
+    const localN =
+      childNode.localName ||
+      childNode.tagName?.split(":")[1] ||
+      childNode.tagName;
+
+    if (localN === "element") {
+      emitElement(
+        childNode as XmldomElement,
+        lines,
+        unit,
+        state,
+        ensureClass,
+        insideChoice
+      );
+    } else if (localN === "group") {
+      processGroup(childNode as XmldomElement);
+    } else if (localN === "any") {
+      ensureAnyElement(lines);
+    } else if (localN === "sequence" || localN === "choice" || localN === "all") {
+      // Recursively process nested compositors
+      processCompositorChildren(
+        childNode as XmldomElement,
+        lines,
+        unit,
+        state,
+        ensureClass,
+        processGroup,
+        ensureAnyElement,
+        insideChoice || localN === "choice"
+      );
     }
   }
 }
@@ -220,6 +267,19 @@ export function emitElement(
 }
 
 /**
+ * Checks if a property with the given name has already been emitted.
+ * Used to prevent duplicate property declarations.
+ *
+ * @param propName - The property name to check
+ * @param lines - The output lines array
+ * @returns True if the property already exists, false otherwise
+ */
+function isPropertyAlreadyEmitted(propName: string, lines: string[]): boolean {
+  const propertyPattern = new RegExp(`^  ${propName}[!?]:`);
+  return lines.some((line) => propertyPattern.test(line));
+}
+
+/**
  * Emits code for an element reference (ref attribute).
  * Looks up the referenced element definition and generates the property.
  *
@@ -277,6 +337,12 @@ function emitElementRef(
     }
 
     const propName = toPropertyName(refLocalName, state.reservedWords);
+    
+    // Check if this property name has already been emitted to avoid duplicates
+    if (isPropertyAlreadyEmitted(propName, lines)) {
+      return;
+    }
+    
     const decoratorOpts: string[] = [];
     // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)
     const isSelfReference = tsType === unit.className;
@@ -375,6 +441,10 @@ function handleInlineType(
   if (inlineCT) {
     const anonName = toClassName(en + "Type", state.reservedWords);
     ensureClass(anonName, inlineCT as any);
+    // Add dependency for the generated inline type
+    if (anonName !== unit.className) {
+      unit.deps.add(anonName);
+    }
     return anonName;
   } else if (inlineST) {
     return handleInlineSimpleType(inlineST, en, unit, state);
@@ -483,6 +553,12 @@ function emitElementDecorator(
   makeRequired: boolean
 ): void {
   const propName = toPropertyName(en, state.reservedWords);
+  
+  // Check if this property name has already been emitted to avoid duplicates
+  if (isPropertyAlreadyEmitted(propName, lines)) {
+    return;
+  }
+  
   const decoratorOpts: string[] = [];
 
   // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)

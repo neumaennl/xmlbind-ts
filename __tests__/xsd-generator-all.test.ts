@@ -1,16 +1,9 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
+import { readFileSync, existsSync } from "fs";
+import path from "path";
+import { withTmpDir } from "./test-utils/temp-dir";
 
-function withTmpDir(fn: (dir: string) => void) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "xmlbind-all-"));
-  try {
-    fn(dir);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-}
+
 
 describe("XSD Generator - xs:all Compositor", () => {
   test("generates class with xs:all elements", () => {
@@ -32,9 +25,9 @@ describe("XSD Generator - xs:all Compositor", () => {
       generateFromXsd(xsd, dir);
 
       const personFile = path.join(dir, "Person.ts");
-      expect(fs.existsSync(personFile)).toBe(true);
+      expect(existsSync(personFile)).toBe(true);
 
-      const content = fs.readFileSync(personFile, "utf-8");
+      const content = readFileSync(personFile, "utf-8");
 
       // Should have all elements from xs:all
       expect(content).toContain("@XmlElement('firstName'");
@@ -67,7 +60,7 @@ describe("XSD Generator - xs:all Compositor", () => {
       generateFromXsd(xsd, dir);
 
       const contactFile = path.join(dir, "Contact.ts");
-      const content = fs.readFileSync(contactFile, "utf-8");
+      const content = readFileSync(contactFile, "utf-8");
 
       // All elements should be optional (marked with ?)
       expect(content).toContain("phone?: String");
@@ -95,7 +88,7 @@ describe("XSD Generator - xs:all Compositor", () => {
       generateFromXsd(xsd, dir);
 
       const productFile = path.join(dir, "Product.ts");
-      const content = fs.readFileSync(productFile, "utf-8");
+      const content = readFileSync(productFile, "utf-8");
 
       // Should have elements from xs:all
       expect(content).toContain("@XmlElement('name'");

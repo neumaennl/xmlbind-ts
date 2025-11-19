@@ -1,17 +1,10 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import { readFileSync, mkdtempSync, rmSync, existsSync } from "fs";
-import os from "os";
+import { readFileSync, existsSync } from "fs";
+
 import path from "path";
+import { withTmpDir } from "./test-utils/temp-dir";
 
 describe("XSD Generator - Barrel Export", () => {
-  function withTmpDir(cb: (tmp: string) => void): void {
-    const tmp = mkdtempSync(path.join(os.tmpdir(), "xmlbind-barrel-"));
-    try {
-      cb(tmp);
-    } finally {
-      rmSync(tmp, { recursive: true, force: true });
-    }
-  }
 
   test("generates barrel export (index.ts) for all generated types", () => {
     const XSD = `<?xml version="1.0" encoding="UTF-8"?>

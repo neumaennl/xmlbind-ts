@@ -1,79 +1,17 @@
-import {
-  readFileSync,
-  mkdtempSync,
-  rmSync,
-  readdirSync,
-  writeFileSync,
-} from "fs";
-import os from "os";
+import { readFileSync, readdirSync, writeFileSync } from "fs";
+
 import path from "path";
-import https from "https";
+import { withTmpDir } from "./test-utils/temp-dir";
 import { execSync } from "child_process";
 import { setupGeneratedRuntime } from "./test-utils/generated-runtime";
 
 describe("XSD Generator - XML Schema XSD", () => {
-  async function withTmpDir(run: (dir: string) => Promise<void>) {
-    const tmpDir = mkdtempSync(path.join(os.tmpdir(), "xmlbind-ts-xmlschema-"));
-    try {
-      await run(tmpDir);
-    } finally {
-      try {
-        rmSync(tmpDir, { recursive: true, force: true });
-      } catch {
-        /* ignore */
-      }
-    }
-  }
-
-  function downloadFile(url: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      https
-        .get(url, (res) => {
-          if (res.statusCode === 301 || res.statusCode === 302) {
-            // Follow redirect
-            if (res.headers.location) {
-              downloadFile(res.headers.location).then(resolve).catch(reject);
-              return;
-            }
-          }
-
-          if (res.statusCode !== 200) {
-            reject(new Error(`Failed to download: HTTP ${res.statusCode}`));
-            return;
-          }
-
-          let data = "";
-          res.on("data", (chunk) => {
-            data += chunk;
-          });
-          res.on("end", () => {
-            resolve(data);
-          });
-        })
-        .on("error", reject);
-    });
-  }
-
-  test("generates TypeScript classes from XML Schema XSD and verifies compilation", async () => {
-    await withTmpDir(async (tmpDir) => {
-      // Download the official XML Schema XSD from W3C
-      console.log("Downloading XMLSchema.xsd from W3C...");
-      let xmlSchemaXsd: string;
-      try {
-        xmlSchemaXsd = await downloadFile(
-          "https://www.w3.org/2001/XMLSchema.xsd"
-        );
-        console.log(`Downloaded ${xmlSchemaXsd.length} bytes from W3C`);
-      } catch (error) {
-        // Fallback to local file if download fails
-        console.log(
-          "Download failed, falling back to local file:",
-          (error as Error).message
-        );
-        const xsdPath = path.join(__dirname, "test-resources", "XMLSchema.xsd");
-        xmlSchemaXsd = readFileSync(xsdPath, "utf-8");
-        console.log(`Loaded from local file: ${xsdPath}`);
-      }
+  test("generates TypeScript classes from XML Schema XSD and verifies compilation", () => {
+    withTmpDir((tmpDir) => {
+      // Load the XML Schema XSD from local test resources
+      const xsdPath = path.join(__dirname, "test-resources", "XMLSchema.xsd");
+      const xmlSchemaXsd = readFileSync(xsdPath, "utf-8");
+      console.log(`Loaded XMLSchema.xsd from ${xsdPath}`);
 
       console.log("Generating TypeScript classes...");
 

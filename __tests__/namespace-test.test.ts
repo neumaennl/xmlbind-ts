@@ -1,21 +1,10 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import { readFileSync, mkdtempSync, rmSync } from "fs";
-import os from "os";
+import { readFileSync } from "fs";
+
 import path from "path";
+import { withTmpDir } from "./test-utils/temp-dir";
 
 describe("Namespace handling", () => {
-  function withTmpDir(run: (dir: string) => void) {
-    const tmpDir = mkdtempSync(path.join(os.tmpdir(), "xmlbind-ns-"));
-    try {
-      run(tmpDir);
-    } finally {
-      try {
-        rmSync(tmpDir, { recursive: true, force: true });
-      } catch {
-        /* ignore */
-      }
-    }
-  }
 
   test("generates namespace on @XmlRoot from targetNamespace", () => {
     const XSD = `<?xml version="1.0"?>

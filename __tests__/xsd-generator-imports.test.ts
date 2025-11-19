@@ -1,21 +1,10 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import { readFileSync, mkdtempSync, rmSync } from "fs";
-import os from "os";
+import { readFileSync } from "fs";
+
 import path from "path";
+import { withTmpDir } from "./test-utils/temp-dir";
 
 describe("XSD Generator - Multiple schemas with imports and cross-namespace references", () => {
-  function withTmpDir(run: (dir: string) => void) {
-    const tmpDir = mkdtempSync(path.join(os.tmpdir(), "xmlbind-ts-imports-"));
-    try {
-      run(tmpDir);
-    } finally {
-      try {
-        rmSync(tmpDir, { recursive: true, force: true });
-      } catch {
-        /* ignore */
-      }
-    }
-  }
 
   test("handles schema with import and type reference from imported namespace", () => {
     const ADDRESS_XSD = `<?xml version="1.0"?>

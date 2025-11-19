@@ -1,16 +1,9 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
+import { readFileSync, existsSync } from "fs";
+import path from "path";
+import { withTmpDir } from "./test-utils/temp-dir";
 
-function withTmpDir(fn: (dir: string) => void) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "xmlbind-refs-"));
-  try {
-    fn(dir);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-}
+
 
 describe("XSD Generator - Element and Attribute References", () => {
   test("handles element references", () => {
@@ -33,9 +26,9 @@ describe("XSD Generator - Element and Attribute References", () => {
       generateFromXsd(xsd, dir);
 
       const docFile = path.join(dir, "Document.ts");
-      expect(fs.existsSync(docFile)).toBe(true);
+      expect(existsSync(docFile)).toBe(true);
 
-      const content = fs.readFileSync(docFile, "utf-8");
+      const content = readFileSync(docFile, "utf-8");
 
       // Should have the referenced element
       expect(content).toContain("@XmlElement('Title'");
@@ -68,9 +61,9 @@ describe("XSD Generator - Element and Attribute References", () => {
       generateFromXsd(xsd, dir);
 
       const docFile = path.join(dir, "Document.ts");
-      expect(fs.existsSync(docFile)).toBe(true);
+      expect(existsSync(docFile)).toBe(true);
 
-      const content = fs.readFileSync(docFile, "utf-8");
+      const content = readFileSync(docFile, "utf-8");
 
       // Should have the referenced attribute
       expect(content).toContain("@XmlAttribute('version'");
@@ -101,7 +94,7 @@ describe("XSD Generator - Element and Attribute References", () => {
       generateFromXsd(xsd, dir);
 
       const listFile = path.join(dir, "List.ts");
-      const content = fs.readFileSync(listFile, "utf-8");
+      const content = readFileSync(listFile, "utf-8");
 
       // Should generate an array
       expect(content).toMatch(/\bItem!?:\s*String\[\]/);
@@ -126,7 +119,7 @@ describe("XSD Generator - Element and Attribute References", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(
+        const content = readFileSync(
           path.join(tmp, "NullableContainer.ts"),
           "utf8"
         );
@@ -153,7 +146,7 @@ describe("XSD Generator - Element and Attribute References", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(path.join(tmp, "Choice.ts"), "utf8");
+        const content = readFileSync(path.join(tmp, "Choice.ts"), "utf8");
 
         expect(content).toContain("OptionA?: String");
         expect(content).toContain("OptionB?: Number");
@@ -175,7 +168,7 @@ describe("XSD Generator - Element and Attribute References", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(
+        const content = readFileSync(
           path.join(tmp, "MalformedElement.ts"),
           "utf8"
         );
@@ -202,7 +195,7 @@ describe("XSD Generator - Element and Attribute References", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(
+        const content = readFileSync(
           path.join(tmp, "Namespaced.ts"),
           "utf8"
         );
