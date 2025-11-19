@@ -1,16 +1,9 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
 import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
+import { withTmpDir } from "./test-utils/temp-dir";
 
-function withTmpDir(fn: (dir: string) => void) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "xmlbind-unions-"));
-  try {
-    fn(dir);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-}
+
 
 describe("XSD Generator - Union Types", () => {
   test("generates type alias for union with memberTypes", () => {

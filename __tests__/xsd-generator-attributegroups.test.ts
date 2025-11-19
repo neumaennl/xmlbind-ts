@@ -1,16 +1,9 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
 import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
+import { withTmpDir } from "./test-utils/temp-dir";
 
-function withTmpDir(fn: (dir: string) => void) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "xmlbind-attrgroups-"));
-  try {
-    fn(dir);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-}
+
 
 describe("XSD Generator - Attribute Groups", () => {
   test("generates classes with attribute group references", () => {

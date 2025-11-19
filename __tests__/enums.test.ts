@@ -7,9 +7,10 @@ import {
 } from "../src/decorators";
 import { marshal, unmarshal } from "../src/marshalling";
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import { readFileSync, mkdtempSync, rmSync } from "fs";
-import os from "os";
+import { readFileSync } from "fs";
+
 import path from "path";
+import { withTmpDir } from "./test-utils/temp-dir";
 
 // Define test enums
 enum StatusEnum {
@@ -87,18 +88,6 @@ class MultiEnum {
 }
 
 describe("Enums", () => {
-  function withTmpDir(run: (dir: string) => void) {
-    const tmpDir = mkdtempSync(path.join(os.tmpdir(), "xmlbind-ts-enum-"));
-    try {
-      run(tmpDir);
-    } finally {
-      try {
-        rmSync(tmpDir, { recursive: true, force: true });
-      } catch {
-        /* ignore */
-      }
-    }
-  }
 
   describe("Marshalling with enums", () => {
     test("marshal object with enum values to XML", () => {
