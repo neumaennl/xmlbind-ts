@@ -1,6 +1,6 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import * as fs from "fs";
-import * as path from "path";
+import { readFileSync, existsSync } from "fs";
+import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir";
 
 
@@ -32,9 +32,9 @@ describe("XSD Generator - Attribute Groups", () => {
       generateFromXsd(xsd, dir);
 
       const docFile = path.join(dir, "Document.ts");
-      expect(fs.existsSync(docFile)).toBe(true);
+      expect(existsSync(docFile)).toBe(true);
 
-      const content = fs.readFileSync(docFile, "utf-8");
+      const content = readFileSync(docFile, "utf-8");
 
       // Should have all attributes from the group
       expect(content).toContain("@XmlAttribute('id')");
@@ -79,9 +79,9 @@ describe("XSD Generator - Attribute Groups", () => {
       generateFromXsd(xsd, dir);
 
       const entityFile = path.join(dir, "Entity.ts");
-      expect(fs.existsSync(entityFile)).toBe(true);
+      expect(existsSync(entityFile)).toBe(true);
 
-      const content = fs.readFileSync(entityFile, "utf-8");
+      const content = readFileSync(entityFile, "utf-8");
 
       // Should have attributes from both groups
       expect(content).toContain("@XmlAttribute('id')");
