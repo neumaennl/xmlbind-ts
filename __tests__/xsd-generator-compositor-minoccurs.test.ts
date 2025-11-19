@@ -91,4 +91,38 @@ describe("XSD Generator - Compositor minOccurs", () => {
       expect(containerContent).toMatch(/deeplyNested\?:\s*String;/);
     });
   });
+
+  test("elements with minOccurs > 1 are arrays", () => {
+    withTmpDir((tmpDir) => {
+      const xsd = `<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://test.com" elementFormDefault="qualified">
+  <xs:element name="container">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="multipleRequired" type="xs:string" minOccurs="2"/>
+        <xs:element name="multipleOptional" type="xs:string" minOccurs="2" maxOccurs="unbounded"/>
+        <xs:element name="singleOptional" type="xs:string" minOccurs="0"/>
+        <xs:element name="singleRequired" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>`;
+
+      setupGeneratedRuntime(tmpDir, [xsd]);
+
+      const containerContent = readFileSync(path.join(tmpDir, "container.ts"), "utf8");
+      
+      // Element with minOccurs="2" should be array and required
+      expect(containerContent).toMatch(/multipleRequired!:\s*String\[\]/);
+      
+      // Element with minOccurs="2" maxOccurs="unbounded" should be array and required
+      expect(containerContent).toMatch(/multipleOptional!:\s*String\[\]/);
+      
+      // Element with minOccurs="0" should not be array and optional
+      expect(containerContent).toMatch(/singleOptional\?:\s*String;/);
+      
+      // Element with default minOccurs="1" should not be array and required
+      expect(containerContent).toMatch(/singleRequired!:\s*String;/);
+    });
+  });
 });
