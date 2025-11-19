@@ -189,6 +189,11 @@ function xmlValueToObject<T>(
   cls: new () => T,
   nsMap: NsMap
 ): T {
+  // If no type specified (cls is undefined), return the raw parsed value
+  if (!cls) {
+    return node as T;
+  }
+
   if (isPrimitiveCtor(cls)) {
     // node may be a primitive value or an object with a text node
     if (isParsedXmlNode(node)) {
