@@ -1,13 +1,9 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import {
-  localName,
-  getChildByLocalName,
-  getChildrenByLocalName,
-} from "./utils";
-import { typeMapping, sanitizeTypeName } from "./types";
-import { extractEnumValues, generateEnumCode } from "./enum";
-import { toPropertyName, toClassName, elementNamespaceFor } from "./codegen";
+import { localName, getChildrenByLocalName } from "./utils";
+import { elementNamespaceFor } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
+import { emitElementRef } from "./element-refs";
+import { resolveElementType, handleInlineType, emitElementDecorator } from "./element-types";
 
 /**
  * Determines if a maxOccurs attribute value indicates an array.
@@ -33,6 +29,18 @@ function isOptionalFromMinOccurs(minOccurs: string | null): boolean {
   const numValue = Number(minOccurs);
   if (isNaN(numValue)) return false;
   return numValue === 0;
+}
+
+/**
+ * Determines if a minOccurs attribute value indicates an array (multiple required occurrences).
+ * @param minOccurs - The minOccurs attribute value (e.g., "0", "1", "2")
+ * @returns True if the element must appear multiple times (minOccurs > 1)
+ */
+function isArrayFromMinOccurs(minOccurs: string | null): boolean {
+  if (!minOccurs) return false; // default is "1", so not array
+  const numValue = Number(minOccurs);
+  if (isNaN(numValue)) return false;
+  return numValue > 1;
 }
 
 /**
@@ -308,18 +316,35 @@ export function emitElement(
   const refAttr = e.getAttribute("ref");
 
   if (refAttr && !en) {
-    emitElementRef(e, refAttr, lines, unit, state, insideChoice, compositorIsArray, compositorIsOptional);
+    emitElementRef(
+      e,
+      refAttr,
+      lines,
+      unit,
+      state,
+      insideChoice,
+      compositorIsArray,
+      compositorIsOptional,
+      isArrayFromMaxOccurs
+    );
     return;
   }
 
   if (!en) return;
 
   const typeAttr = e.getAttribute("type");
-  const elementIsArray = isArrayFromMaxOccurs(e.getAttribute("maxOccurs"));
-  // Element is an array if either the element itself has maxOccurs > 1, or it's inside a compositor with maxOccurs > 1
-  const isArray = elementIsArray || compositorIsArray;
+  const minOccursAttr = e.getAttribute("minOccurs");
+  const maxOccursAttr = e.getAttribute("maxOccurs");
+  
+  const elementIsArrayFromMax = isArrayFromMaxOccurs(maxOccursAttr);
+  const elementIsArrayFromMin = isArrayFromMinOccurs(minOccursAttr);
+  // Element is an array if:
+  // 1. maxOccurs > 1 (can appear multiple times)
+  // 2. minOccurs > 1 (must appear multiple times)
+  // 3. Inside a compositor with maxOccurs > 1
+  const isArray = elementIsArrayFromMax || elementIsArrayFromMin || compositorIsArray;
   const nillable = e.getAttribute("nillable") === "true";
-  const min = e.getAttribute("minOccurs") ?? "1";
+  const min = minOccursAttr ?? "1";
   // Element is required only if it's not in a choice, has minOccurs >= 1, and is not inside an optional compositor
   const makeRequired = !insideChoice && Number(min) >= 1 && !compositorIsOptional;
   const ens = elementNamespaceFor(
@@ -348,367 +373,4 @@ export function emitElement(
     state,
     makeRequired
   );
-}
-
-/**
- * Checks if a property with the given name has already been emitted.
- * Used to prevent duplicate property declarations.
- *
- * @param propName - The property name to check
- * @param lines - The output lines array
- * @returns True if the property already exists, false otherwise
- */
-function isPropertyAlreadyEmitted(propName: string, lines: string[]): boolean {
-  const propertyPattern = new RegExp(`^  ${propName}[!?]:`);
-  return lines.some((line) => propertyPattern.test(line));
-}
-
-/**
- * Emits code for an element reference (ref attribute).
- * Looks up the referenced element definition and generates the property.
- *
- * @param e - The XSD element with ref attribute
- * @param refAttr - The reference attribute value (QName)
- * @param lines - The output lines array
- * @param unit - The generation unit
- * @param state - The generator state
- * @param insideChoice - Whether this element is inside an xs:choice (affects optionality)
- */
-/**
- * Resolves the namespace URI for a qualified name in the context of an element.
- * @param qname - The qualified name (e.g., "xs:string", "tns:myElement")
- * @param contextElement - The element in which the QName appears (for namespace resolution)
- * @returns The namespace URI, or undefined if no prefix (refers to target namespace)
- */
-function resolveNamespace(qname: string, contextElement: XmldomElement): string | undefined {
-  if (!qname.includes(":")) {
-    // No prefix - refers to target namespace
-    return undefined;
-  }
-  const prefix = qname.split(":")[0];
-  // Use lookupNamespaceURI if available (modern browsers and xmldom)
-  return contextElement.lookupNamespaceURI?.(prefix) || undefined;
-}
-
-function emitElementRef(
-  e: XmldomElement,
-  refAttr: string,
-  lines: string[],
-  unit: GenUnit,
-  state: GeneratorState,
-  insideChoice: boolean,
-  compositorIsArray: boolean = false,
-  compositorIsOptional: boolean = false
-): void {
-  const refLocalName = localName(refAttr)!;
-  const elementIsArray = isArrayFromMaxOccurs(e.getAttribute("maxOccurs"));
-  // Element is an array if either the element itself has maxOccurs > 1, or it's inside a compositor with maxOccurs > 1
-  const isArray = elementIsArray || compositorIsArray;
-  const nillable = e.getAttribute("nillable") === "true";
-  const min = e.getAttribute("minOccurs") ?? "1";
-  // Element is required only if it's not in a choice, has minOccurs >= 1, and is not inside an optional compositor
-  const makeRequired = !insideChoice && Number(min) >= 1 && !compositorIsOptional;
-
-  // Resolve the namespace of the reference
-  const refNamespace = resolveNamespace(refAttr, e);
-  
-  // Find referenced element with proper namespace matching
-  const referencedElement = state.schemaContext.topLevelElements.find((el) => {
-    const elName = el.getAttribute("name");
-    if (elName !== refLocalName) {
-      return false;
-    }
-    
-    // Get element's namespace
-    const elementNs = el.getAttribute("targetNamespace") || 
-                      (el.parentNode as any)?.getAttribute?.("targetNamespace") ||
-                      state.schemaContext.targetNs;
-    
-    // If reference has no prefix, it refers to target namespace
-    if (!refNamespace) {
-      return elementNs === state.schemaContext.targetNs || !elementNs;
-    }
-    
-    // If reference has a prefix, namespaces must match exactly
-    return elementNs === refNamespace;
-  });
-
-  if (referencedElement) {
-    const refType = referencedElement.getAttribute("type");
-    const refNs =
-      referencedElement.getAttribute("targetNamespace") ||
-      (referencedElement.parentNode as any)?.getAttribute?.("targetNamespace");
-
-    let tsType = "any";
-    if (refType) {
-      const local = localName(refType)!;
-      const sanitized = sanitizeTypeName(local);
-      if (state.schemaContext.enumTypesMap.has(local)) {
-        tsType = sanitized;
-        unit.deps.add(sanitized);
-      } else {
-        tsType = typeMapping(refType);
-        // Only add dependency if the resolved type is actually the custom type (not a built-in)
-        if (
-          tsType !== "String" &&
-          tsType !== "Number" &&
-          tsType !== "Boolean" &&
-          tsType === sanitized
-        ) {
-          unit.deps.add(sanitized);
-        }
-      }
-    }
-
-    const propName = toPropertyName(refLocalName, state.reservedWords);
-    
-    // Check if this property name has already been emitted to avoid duplicates
-    if (isPropertyAlreadyEmitted(propName, lines)) {
-      return;
-    }
-    
-    const decoratorOpts: string[] = [];
-    // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)
-    const isSelfReference = tsType === unit.className;
-    if (
-      tsType &&
-      tsType !== "any" &&
-      /^[A-Za-z0-9_]+$/.test(tsType) &&
-      !isSelfReference
-    ) {
-      decoratorOpts.push(`type: ${tsType}`);
-    }
-    if (isArray) decoratorOpts.push("array: true");
-    if (nillable) decoratorOpts.push("nillable: true");
-    if (refNs) decoratorOpts.push(`namespace: '${refNs}'`);
-
-    const decoratorBody = decoratorOpts.length
-      ? `{ ${decoratorOpts.join(", ")} }`
-      : "";
-    lines.push(
-      decoratorBody
-        ? `  @XmlElement('${refLocalName}', ${decoratorBody})`
-        : `  @XmlElement('${refLocalName}')`
-    );
-    lines.push(
-      `  ${propName}${makeRequired ? "!" : "?"}: ${tsType}${
-        isArray ? "[]" : ""
-      };`
-    );
-    lines.push("");
-  }
-}
-
-/**
- * Resolves an XSD type reference for an element to a TypeScript type.
- * Handles enums, built-in types, and user-defined types.
- *
- * @param typeAttr - The XSD type attribute value
- * @param unit - The generation unit for tracking dependencies
- * @param state - The generator state
- * @returns The TypeScript type name
- */
-function resolveElementType(
-  typeAttr: string,
-  unit: GenUnit,
-  state: GeneratorState
-): string {
-  const local = localName(typeAttr)!;
-  const sanitized = sanitizeTypeName(local);
-
-  if (state.schemaContext.enumTypesMap.has(local)) {
-    const tsType = sanitized;
-    // Don't add self-references to deps
-    if (tsType !== unit.className) {
-      unit.deps.add(tsType);
-    }
-    return tsType;
-  } else {
-    const tsType = typeMapping(typeAttr);
-    // Only add dependency if the resolved type is actually the custom type (not a built-in)
-    if (
-      tsType !== "String" &&
-      tsType !== "Number" &&
-      tsType !== "Boolean" &&
-      tsType === sanitized
-    ) {
-      // Don't add self-references to deps
-      if (sanitized !== unit.className) {
-        unit.deps.add(sanitized);
-      }
-    }
-    return tsType;
-  }
-}
-
-/**
- * Handles inline type definitions within an element.
- * Generates anonymous classes or enums for inline complex or simple types.
- *
- * @param e - The XSD element containing the inline type
- * @param en - The element name
- * @param unit - The generation unit
- * @param state - The generator state
- * @param ensureClass - Callback to ensure classes are generated
- * @returns The TypeScript type name for the inline type
- */
-function handleInlineType(
-  e: XmldomElement,
-  en: string,
-  unit: GenUnit,
-  state: GeneratorState,
-  ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit
-): string {
-  const inlineCT = getChildByLocalName(e, "complexType", state.xsdPrefix);
-  const inlineST = getChildByLocalName(e, "simpleType", state.xsdPrefix);
-
-  if (inlineCT) {
-    const anonName = toClassName(en + "Type", state.reservedWords);
-    ensureClass(anonName, inlineCT as any);
-    // Add dependency for the generated inline type
-    if (anonName !== unit.className) {
-      unit.deps.add(anonName);
-    }
-    return anonName;
-  } else if (inlineST) {
-    return handleInlineSimpleType(inlineST, en, unit, state);
-  }
-
-  return "any";
-}
-
-/**
- * Handles inline simpleType definitions within an element.
- * Generates enums for restrictions or maps unions/lists to TypeScript types.
- *
- * @param inlineST - The inline simpleType element
- * @param en - The element name (used for generating anonymous enum names)
- * @param unit - The generation unit
- * @param state - The generator state
- * @returns The TypeScript type name for the simple type
- */
-function handleInlineSimpleType(
-  inlineST: XmldomElement,
-  en: string,
-  unit: GenUnit,
-  state: GeneratorState
-): string {
-  const rest = getChildByLocalName(
-    inlineST as any,
-    "restriction",
-    state.xsdPrefix
-  );
-
-  if (rest) {
-    const enumValues = extractEnumValues(
-      rest as XmldomElement,
-      state.xsdPrefix
-    );
-    if (enumValues.length > 0) {
-      const anonEnumName = toClassName(en + "Enum", state.reservedWords);
-      const enumCode = generateEnumCode(anonEnumName, enumValues);
-      state.generatedEnums.set(anonEnumName, enumCode);
-      unit.deps.add(anonEnumName);
-      return anonEnumName;
-    } else {
-      const base = (rest as XmldomElement).getAttribute("base");
-      return typeMapping(base || "string");
-    }
-  } else {
-    const union = getChildByLocalName(
-      inlineST as any,
-      "union",
-      state.xsdPrefix
-    );
-    if (union) {
-      return handleInlineUnion(union);
-    }
-  }
-
-  return "any";
-}
-
-/**
- * Handles inline union types within a simpleType.
- * Generates TypeScript union types from XSD union member types.
- *
- * @param union - The XSD union element
- * @returns A TypeScript union type string (e.g., "string | number")
- */
-function handleInlineUnion(union: XmldomElement): string {
-  let memberTypes: string[] = [];
-  const memberTypesAttr = union.getAttribute("memberTypes");
-  if (memberTypesAttr) {
-    memberTypes = memberTypesAttr
-      .split(/\s+/)
-      .map(localName)
-      .filter((t): t is string => !!t);
-  }
-  const inlineMembers = getChildrenByLocalName(union, "simpleType", "");
-  memberTypes.push(...inlineMembers.map(() => "string"));
-  if (memberTypes.length > 0) {
-    return memberTypes.map(typeMapping).join(" | ");
-  }
-  return "any";
-}
-
-/**
- * Emits the @XmlElement decorator and property declaration for an element.
- * Handles decorator options (type, array, nillable, namespace) and property optionality.
- *
- * @param en - The XML element name
- * @param tsType - The TypeScript type for the property
- * @param isArray - Whether the property is an array
- * @param nillable - Whether the element can be nil
- * @param ens - The XML namespace for the element (optional)
- * @param lines - The output lines array
- * @param state - The generator state
- * @param makeRequired - Whether the property should be non-optional (use ! instead of ?)
- */
-function emitElementDecorator(
-  en: string,
-  tsType: string,
-  isArray: boolean,
-  nillable: boolean,
-  ens: string | undefined,
-  lines: string[],
-  unit: GenUnit,
-  state: GeneratorState,
-  makeRequired: boolean
-): void {
-  const propName = toPropertyName(en, state.reservedWords);
-  
-  // Check if this property name has already been emitted to avoid duplicates
-  if (isPropertyAlreadyEmitted(propName, lines)) {
-    return;
-  }
-  
-  const decoratorOpts: string[] = [];
-
-  // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)
-  const isSelfReference = tsType === unit.className;
-  if (
-    tsType &&
-    tsType !== "any" &&
-    /^[A-Za-z0-9_]+$/.test(tsType) &&
-    !isSelfReference
-  ) {
-    decoratorOpts.push(`type: ${tsType}`);
-  }
-  if (isArray) decoratorOpts.push("array: true");
-  if (nillable) decoratorOpts.push("nillable: true");
-  if (ens) decoratorOpts.push(`namespace: '${ens}'`);
-
-  const decoratorBody = decoratorOpts.length
-    ? `{ ${decoratorOpts.join(", ")} }`
-    : "";
-  lines.push(
-    decoratorBody
-      ? `  @XmlElement('${en}', ${decoratorBody})`
-      : `  @XmlElement('${en}')`
-  );
-  lines.push(
-    `  ${propName}${makeRequired ? "!" : "?"}: ${tsType}${isArray ? "[]" : ""};`
-  );
-  lines.push("");
 }
