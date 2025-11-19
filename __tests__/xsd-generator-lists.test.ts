@@ -1,16 +1,9 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
+import { readFileSync, existsSync } from "fs";
+import path from "path";
+import { withTmpDir } from "./test-utils/temp-dir";
 
-function withTmpDir(fn: (dir: string) => void) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "xmlbind-lists-"));
-  try {
-    fn(dir);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-}
+
 
 describe("XSD Generator - List Types", () => {
   test("generates array type for list with itemType", () => {
@@ -29,9 +22,9 @@ describe("XSD Generator - List Types", () => {
 
       // Types are now in consolidated types.ts file
       const typeFile = path.join(dir, "types.ts");
-      expect(fs.existsSync(typeFile)).toBe(true);
+      expect(existsSync(typeFile)).toBe(true);
 
-      const content = fs.readFileSync(typeFile, "utf-8");
+      const content = readFileSync(typeFile, "utf-8");
 
       // Should generate an array type
       expect(content).toContain("export type StringList");
@@ -55,7 +48,7 @@ describe("XSD Generator - List Types", () => {
 
       // Types are now in consolidated types.ts file
       const typeFile = path.join(dir, "types.ts");
-      const content = fs.readFileSync(typeFile, "utf-8");
+      const content = readFileSync(typeFile, "utf-8");
 
       expect(content).toContain("Number[]");
     });
@@ -83,9 +76,9 @@ describe("XSD Generator - List Types", () => {
 
       // Types are now in consolidated types.ts file
       const typeFile = path.join(dir, "types.ts");
-      expect(fs.existsSync(typeFile)).toBe(true);
+      expect(existsSync(typeFile)).toBe(true);
 
-      const content = fs.readFileSync(typeFile, "utf-8");
+      const content = readFileSync(typeFile, "utf-8");
       expect(content).toContain("RestrictedList");
       expect(content).toContain("string[]");
     });

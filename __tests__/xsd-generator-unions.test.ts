@@ -1,16 +1,9 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
+import { readFileSync, existsSync } from "fs";
+import path from "path";
+import { withTmpDir } from "./test-utils/temp-dir";
 
-function withTmpDir(fn: (dir: string) => void) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "xmlbind-unions-"));
-  try {
-    fn(dir);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-}
+
 
 describe("XSD Generator - Union Types", () => {
   test("generates type alias for union with memberTypes", () => {
@@ -29,9 +22,9 @@ describe("XSD Generator - Union Types", () => {
 
       // Types are now in consolidated types.ts file
       const typeFile = path.join(dir, "types.ts");
-      expect(fs.existsSync(typeFile)).toBe(true);
+      expect(existsSync(typeFile)).toBe(true);
 
-      const content = fs.readFileSync(typeFile, "utf-8");
+      const content = readFileSync(typeFile, "utf-8");
 
       // Should generate a union type
       expect(content).toContain("export type StringOrNumber");
@@ -55,7 +48,7 @@ describe("XSD Generator - Union Types", () => {
 
       // Types are now in consolidated types.ts file
       const typeFile = path.join(dir, "types.ts");
-      const content = fs.readFileSync(typeFile, "utf-8");
+      const content = readFileSync(typeFile, "utf-8");
 
       expect(content).toContain("String | Number | Boolean | Date");
     });
@@ -84,9 +77,9 @@ describe("XSD Generator - Union Types", () => {
 
       // Types are now in consolidated types.ts file
       const typeFile = path.join(dir, "types.ts");
-      expect(fs.existsSync(typeFile)).toBe(true);
+      expect(existsSync(typeFile)).toBe(true);
 
-      const content = fs.readFileSync(typeFile, "utf-8");
+      const content = readFileSync(typeFile, "utf-8");
       expect(content).toContain("export type FlexibleType");
     });
   });
@@ -110,7 +103,7 @@ describe("XSD Generator - Union Types", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(path.join(tmp, "UnionType.ts"), "utf8");
+        const content = readFileSync(path.join(tmp, "UnionType.ts"), "utf8");
 
         expect(content).toContain("String | Number | Boolean");
       });
@@ -145,7 +138,7 @@ describe("XSD Generator - Union Types", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(
+        const content = readFileSync(
           path.join(tmp, "ComplexUnion.ts"),
           "utf8"
         );
@@ -172,7 +165,7 @@ describe("XSD Generator - Union Types", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(
+        const content = readFileSync(
           path.join(tmp, "EmptyUnion.ts"),
           "utf8"
         );
@@ -203,7 +196,7 @@ describe("XSD Generator - Union Types", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(
+        const content = readFileSync(
           path.join(tmp, "RestrictedString.ts"),
           "utf8"
         );
@@ -232,7 +225,7 @@ describe("XSD Generator - Union Types", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(
+        const content = readFileSync(
           path.join(tmp, "UnbasedRestriction.ts"),
           "utf8"
         );
