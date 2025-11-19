@@ -10,6 +10,20 @@ import { toPropertyName, toClassName, elementNamespaceFor } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 
 /**
+ * Determines if a maxOccurs attribute value indicates an array.
+ * @param maxOccurs - The maxOccurs attribute value (e.g., "1", "unbounded", "5")
+ * @returns True if the element should be an array (maxOccurs is "unbounded" or > 1)
+ */
+function isArrayFromMaxOccurs(maxOccurs: string | null): boolean {
+  if (!maxOccurs) return false;
+  if (maxOccurs === "unbounded") return true;
+  const numValue = Number(maxOccurs);
+  // Handle invalid maxOccurs values by treating them as single elements (default behavior)
+  if (isNaN(numValue)) return false;
+  return numValue > 1;
+}
+
+/**
  * Emits @XmlElement decorators and properties for all child elements in an XSD type.
  *
  * Processes xs:sequence, xs:choice, xs:all, and xs:group elements.
@@ -20,24 +34,26 @@ import type { GeneratorState, GenUnit } from "./codegen";
  * @param unit - The generation unit for tracking dependencies
  * @param state - The generator state
  * @param ensureClass - Callback to ensure a class is generated for complex types
+ * @param compositorIsArray - Whether we're inside a compositor with maxOccurs > 1
  */
-export function emitElements(
+function emitElementsWithMultiplicity(
   ctx: XmldomElement,
   lines: string[],
   unit: GenUnit,
   state: GeneratorState,
-  ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit
+  ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
+  compositorIsArray: boolean = false
 ): void {
-  function processGroup(grp: XmldomElement) {
+  function processGroup(grp: XmldomElement, compositorIsArray: boolean = false) {
     const ref = grp.getAttribute("ref");
     if (ref) {
       const refLocal = localName(ref)!;
       const def = state.schemaContext.groupDefs.get(refLocal);
       if (def) {
-        emitElements(def, lines, unit, state, ensureClass);
+        emitElementsWithMultiplicity(def, lines, unit, state, ensureClass, compositorIsArray);
       }
     } else {
-      emitElements(grp, lines, unit, state, ensureClass);
+      emitElementsWithMultiplicity(grp, lines, unit, state, ensureClass, compositorIsArray);
     }
   }
 
@@ -58,7 +74,8 @@ export function emitElements(
     state,
     ensureClass,
     processGroup,
-    ensureAnyElement
+    ensureAnyElement,
+    compositorIsArray
   );
 
   // Process choices
@@ -70,7 +87,8 @@ export function emitElements(
     state,
     ensureClass,
     processGroup,
-    ensureAnyElement
+    ensureAnyElement,
+    compositorIsArray
   );
 
   // Process all
@@ -82,7 +100,8 @@ export function emitElements(
     state,
     ensureClass,
     processGroup,
-    ensureAnyElement
+    ensureAnyElement,
+    compositorIsArray
   );
 
   // Handle groups that are direct children of ctx
@@ -93,8 +112,21 @@ export function emitElements(
   );
   for (const grp of directGroups) {
     if ((grp.parentNode as any) !== ctx) continue;
-    processGroup(grp);
+    processGroup(grp, compositorIsArray);
   }
+}
+
+/**
+ * Public wrapper for emitElementsWithMultiplicity that doesn't expose the compositorIsArray parameter
+ */
+export function emitElements(
+  ctx: XmldomElement,
+  lines: string[],
+  unit: GenUnit,
+  state: GeneratorState,
+  ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit
+): void {
+  emitElementsWithMultiplicity(ctx, lines, unit, state, ensureClass, false);
 }
 
 /**
@@ -109,6 +141,7 @@ export function emitElements(
  * @param ensureClass - Callback to ensure classes are generated
  * @param processGroup - Callback to process group references
  * @param ensureAnyElement - Callback to ensure any element wildcard
+ * @param parentCompositorIsArray - Whether the parent compositor has maxOccurs > 1
  */
 function processElementContainer(
   ctx: XmldomElement,
@@ -117,8 +150,9 @@ function processElementContainer(
   unit: GenUnit,
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
-  processGroup: (grp: XmldomElement) => void,
-  ensureAnyElement: (lines: string[]) => void
+  processGroup: (grp: XmldomElement, compositorIsArray?: boolean) => void,
+  ensureAnyElement: (lines: string[]) => void,
+  parentCompositorIsArray: boolean = false
 ): void {
   const containers: XmldomElement[] = getChildrenByLocalName(
     ctx,
@@ -129,6 +163,12 @@ function processElementContainer(
   for (const container of containers) {
     if ((container.parentNode as any) !== ctx) continue;
 
+    // Check if this compositor itself has maxOccurs > 1
+    const thisCompositorIsArray = isArrayFromMaxOccurs(container.getAttribute("maxOccurs"));
+    
+    // Combine with parent compositor multiplicity
+    const compositorIsArray = parentCompositorIsArray || thisCompositorIsArray;
+
     processCompositorChildren(
       container,
       lines,
@@ -137,7 +177,8 @@ function processElementContainer(
       ensureClass,
       processGroup,
       ensureAnyElement,
-      containerType === "choice"
+      containerType === "choice",
+      compositorIsArray
     );
   }
 }
@@ -154,6 +195,7 @@ function processElementContainer(
  * @param processGroup - Callback to process group references
  * @param ensureAnyElement - Callback to ensure any element wildcard
  * @param insideChoice - Whether we're inside a choice (affects optionality)
+ * @param compositorIsArray - Whether we're inside a compositor with maxOccurs > 1
  */
 function processCompositorChildren(
   compositor: XmldomElement,
@@ -161,9 +203,10 @@ function processCompositorChildren(
   unit: GenUnit,
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
-  processGroup: (grp: XmldomElement) => void,
+  processGroup: (grp: XmldomElement, compositorIsArray?: boolean) => void,
   ensureAnyElement: (lines: string[]) => void,
-  insideChoice: boolean
+  insideChoice: boolean,
+  compositorIsArray: boolean = false
 ): void {
   const children = Array.from((compositor as any).childNodes || []);
   for (const child of children) {
@@ -181,14 +224,18 @@ function processCompositorChildren(
         unit,
         state,
         ensureClass,
-        insideChoice
+        insideChoice,
+        compositorIsArray
       );
     } else if (localN === "group") {
-      processGroup(childNode as XmldomElement);
+      processGroup(childNode as XmldomElement, compositorIsArray);
     } else if (localN === "any") {
       ensureAnyElement(lines);
     } else if (localN === "sequence" || localN === "choice" || localN === "all") {
-      // Recursively process nested compositors
+      // Check if this nested compositor itself has maxOccurs > 1
+      const thisCompositorIsArray = isArrayFromMaxOccurs(childNode.getAttribute("maxOccurs"));
+      
+      // Recursively process nested compositors, combining multiplicity
       processCompositorChildren(
         childNode as XmldomElement,
         lines,
@@ -197,7 +244,8 @@ function processCompositorChildren(
         ensureClass,
         processGroup,
         ensureAnyElement,
-        insideChoice || localN === "choice"
+        insideChoice || localN === "choice",
+        compositorIsArray || thisCompositorIsArray
       );
     }
   }
@@ -213,6 +261,7 @@ function processCompositorChildren(
  * @param state - The generator state
  * @param ensureClass - Callback to ensure classes are generated
  * @param insideChoice - Whether this element is inside an xs:choice (affects optionality)
+ * @param compositorIsArray - Whether this element is inside a compositor with maxOccurs > 1
  */
 export function emitElement(
   e: XmldomElement,
@@ -220,21 +269,23 @@ export function emitElement(
   unit: GenUnit,
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
-  insideChoice: boolean
+  insideChoice: boolean,
+  compositorIsArray: boolean = false
 ): void {
   const en = e.getAttribute("name");
   const refAttr = e.getAttribute("ref");
 
   if (refAttr && !en) {
-    emitElementRef(e, refAttr, lines, unit, state, insideChoice);
+    emitElementRef(e, refAttr, lines, unit, state, insideChoice, compositorIsArray);
     return;
   }
 
   if (!en) return;
 
   const typeAttr = e.getAttribute("type");
-  const max = e.getAttribute("maxOccurs") ?? "1";
-  const isArray = max === "unbounded" || Number(max) > 1;
+  const elementIsArray = isArrayFromMaxOccurs(e.getAttribute("maxOccurs"));
+  // Element is an array if either the element itself has maxOccurs > 1, or it's inside a compositor with maxOccurs > 1
+  const isArray = elementIsArray || compositorIsArray;
   const nillable = e.getAttribute("nillable") === "true";
   const min = e.getAttribute("minOccurs") ?? "1";
   const makeRequired = !insideChoice && Number(min) >= 1;
@@ -296,11 +347,13 @@ function emitElementRef(
   lines: string[],
   unit: GenUnit,
   state: GeneratorState,
-  insideChoice: boolean
+  insideChoice: boolean,
+  compositorIsArray: boolean = false
 ): void {
   const refLocalName = localName(refAttr)!;
-  const max = e.getAttribute("maxOccurs") ?? "1";
-  const isArray = max === "unbounded" || Number(max) > 1;
+  const elementIsArray = isArrayFromMaxOccurs(e.getAttribute("maxOccurs"));
+  // Element is an array if either the element itself has maxOccurs > 1, or it's inside a compositor with maxOccurs > 1
+  const isArray = elementIsArray || compositorIsArray;
   const nillable = e.getAttribute("nillable") === "true";
   const min = e.getAttribute("minOccurs") ?? "1";
   const makeRequired = !insideChoice && Number(min) >= 1;
