@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+           xmlns:tns="http://test.com"
+           targetNamespace="http://test.com" 
+           elementFormDefault="qualified">
+  
+  <!-- Test case: Group with elements in unbounded sequence -->
+  <xs:group name="itemGroup">
+    <xs:choice>
+      <xs:element ref="tns:item"/>
+      <xs:element ref="tns:note"/>
+    </xs:choice>
+  </xs:group>
+  
+  <xs:element name="item" type="xs:string"/>
+  <xs:element name="note" type="xs:string"/>
+  
+  <xs:element name="groupInUnboundedSequence">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+          <xs:group ref="tns:itemGroup"/>
+        </xs:sequence>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Test case: Nested compositors with different maxOccurs -->
+  <xs:element name="nestedMaxOccurs">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="option1" type="xs:string"/>
+          <xs:element name="option2" type="xs:int"/>
+        </xs:choice>
+        <xs:sequence maxOccurs="5">
+          <xs:element name="repeated" type="xs:string"/>
+        </xs:sequence>
+        <xs:element name="single" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Test case: Combining element and compositor maxOccurs -->
+  <xs:element name="combinedMaxOccurs">
+    <xs:complexType>
+      <xs:sequence maxOccurs="unbounded">
+        <xs:element name="item" type="xs:string" maxOccurs="3"/>
+        <xs:element name="single" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Test case: Optional compositors -->
+  <xs:element name="optionalCompositors">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:sequence minOccurs="0">
+          <xs:element name="optionalSeqElement" type="xs:string"/>
+        </xs:sequence>
+        <xs:choice minOccurs="0">
+          <xs:element name="optionalChoiceElement1" type="xs:string"/>
+          <xs:element name="optionalChoiceElement2" type="xs:int"/>
+        </xs:choice>
+        <xs:element name="requiredElement" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Test case: Element-level minOccurs -->
+  <xs:element name="elementMinOccurs">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="optional" type="xs:string" minOccurs="0"/>
+        <xs:element name="required" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Test case: Nested optional compositors -->
+  <xs:element name="nestedOptional">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:sequence minOccurs="0">
+          <xs:sequence>
+            <xs:element name="deeplyNested" type="xs:string"/>
+          </xs:sequence>
+        </xs:sequence>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Test case: minOccurs > 1 -->
+  <xs:element name="minOccursGreaterThanOne">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="multipleRequired" type="xs:string" minOccurs="2"/>
+        <xs:element name="multipleOptional" type="xs:string" minOccurs="2" maxOccurs="unbounded"/>
+        <xs:element name="singleOptional" type="xs:string" minOccurs="0"/>
+        <xs:element name="singleRequired" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
