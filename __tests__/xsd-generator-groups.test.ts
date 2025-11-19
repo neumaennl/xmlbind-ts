@@ -1,6 +1,6 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import * as fs from "fs";
-import * as path from "path";
+import { readFileSync, existsSync } from "fs";
+import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir";
 
 
@@ -33,9 +33,9 @@ describe("XSD Generator - Groups", () => {
       generateFromXsd(xsd, dir);
 
       const personFile = path.join(dir, "PersonType.ts");
-      expect(fs.existsSync(personFile)).toBe(true);
+      expect(existsSync(personFile)).toBe(true);
 
-      const content = fs.readFileSync(personFile, "utf-8");
+      const content = readFileSync(personFile, "utf-8");
 
       // Should have all elements from the group reference
       expect(content).toContain("@XmlElement('name'");
@@ -86,9 +86,9 @@ describe("XSD Generator - Groups", () => {
       generateFromXsd(xsd, dir);
 
       const employeeFile = path.join(dir, "Employee.ts");
-      expect(fs.existsSync(employeeFile)).toBe(true);
+      expect(existsSync(employeeFile)).toBe(true);
 
-      const content = fs.readFileSync(employeeFile, "utf-8");
+      const content = readFileSync(employeeFile, "utf-8");
 
       // Should have all elements from nested groups
       expect(content).toContain("@XmlElement('firstName'");
@@ -125,9 +125,9 @@ describe("XSD Generator - Groups", () => {
       generateFromXsd(xsd, dir);
 
       const orderFile = path.join(dir, "Order.ts");
-      expect(fs.existsSync(orderFile)).toBe(true);
+      expect(existsSync(orderFile)).toBe(true);
 
-      const content = fs.readFileSync(orderFile, "utf-8");
+      const content = readFileSync(orderFile, "utf-8");
 
       // Should have all choice elements
       expect(content).toContain("@XmlElement('orderId'");

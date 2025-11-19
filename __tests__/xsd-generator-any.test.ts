@@ -1,6 +1,6 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import * as fs from "fs";
-import * as path from "path";
+import { readFileSync } from "fs";
+import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir";
 
 
@@ -20,7 +20,7 @@ describe("XSD Generator - Wildcards", () => {
     withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
       const file = path.join(dir, "Container.ts");
-      const content = fs.readFileSync(file, "utf-8");
+      const content = readFileSync(file, "utf-8");
       expect(content).toContain("@XmlAnyElement(");
       expect(content).toContain("_any?: unknown[]");
     });
@@ -39,7 +39,7 @@ describe("XSD Generator - Wildcards", () => {
     withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
       const file = path.join(dir, "WithAttrs.ts");
-      const content = fs.readFileSync(file, "utf-8");
+      const content = readFileSync(file, "utf-8");
       expect(content).toContain("@XmlAnyAttribute(");
       expect(content).toContain("_anyAttributes?: { [name: string]: string }");
     });
@@ -61,7 +61,7 @@ describe("XSD Generator - Wildcards", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(
+        const content = readFileSync(
           path.join(tmp, "MultipleAny.ts"),
           "utf8"
         );
@@ -91,7 +91,7 @@ describe("XSD Generator - Wildcards", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = fs.readFileSync(
+        const content = readFileSync(
           path.join(tmp, "DirectGroupUsage.ts"),
           "utf8"
         );

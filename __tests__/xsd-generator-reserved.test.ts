@@ -1,6 +1,6 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
-import * as fs from "fs";
-import * as path from "path";
+import { readFileSync, existsSync } from "fs";
+import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir";
 
 
@@ -24,9 +24,9 @@ describe("XSD Generator - Reserved Word Handling", () => {
 
       // Should rename 'import' to avoid reserved word
       const importFile = path.join(dir, "import_.ts");
-      expect(fs.existsSync(importFile)).toBe(true);
+      expect(existsSync(importFile)).toBe(true);
 
-      const content = fs.readFileSync(importFile, "utf-8");
+      const content = readFileSync(importFile, "utf-8");
 
       // Should have sanitized class name
       expect(content).toContain("export class import_");
@@ -52,7 +52,7 @@ describe("XSD Generator - Reserved Word Handling", () => {
       generateFromXsd(xsd, dir);
 
       const configFile = path.join(dir, "Config.ts");
-      const content = fs.readFileSync(configFile, "utf-8");
+      const content = readFileSync(configFile, "utf-8");
 
       // Property names should be sanitized; required elements are non-optional
       expect(content).toMatch(/\bclass_!?:/);
@@ -80,17 +80,17 @@ describe("XSD Generator - Reserved Word Handling", () => {
 
       // Enums are now in consolidated enums.ts file
       const enumsFile = path.join(dir, "enums.ts");
-      expect(fs.existsSync(enumsFile)).toBe(true);
+      expect(existsSync(enumsFile)).toBe(true);
 
-      const enumContent = fs.readFileSync(enumsFile, "utf-8");
+      const enumContent = readFileSync(enumsFile, "utf-8");
 
       // Should have sanitized enum name inside
       expect(enumContent).toContain("export enum void_");
 
       // And the referencing class should import from './enums'
       const voidTypeFile = path.join(dir, "VoidType.ts");
-      expect(fs.existsSync(voidTypeFile)).toBe(true);
-      const classContent = fs.readFileSync(voidTypeFile, "utf-8");
+      expect(existsSync(voidTypeFile)).toBe(true);
+      const classContent = readFileSync(voidTypeFile, "utf-8");
       expect(classContent).toContain("import { void_ } from './enums';");
     });
   });
@@ -122,11 +122,11 @@ describe("XSD Generator - Reserved Word Handling", () => {
       const exportFile = path.join(dir, "export_.ts");
       const interfaceFile = path.join(dir, "interface_.ts");
 
-      expect(fs.existsSync(exportFile)).toBe(true);
-      expect(fs.existsSync(interfaceFile)).toBe(true);
+      expect(existsSync(exportFile)).toBe(true);
+      expect(existsSync(interfaceFile)).toBe(true);
 
-      const exportContent = fs.readFileSync(exportFile, "utf-8");
-      const interfaceContent = fs.readFileSync(interfaceFile, "utf-8");
+      const exportContent = readFileSync(exportFile, "utf-8");
+      const interfaceContent = readFileSync(interfaceFile, "utf-8");
 
       expect(exportContent).toContain("export class export_");
       // element is required -> non-optional
