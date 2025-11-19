@@ -24,6 +24,18 @@ function isArrayFromMaxOccurs(maxOccurs: string | null): boolean {
 }
 
 /**
+ * Determines if a minOccurs attribute value indicates an optional element/compositor.
+ * @param minOccurs - The minOccurs attribute value (e.g., "0", "1")
+ * @returns True if the element/compositor is optional (minOccurs is 0)
+ */
+function isOptionalFromMinOccurs(minOccurs: string | null): boolean {
+  if (!minOccurs) return false; // default is "1", so not optional
+  const numValue = Number(minOccurs);
+  if (isNaN(numValue)) return false;
+  return numValue === 0;
+}
+
+/**
  * Emits @XmlElement decorators and properties for all child elements in an XSD type.
  *
  * Processes xs:sequence, xs:choice, xs:all, and xs:group elements.
@@ -35,6 +47,7 @@ function isArrayFromMaxOccurs(maxOccurs: string | null): boolean {
  * @param state - The generator state
  * @param ensureClass - Callback to ensure a class is generated for complex types
  * @param compositorIsArray - Whether we're inside a compositor with maxOccurs > 1
+ * @param compositorIsOptional - Whether we're inside a compositor with minOccurs = 0
  */
 function emitElementsWithMultiplicity(
   ctx: XmldomElement,
@@ -42,18 +55,19 @@ function emitElementsWithMultiplicity(
   unit: GenUnit,
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
-  compositorIsArray: boolean = false
+  compositorIsArray: boolean = false,
+  compositorIsOptional: boolean = false
 ): void {
-  function processGroup(grp: XmldomElement, compositorIsArray: boolean = false) {
+  function processGroup(grp: XmldomElement, compositorIsArray: boolean = false, compositorIsOptional: boolean = false) {
     const ref = grp.getAttribute("ref");
     if (ref) {
       const refLocal = localName(ref)!;
       const def = state.schemaContext.groupDefs.get(refLocal);
       if (def) {
-        emitElementsWithMultiplicity(def, lines, unit, state, ensureClass, compositorIsArray);
+        emitElementsWithMultiplicity(def, lines, unit, state, ensureClass, compositorIsArray, compositorIsOptional);
       }
     } else {
-      emitElementsWithMultiplicity(grp, lines, unit, state, ensureClass, compositorIsArray);
+      emitElementsWithMultiplicity(grp, lines, unit, state, ensureClass, compositorIsArray, compositorIsOptional);
     }
   }
 
@@ -75,7 +89,8 @@ function emitElementsWithMultiplicity(
     ensureClass,
     processGroup,
     ensureAnyElement,
-    compositorIsArray
+    compositorIsArray,
+    compositorIsOptional
   );
 
   // Process choices
@@ -88,7 +103,8 @@ function emitElementsWithMultiplicity(
     ensureClass,
     processGroup,
     ensureAnyElement,
-    compositorIsArray
+    compositorIsArray,
+    compositorIsOptional
   );
 
   // Process all
@@ -101,7 +117,8 @@ function emitElementsWithMultiplicity(
     ensureClass,
     processGroup,
     ensureAnyElement,
-    compositorIsArray
+    compositorIsArray,
+    compositorIsOptional
   );
 
   // Handle groups that are direct children of ctx
@@ -112,12 +129,12 @@ function emitElementsWithMultiplicity(
   );
   for (const grp of directGroups) {
     if ((grp.parentNode as any) !== ctx) continue;
-    processGroup(grp, compositorIsArray);
+    processGroup(grp, compositorIsArray, compositorIsOptional);
   }
 }
 
 /**
- * Public wrapper for emitElementsWithMultiplicity that doesn't expose the compositorIsArray parameter
+ * Public wrapper for emitElementsWithMultiplicity that doesn't expose the compositor parameters
  */
 export function emitElements(
   ctx: XmldomElement,
@@ -126,7 +143,7 @@ export function emitElements(
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit
 ): void {
-  emitElementsWithMultiplicity(ctx, lines, unit, state, ensureClass, false);
+  emitElementsWithMultiplicity(ctx, lines, unit, state, ensureClass, false, false);
 }
 
 /**
@@ -142,6 +159,7 @@ export function emitElements(
  * @param processGroup - Callback to process group references
  * @param ensureAnyElement - Callback to ensure any element wildcard
  * @param parentCompositorIsArray - Whether the parent compositor has maxOccurs > 1
+ * @param parentCompositorIsOptional - Whether the parent compositor has minOccurs = 0
  */
 function processElementContainer(
   ctx: XmldomElement,
@@ -150,9 +168,10 @@ function processElementContainer(
   unit: GenUnit,
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
-  processGroup: (grp: XmldomElement, compositorIsArray?: boolean) => void,
+  processGroup: (grp: XmldomElement, compositorIsArray?: boolean, compositorIsOptional?: boolean) => void,
   ensureAnyElement: (lines: string[]) => void,
-  parentCompositorIsArray: boolean = false
+  parentCompositorIsArray: boolean = false,
+  parentCompositorIsOptional: boolean = false
 ): void {
   const containers: XmldomElement[] = getChildrenByLocalName(
     ctx,
@@ -166,8 +185,12 @@ function processElementContainer(
     // Check if this compositor itself has maxOccurs > 1
     const thisCompositorIsArray = isArrayFromMaxOccurs(container.getAttribute("maxOccurs"));
     
-    // Combine with parent compositor multiplicity
+    // Check if this compositor itself has minOccurs = 0
+    const thisCompositorIsOptional = isOptionalFromMinOccurs(container.getAttribute("minOccurs"));
+    
+    // Combine with parent compositor flags
     const compositorIsArray = parentCompositorIsArray || thisCompositorIsArray;
+    const compositorIsOptional = parentCompositorIsOptional || thisCompositorIsOptional;
 
     processCompositorChildren(
       container,
@@ -178,7 +201,8 @@ function processElementContainer(
       processGroup,
       ensureAnyElement,
       containerType === "choice",
-      compositorIsArray
+      compositorIsArray,
+      compositorIsOptional
     );
   }
 }
@@ -196,6 +220,7 @@ function processElementContainer(
  * @param ensureAnyElement - Callback to ensure any element wildcard
  * @param insideChoice - Whether we're inside a choice (affects optionality)
  * @param compositorIsArray - Whether we're inside a compositor with maxOccurs > 1
+ * @param compositorIsOptional - Whether we're inside a compositor with minOccurs = 0
  */
 function processCompositorChildren(
   compositor: XmldomElement,
@@ -203,10 +228,11 @@ function processCompositorChildren(
   unit: GenUnit,
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
-  processGroup: (grp: XmldomElement, compositorIsArray?: boolean) => void,
+  processGroup: (grp: XmldomElement, compositorIsArray?: boolean, compositorIsOptional?: boolean) => void,
   ensureAnyElement: (lines: string[]) => void,
   insideChoice: boolean,
-  compositorIsArray: boolean = false
+  compositorIsArray: boolean = false,
+  compositorIsOptional: boolean = false
 ): void {
   const children = Array.from((compositor as any).childNodes || []);
   for (const child of children) {
@@ -225,17 +251,20 @@ function processCompositorChildren(
         state,
         ensureClass,
         insideChoice,
-        compositorIsArray
+        compositorIsArray,
+        compositorIsOptional
       );
     } else if (localN === "group") {
-      processGroup(childNode as XmldomElement, compositorIsArray);
+      processGroup(childNode as XmldomElement, compositorIsArray, compositorIsOptional);
     } else if (localN === "any") {
       ensureAnyElement(lines);
     } else if (localN === "sequence" || localN === "choice" || localN === "all") {
       // Check if this nested compositor itself has maxOccurs > 1
       const thisCompositorIsArray = isArrayFromMaxOccurs(childNode.getAttribute("maxOccurs"));
+      // Check if this nested compositor itself has minOccurs = 0
+      const thisCompositorIsOptional = isOptionalFromMinOccurs(childNode.getAttribute("minOccurs"));
       
-      // Recursively process nested compositors, combining multiplicity
+      // Recursively process nested compositors, combining flags
       processCompositorChildren(
         childNode as XmldomElement,
         lines,
@@ -245,7 +274,8 @@ function processCompositorChildren(
         processGroup,
         ensureAnyElement,
         insideChoice || localN === "choice",
-        compositorIsArray || thisCompositorIsArray
+        compositorIsArray || thisCompositorIsArray,
+        compositorIsOptional || thisCompositorIsOptional
       );
     }
   }
@@ -262,6 +292,7 @@ function processCompositorChildren(
  * @param ensureClass - Callback to ensure classes are generated
  * @param insideChoice - Whether this element is inside an xs:choice (affects optionality)
  * @param compositorIsArray - Whether this element is inside a compositor with maxOccurs > 1
+ * @param compositorIsOptional - Whether this element is inside a compositor with minOccurs = 0
  */
 export function emitElement(
   e: XmldomElement,
@@ -270,13 +301,14 @@ export function emitElement(
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
   insideChoice: boolean,
-  compositorIsArray: boolean = false
+  compositorIsArray: boolean = false,
+  compositorIsOptional: boolean = false
 ): void {
   const en = e.getAttribute("name");
   const refAttr = e.getAttribute("ref");
 
   if (refAttr && !en) {
-    emitElementRef(e, refAttr, lines, unit, state, insideChoice, compositorIsArray);
+    emitElementRef(e, refAttr, lines, unit, state, insideChoice, compositorIsArray, compositorIsOptional);
     return;
   }
 
@@ -288,7 +320,8 @@ export function emitElement(
   const isArray = elementIsArray || compositorIsArray;
   const nillable = e.getAttribute("nillable") === "true";
   const min = e.getAttribute("minOccurs") ?? "1";
-  const makeRequired = !insideChoice && Number(min) >= 1;
+  // Element is required only if it's not in a choice, has minOccurs >= 1, and is not inside an optional compositor
+  const makeRequired = !insideChoice && Number(min) >= 1 && !compositorIsOptional;
   const ens = elementNamespaceFor(
     e,
     false,
@@ -348,7 +381,8 @@ function emitElementRef(
   unit: GenUnit,
   state: GeneratorState,
   insideChoice: boolean,
-  compositorIsArray: boolean = false
+  compositorIsArray: boolean = false,
+  compositorIsOptional: boolean = false
 ): void {
   const refLocalName = localName(refAttr)!;
   const elementIsArray = isArrayFromMaxOccurs(e.getAttribute("maxOccurs"));
@@ -356,7 +390,8 @@ function emitElementRef(
   const isArray = elementIsArray || compositorIsArray;
   const nillable = e.getAttribute("nillable") === "true";
   const min = e.getAttribute("minOccurs") ?? "1";
-  const makeRequired = !insideChoice && Number(min) >= 1;
+  // Element is required only if it's not in a choice, has minOccurs >= 1, and is not inside an optional compositor
+  const makeRequired = !insideChoice && Number(min) >= 1 && !compositorIsOptional;
 
   const referencedElement = state.schemaContext.topLevelElements.find(
     (el) => el.getAttribute("name") === refLocalName
