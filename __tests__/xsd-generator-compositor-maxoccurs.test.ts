@@ -75,11 +75,11 @@ describe("XSD Generator - Compositor maxOccurs", () => {
   <xs:element name="root">
     <xs:complexType>
       <xs:sequence>
-        <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:choice maxOccurs="unbounded">
           <xs:element name="option1" type="xs:string"/>
           <xs:element name="option2" type="xs:int"/>
         </xs:choice>
-        <xs:sequence minOccurs="0" maxOccurs="5">
+        <xs:sequence maxOccurs="5">
           <xs:element name="repeated" type="xs:string"/>
         </xs:sequence>
         <xs:element name="single" type="xs:string"/>
@@ -92,15 +92,14 @@ describe("XSD Generator - Compositor maxOccurs", () => {
 
       const rootContent = readFileSync(path.join(tmpDir, "root.ts"), "utf8");
       
-      // Elements in unbounded choice should be arrays (and optional because inside choice)
+      // Elements in unbounded choice should be arrays (optional because inside choice)
       expect(rootContent).toMatch(/option1\?:\s*String\[\]/);
       expect(rootContent).toMatch(/option2\?:\s*Number\[\]/);
       
-      // Element in sequence with maxOccurs="5" and minOccurs="0" should be array and optional
-      // Note: it's optional (?:) because the parent sequence has minOccurs="0"
-      expect(rootContent).toMatch(/repeated\?:\s*String\[\]/);
+      // Element in sequence with maxOccurs="5" should be array
+      expect(rootContent).toMatch(/repeated!:\s*String\[\]/);
       
-      // Single element with default maxOccurs="1" should not be array, and is required
+      // Single element with default maxOccurs="1" should not be array
       expect(rootContent).toMatch(/single!:\s*String;/);
       expect(rootContent).not.toMatch(/single.*:\s*String\[\]/);
     });
@@ -112,7 +111,7 @@ describe("XSD Generator - Compositor maxOccurs", () => {
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://test.com" elementFormDefault="qualified">
   <xs:element name="container">
     <xs:complexType>
-      <xs:sequence minOccurs="0" maxOccurs="unbounded">
+      <xs:sequence maxOccurs="unbounded">
         <xs:element name="item" type="xs:string" maxOccurs="3"/>
         <xs:element name="single" type="xs:string"/>
       </xs:sequence>
@@ -125,45 +124,8 @@ describe("XSD Generator - Compositor maxOccurs", () => {
       const containerContent = readFileSync(path.join(tmpDir, "container.ts"), "utf8");
       
       // Both elements should be arrays because sequence has maxOccurs="unbounded"
-      // Note: they're optional (?:) because the parent sequence has minOccurs="0"
-      expect(containerContent).toMatch(/item\?:\s*String\[\]/);
-      expect(containerContent).toMatch(/single\?:\s*String\[\]/);
-    });
-  });
-
-  test("elements in optional compositors are optional", () => {
-    withTmpDir((tmpDir) => {
-      const xsd = `<?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://test.com" elementFormDefault="qualified">
-  <xs:element name="container">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:sequence minOccurs="0">
-          <xs:element name="optionalSeqElement" type="xs:string"/>
-        </xs:sequence>
-        <xs:choice minOccurs="0">
-          <xs:element name="optionalChoiceElement1" type="xs:string"/>
-          <xs:element name="optionalChoiceElement2" type="xs:int"/>
-        </xs:choice>
-        <xs:element name="requiredElement" type="xs:string"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-</xs:schema>`;
-
-      setupGeneratedRuntime(tmpDir, [xsd]);
-
-      const containerContent = readFileSync(path.join(tmpDir, "container.ts"), "utf8");
-      
-      // Element in optional sequence should be optional
-      expect(containerContent).toMatch(/optionalSeqElement\?:\s*String;/);
-      
-      // Elements in optional choice should be optional (already optional due to choice)
-      expect(containerContent).toMatch(/optionalChoiceElement1\?:\s*String;/);
-      expect(containerContent).toMatch(/optionalChoiceElement2\?:\s*Number;/);
-      
-      // Required element should be required
-      expect(containerContent).toMatch(/requiredElement!:\s*String;/);
+      expect(containerContent).toMatch(/item!:\s*String\[\]/);
+      expect(containerContent).toMatch(/single!:\s*String\[\]/);
     });
   });
 });

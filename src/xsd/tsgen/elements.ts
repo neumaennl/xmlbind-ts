@@ -374,6 +374,22 @@ function isPropertyAlreadyEmitted(propName: string, lines: string[]): boolean {
  * @param state - The generator state
  * @param insideChoice - Whether this element is inside an xs:choice (affects optionality)
  */
+/**
+ * Resolves the namespace URI for a qualified name in the context of an element.
+ * @param qname - The qualified name (e.g., "xs:string", "tns:myElement")
+ * @param contextElement - The element in which the QName appears (for namespace resolution)
+ * @returns The namespace URI, or undefined if no prefix (refers to target namespace)
+ */
+function resolveNamespace(qname: string, contextElement: XmldomElement): string | undefined {
+  if (!qname.includes(":")) {
+    // No prefix - refers to target namespace
+    return undefined;
+  }
+  const prefix = qname.split(":")[0];
+  // Use lookupNamespaceURI if available (modern browsers and xmldom)
+  return contextElement.lookupNamespaceURI?.(prefix) || undefined;
+}
+
 function emitElementRef(
   e: XmldomElement,
   refAttr: string,
@@ -393,9 +409,29 @@ function emitElementRef(
   // Element is required only if it's not in a choice, has minOccurs >= 1, and is not inside an optional compositor
   const makeRequired = !insideChoice && Number(min) >= 1 && !compositorIsOptional;
 
-  const referencedElement = state.schemaContext.topLevelElements.find(
-    (el) => el.getAttribute("name") === refLocalName
-  );
+  // Resolve the namespace of the reference
+  const refNamespace = resolveNamespace(refAttr, e);
+  
+  // Find referenced element with proper namespace matching
+  const referencedElement = state.schemaContext.topLevelElements.find((el) => {
+    const elName = el.getAttribute("name");
+    if (elName !== refLocalName) {
+      return false;
+    }
+    
+    // Get element's namespace
+    const elementNs = el.getAttribute("targetNamespace") || 
+                      (el.parentNode as any)?.getAttribute?.("targetNamespace") ||
+                      state.schemaContext.targetNs;
+    
+    // If reference has no prefix, it refers to target namespace
+    if (!refNamespace) {
+      return elementNs === state.schemaContext.targetNs || !elementNs;
+    }
+    
+    // If reference has a prefix, namespaces must match exactly
+    return elementNs === refNamespace;
+  });
 
   if (referencedElement) {
     const refType = referencedElement.getAttribute("type");
