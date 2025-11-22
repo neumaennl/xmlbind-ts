@@ -1,5 +1,5 @@
 import { XmlRoot, XmlElement, XmlAnyAttribute, marshal, getMeta } from "../src";
-import { expectConsecutiveStrings } from "./test-utils";
+import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils";
 
 // Define classes at module level to avoid scoping issues
 @XmlRoot("Document")
@@ -36,11 +36,14 @@ describe("XmlAnyAttribute Integration Tests", () => {
     doc.additionalAttributes = { id: "123", version: "1.0", author: "John" };
 
     const xml = marshal(doc);
-    // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
-    expect(xml).toContain("<Document");
-    expect(xml).toContain('id="123"');
-    expect(xml).toContain('version="1.0"');
-    expect(xml).toContain('author="John"');
+    // Verify that attributes appear on the same line as the opening tag
+    const firstLine = xml.split('\n')[0];
+    expectStringsOnSameLine(firstLine, [
+      "<Document",
+      'id="123"',
+      'version="1.0"',
+      'author="John"',
+    ]);
     expect(xml).toContain("<title>Test Document</title>");
   });
 
@@ -73,10 +76,13 @@ describe("XmlAnyAttribute Integration Tests", () => {
     obj.extraAttrs = { id: "100", type: "special" };
 
     const xml = marshal(obj);
-    // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
-    expect(xml).toContain('id="100"');
-    expect(xml).toContain('type="special"');
-    expectConsecutiveStrings(xml, [
+    // Verify that attributes appear on the same line as the opening tag
+    const firstLine = xml.split('\n')[0];
+    expectStringsOnSameLine(firstLine, [
+      'id="100"',
+      'type="special"',
+    ]);
+    expectStringsOnConsecutiveLines(xml, [
       "<name>Test</name>",
       "<value>42</value>",
     ]);

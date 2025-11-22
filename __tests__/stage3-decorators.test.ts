@@ -7,7 +7,7 @@
  */
 
 import { XmlRoot, XmlElement, XmlAttribute, XmlAnyAttribute, XmlAnyElement, XmlText, XmlEnum, marshal, getMeta } from "../src";
-import { expectConsecutiveStrings } from "./test-utils";
+import { expectStringsOnSameLine, expectStringsOnConsecutiveLines } from "./test-utils";
 
 enum TestEnum {
   Value1 = "value1",
@@ -104,11 +104,14 @@ describe("Stage 3 Decorators Support", () => {
     obj.extraAttrs = { custom1: "a", custom2: "b" };
 
     const xml = marshal(obj);
-    // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
-    expect(xml).toContain("<MarshalTest");
-    expect(xml).toContain('id="123"');
-    expect(xml).toContain('custom1="a"');
-    expect(xml).toContain('custom2="b"');
+    // Verify that attributes appear on the same line as the opening tag
+    const firstLine = xml.split('\n')[0];
+    expectStringsOnSameLine(firstLine, [
+      "<MarshalTest",
+      'id="123"',
+      'custom1="a"',
+      'custom2="b"',
+    ]);
     expect(xml).toContain("<value>test</value>");
   });
 
@@ -149,7 +152,7 @@ describe("Stage 3 Decorators Support", () => {
     const xml1 = marshal(instance1);
     const xml2 = marshal(instance2);
 
-    expectConsecutiveStrings(xml1, ['id="1"', "<value>first</value>"]);
-    expectConsecutiveStrings(xml2, ['id="2"', "<value>second</value>"]);
+    expectStringsOnConsecutiveLines(xml1, ['id="1"', "<value>first</value>"]);
+    expectStringsOnConsecutiveLines(xml2, ['id="2"', "<value>second</value>"]);
   });
 });

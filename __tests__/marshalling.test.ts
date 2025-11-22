@@ -7,7 +7,7 @@ import {
   marshal,
   unmarshal,
 } from "../src";
-import { expectConsecutiveStrings } from "./test-utils";
+import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils";
 
 @XmlRoot("Person", { namespace: "http://example.com/ns" })
 class Person {
@@ -55,10 +55,14 @@ describe("Marshalling", () => {
       expect(p.alias).toEqual(["J", "Johnny"]);
 
       const xml = marshal(p);
-      // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
-      expect(xml).toContain('<Person xmlns="http://example.com/ns"');
-      expect(xml).toContain('id="42"');
-      expectConsecutiveStrings(xml, [
+      // Verify that attributes appear on the same line as the opening tag
+      const firstLine = xml.split('\n')[0];
+      expectStringsOnSameLine(firstLine, [
+        '<Person xmlns="http://example.com/ns"',
+        'id="42"',
+      ]);
+      // Verify elements appear on consecutive lines
+      expectStringsOnConsecutiveLines(xml, [
         "<name>John Doe</name>",
         "<age>30</age>",
       ]);
@@ -80,16 +84,23 @@ describe("Marshalling", () => {
       obj._any = [{ extra1: "v1" }, { extra2: { "@_attr": "y" } }];
 
       const xml = marshal(obj);
-      // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
-      expect(xml).toContain("<Doc");
-      expect(xml).toContain('id="123"');
-      expect(xml).toContain('customAttr="x"');
-      expect(xml).toContain('attr="y"');
-      expectConsecutiveStrings(xml, [
+      // Verify that attributes appear on the same line as the opening tag
+      const lines = xml.split('\n');
+      const firstLine = lines[0];
+      expectStringsOnSameLine(firstLine, [
+        "<Doc",
+        'id="123"',
+        'customAttr="x"',
+      ]);
+      // Verify elements appear on consecutive lines, and attr="y" is on the extra2 line
+      expectStringsOnConsecutiveLines(xml, [
         "<known>ok</known>",
         "<extra1>v1</extra1>",
         "<extra2",
       ]);
+      // Find the line with extra2 and verify it has attr="y"
+      const extra2Line = lines.find(line => line.includes("<extra2"));
+      expect(extra2Line).toContain('attr="y"');
     });
   });
 

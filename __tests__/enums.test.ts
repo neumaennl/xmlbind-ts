@@ -10,7 +10,7 @@ import { generateFromXsd } from "../src/xsd/TsGenerator";
 import { readFileSync } from "fs";
 
 import path from "path";
-import { withTmpDir, expectConsecutiveStrings } from "./test-utils";
+import { withTmpDir, expectStringsOnConsecutiveLines } from "./test-utils";
 
 // Define test enums
 enum StatusEnum {
@@ -100,7 +100,7 @@ describe("Enums", () => {
 
       const xml = marshal(task);
 
-      expectConsecutiveStrings(xml, [
+      expectStringsOnConsecutiveLines(xml, [
         'id="2"',
         "<title>Fix bug</title>",
         "<status>approved</status>",
@@ -294,7 +294,7 @@ describe("Enums", () => {
         // Enums are now in consolidated enums.ts file
         const enumsFile = path.join(tmp, "enums.ts");
         const enumsContent = readFileSync(enumsFile, "utf8");
-        expectConsecutiveStrings(enumsContent, [
+        expectStringsOnConsecutiveLines(enumsContent, [
           "export enum ColorType",
           'red = "red"',
           'green = "green"',
@@ -337,7 +337,7 @@ describe("Enums", () => {
         // Enums are now in consolidated enums.ts file
         const enumsFile = path.join(tmp, "enums.ts");
         const enumsContent = readFileSync(enumsFile, "utf8");
-        expectConsecutiveStrings(enumsContent, [
+        expectStringsOnConsecutiveLines(enumsContent, [
           "export enum statusEnum",
           'pending = "pending"',
           'shipped = "shipped"',
@@ -402,7 +402,7 @@ describe("Enums", () => {
         // Enums are now in consolidated enums.ts file
         const enumsFile = path.join(tmp, "enums.ts");
         const enumsContent = readFileSync(enumsFile, "utf8");
-        expectConsecutiveStrings(enumsContent, [
+        expectStringsOnConsecutiveLines(enumsContent, [
           "export enum PriorityEnum",
           'low = "low"',
           'medium = "medium"',
@@ -438,7 +438,7 @@ describe("Enums", () => {
         const enumsFile = path.join(tmp, "enums.ts");
         const content = readFileSync(enumsFile, "utf8");
 
-        expectConsecutiveStrings(content, [
+        expectStringsOnConsecutiveLines(content, [
           'value_with_dash = "value-with-dash"',
           'value_with_dot = "value.with.dot"',
           '_123numeric = "123numeric"',
