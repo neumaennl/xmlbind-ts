@@ -10,7 +10,7 @@ import { generateFromXsd } from "../src/xsd/TsGenerator";
 import { readFileSync } from "fs";
 
 import path from "path";
-import { withTmpDir, expectStringsOnConsecutiveLines } from "./test-utils";
+import { withTmpDir, expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils";
 
 // Define test enums
 enum StatusEnum {
@@ -100,8 +100,12 @@ describe("Enums", () => {
 
       const xml = marshal(task);
 
+      // Verify attribute is on the opening tag line
+      const firstLine = xml.split('\n')[0];
+      expectStringsOnSameLine(firstLine, ['<Task', 'id="2"']);
+      
+      // Verify elements appear on consecutive lines
       expectStringsOnConsecutiveLines(xml, [
-        'id="2"',
         "<title>Fix bug</title>",
         "<status>approved</status>",
         "<priority>medium</priority>",
