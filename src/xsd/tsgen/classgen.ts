@@ -3,6 +3,8 @@ import {
   localName,
   getChildByLocalName,
   getChildrenByLocalName,
+  getDocumentation,
+  formatTsDoc,
 } from "./utils";
 import { typeMapping, isBuiltinType, sanitizeTypeName } from "./types";
 import { emitAttrs } from "./attributes";
@@ -47,6 +49,12 @@ export function ensureClass(
     "simpleContent",
     state.xsdPrefix
   );
+
+  // Emit documentation comment if present
+  const doc = getDocumentation(el, state.xsdPrefix);
+  if (doc) {
+    lines.push(...formatTsDoc(doc));
+  }
 
   emitRootDecorator(rootName, state, lines);
 

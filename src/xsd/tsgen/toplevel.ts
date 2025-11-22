@@ -1,5 +1,5 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getChildByLocalName } from "./utils";
+import { localName, getChildByLocalName, getDocumentation, formatTsDoc } from "./utils";
 import { typeMapping, sanitizeTypeName, isBuiltinType } from "./types";
 import { extractEnumValues, generateEnumCode } from "./enum";
 import { toClassName } from "./codegen";
@@ -42,11 +42,11 @@ export function processTopLevelElements(
     const className = toClassName(baseName, state.reservedWords);
 
     if (typeAttr) {
-      processElementWithType(className, en, typeAttr, state);
+      processElementWithType(className, en, typeAttr, state, el);
     } else if (inlineCT) {
       ensureClass(className, inlineCT as any, state, en);
     } else if (inlineST) {
-      processElementWithInlineSimpleType(className, en, inlineST, state);
+      processElementWithInlineSimpleType(className, en, inlineST, state, el);
     }
   }
 }
@@ -59,24 +59,26 @@ export function processTopLevelElements(
  * @param en - The XML element name
  * @param typeAttr - The type attribute value
  * @param state - The generator state
+ * @param el - The XSD element (for extracting documentation)
  */
 function processElementWithType(
   className: string,
   en: string,
   typeAttr: string,
-  state: GeneratorState
+  state: GeneratorState,
+  el: XmldomElement
 ): void {
   const local = localName(typeAttr)!;
 
   if (state.schemaContext.complexTypesMap.has(local)) {
-    createWrapperClass(className, en, local, state);
+    createWrapperClass(className, en, local, state, el);
   } else if (state.schemaContext.enumTypesMap.has(local)) {
-    createEnumWrapperClass(className, en, local, state);
+    createEnumWrapperClass(className, en, local, state, el);
   } else if (
     state.schemaContext.simpleTypesMap.has(local) ||
     isBuiltinType(typeAttr)
   ) {
-    createTextWrapperClass(className, en, typeAttr, state);
+    createTextWrapperClass(className, en, typeAttr, state, el);
   }
 }
 
@@ -88,15 +90,23 @@ function processElementWithType(
  * @param en - The XML element name
  * @param baseType - The base type to extend
  * @param state - The generator state
+ * @param el - The XSD element (for extracting documentation)
  */
 function createWrapperClass(
   className: string,
   en: string,
   baseType: string,
-  state: GeneratorState
+  state: GeneratorState,
+  el: XmldomElement
 ): void {
   const unit: GenUnit = { lines: [], deps: new Set([baseType]) };
   state.generated.set(className, unit);
+
+  // Emit documentation comment if present
+  const doc = getDocumentation(el, state.xsdPrefix);
+  if (doc) {
+    unit.lines.push(...formatTsDoc(doc));
+  }
 
   const prefixObj = getPrefixObject(state);
   unit.lines.push(
@@ -119,16 +129,24 @@ function createWrapperClass(
  * @param en - The XML element name
  * @param enumType - The enum type name
  * @param state - The generator state
+ * @param el - The XSD element (for extracting documentation)
  */
 function createEnumWrapperClass(
   className: string,
   en: string,
   enumType: string,
-  state: GeneratorState
+  state: GeneratorState,
+  el: XmldomElement
 ): void {
   const enumName = sanitizeTypeName(enumType);
   const unit: GenUnit = { lines: [], deps: new Set([enumName]) };
   state.generated.set(className, unit);
+
+  // Emit documentation comment if present
+  const doc = getDocumentation(el, state.xsdPrefix);
+  if (doc) {
+    unit.lines.push(...formatTsDoc(doc));
+  }
 
   const prefixObj = getPrefixObject(state);
   unit.lines.push(
@@ -152,15 +170,23 @@ function createEnumWrapperClass(
  * @param en - The XML element name
  * @param typeAttr - The XSD type
  * @param state - The generator state
+ * @param el - The XSD element (for extracting documentation)
  */
 function createTextWrapperClass(
   className: string,
   en: string,
   typeAttr: string,
-  state: GeneratorState
+  state: GeneratorState,
+  el: XmldomElement
 ): void {
   const unit: GenUnit = { lines: [], deps: new Set() };
   state.generated.set(className, unit);
+
+  // Emit documentation comment if present
+  const doc = getDocumentation(el, state.xsdPrefix);
+  if (doc) {
+    unit.lines.push(...formatTsDoc(doc));
+  }
 
   const tsType = typeMapping(typeAttr);
   const prefixObj = getPrefixObject(state);
@@ -184,12 +210,14 @@ function createTextWrapperClass(
  * @param en - The XML element name
  * @param inlineST - The inline simpleType element
  * @param state - The generator state
+ * @param el - The XSD element (for extracting documentation)
  */
 function processElementWithInlineSimpleType(
   className: string,
   en: string,
   inlineST: XmldomElement,
-  state: GeneratorState
+  state: GeneratorState,
+  el: XmldomElement
 ): void {
   const rest = getChildByLocalName(
     inlineST as any,
@@ -224,6 +252,12 @@ function processElementWithInlineSimpleType(
     deps: isEnum ? new Set([tsType]) : new Set(),
   };
   state.generated.set(className, unit);
+
+  // Emit documentation comment if present
+  const doc = getDocumentation(el, state.xsdPrefix);
+  if (doc) {
+    unit.lines.push(...formatTsDoc(doc));
+  }
 
   const prefixObj = getPrefixObject(state);
   unit.lines.push(

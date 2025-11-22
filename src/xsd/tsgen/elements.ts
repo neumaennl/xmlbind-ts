@@ -1,5 +1,5 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getChildrenByLocalName } from "./utils";
+import { localName, getChildrenByLocalName, getDocumentation } from "./utils";
 import { elementNamespaceFor } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { emitElementRef } from "./element-refs";
@@ -362,6 +362,9 @@ export function emitElement(
     tsType = handleInlineType(e, en, unit, state, ensureClass);
   }
 
+  // Extract documentation from the element
+  const doc = getDocumentation(e, state.xsdPrefix);
+
   emitElementDecorator(
     en,
     tsType,
@@ -371,6 +374,7 @@ export function emitElement(
     lines,
     unit,
     state,
-    makeRequired
+    makeRequired,
+    doc
   );
 }
