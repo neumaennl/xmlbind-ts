@@ -7,7 +7,7 @@ import {
   marshal,
   unmarshal,
 } from "../src";
-import { expectConsecutiveStrings } from "./test-utils";
+import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils";
 
 @XmlRoot("Person", { namespace: "http://example.com/ns" })
 class Person {
@@ -55,9 +55,14 @@ describe("Marshalling", () => {
       expect(p.alias).toEqual(["J", "Johnny"]);
 
       const xml = marshal(p);
-      expectConsecutiveStrings(xml, [
+      // Verify that attributes appear on the same line as the opening tag
+      const firstLine = xml.split('\n')[0];
+      expectStringsOnSameLine(firstLine, [
         '<Person xmlns="http://example.com/ns"',
         'id="42"',
+      ]);
+      // Verify elements appear on consecutive lines
+      expectStringsOnConsecutiveLines(xml, [
         "<name>John Doe</name>",
         "<age>30</age>",
       ]);
@@ -79,15 +84,23 @@ describe("Marshalling", () => {
       obj._any = [{ extra1: "v1" }, { extra2: { "@_attr": "y" } }];
 
       const xml = marshal(obj);
-      expectConsecutiveStrings(xml, [
+      // Verify that attributes appear on the same line as the opening tag
+      const lines = xml.split('\n');
+      const firstLine = lines[0];
+      expectStringsOnSameLine(firstLine, [
         "<Doc",
         'id="123"',
         'customAttr="x"',
+      ]);
+      // Verify elements appear on consecutive lines, and attr="y" is on the extra2 line
+      expectStringsOnConsecutiveLines(xml, [
         "<known>ok</known>",
         "<extra1>v1</extra1>",
         "<extra2",
-        'attr="y"',
       ]);
+      // Find the line with extra2 and verify it has attr="y"
+      const extra2Line = lines.find(line => line.includes("<extra2"));
+      expect(extra2Line).toContain('attr="y"');
     });
   });
 
@@ -106,6 +119,46 @@ describe("Marshalling", () => {
       expect((obj._any as any[]).length).toBe(2);
       expect(obj._anyAttributes?.id).toBe("123");
       expect(obj._anyAttributes?.customAttr).toBe("x");
+    });
+  });
+
+  describe("Pretty-printing", () => {
+    test("marshal produces pretty-printed XML with proper indentation", () => {
+      const person = new Person();
+      person.id = 42;
+      person.name = "John Doe";
+      person.age = 30;
+      person.alias = ["J", "Johnny"];
+
+      const xml = marshal(person);
+
+      // Verify the XML is pretty-printed with newlines
+      expect(xml.includes("\n")).toBe(true);
+
+      // Verify proper indentation (child elements should be indented)
+      expect(xml).toContain("  <name>");
+      expect(xml).toContain("  <age>");
+      expect(xml).toContain("  <alias>");
+
+      // Verify structure: opening tag on one line, child elements indented, closing tag on separate line
+      const lines = xml.split("\n").filter((line) => line.trim() !== "");
+      expect(lines.length).toBeGreaterThan(3);
+      expect(lines[0]).toContain("<Person");
+      expect(lines[lines.length - 1]).toBe("</Person>");
+    });
+
+    test("pretty-printed XML can be unmarshalled correctly", () => {
+      const person = new Person();
+      person.id = 99;
+      person.name = "Jane Smith";
+      person.age = 25;
+
+      const xml = marshal(person);
+      const unmarshalled = unmarshal(Person, xml);
+
+      expect(Number(unmarshalled.id)).toBe(person.id);
+      expect(unmarshalled.name).toBe(person.name);
+      expect(unmarshalled.age).toBe(person.age);
     });
   });
 });

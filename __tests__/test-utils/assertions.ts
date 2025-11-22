@@ -3,54 +3,61 @@
  */
 
 /**
- * Verifies that the expected strings appear consecutively in the given text.
- * For multi-line text (e.g., generated code), ensures strings appear on consecutive lines.
- * For single-line text (e.g., XML output), ensures strings appear in order without other content in between.
+ * Verifies that the expected strings appear consecutively on the same line.
+ * Ensures strings appear in order without other content in between.
  *
- * @param text - The text to search in
- * @param expectedStrings - Array of strings that should appear consecutively
+ * @param line - The line of text to search in
+ * @param expectedStrings - Array of strings that should appear consecutively on the same line
  * @throws Error if any expected string is not found or if they don't appear consecutively
  *
  * @example
  * ```typescript
- * // Multi-line text - verifies consecutive lines
- * const code = 'export enum Colors {\n  red = "red",\n  blue = "blue",\n}';
- * expectConsecutiveStrings(code, ['export enum Colors', 'red = "red"', 'blue = "blue"']); // passes
- * 
- * // Single-line text - verifies consecutive appearance
- * const xml = '<Task id="2"><title>Fix bug</title><status>approved</status></Task>';
- * expectConsecutiveStrings(xml, ['id="2"', '<title>Fix bug</title>', '<status>approved</status>']); // passes
+ * const line = '<Task id="2" title="Fix bug" status="approved"/>';
+ * expectStringsOnSameLine(line, ['id="2"', 'title="Fix bug"', 'status="approved"']); // passes
  * ```
  */
-export function expectConsecutiveStrings(
+export function expectStringsOnSameLine(
+  line: string,
+  expectedStrings: string[]
+): void {
+  let searchStartIndex = 0;
+  
+  for (let i = 0; i < expectedStrings.length; i++) {
+    const expectedStr = expectedStrings[i];
+    const index = line.indexOf(expectedStr, searchStartIndex);
+    
+    if (index === -1) {
+      const previous = i > 0 ? expectedStrings[i - 1] : "(start of line)";
+      throw new Error(
+        `Expected string "${expectedStr}" not found after "${previous}" on the same line. ` +
+        `Searched from position ${searchStartIndex} in line of length ${line.length}.`
+      );
+    }
+    
+    // Update search position for next string to ensure consecutive order
+    searchStartIndex = index + expectedStr.length;
+  }
+}
+
+/**
+ * Verifies that the expected strings appear on consecutive lines in multi-line text.
+ * Each string must appear on a separate line, and lines must appear in order.
+ *
+ * @param text - The multi-line text to search in
+ * @param expectedStrings - Array of strings that should appear on consecutive lines
+ * @throws Error if any expected string is not found or if they don't appear on consecutive lines
+ *
+ * @example
+ * ```typescript
+ * const code = 'export enum Colors {\n  red = "red",\n  blue = "blue",\n}';
+ * expectStringsOnConsecutiveLines(code, ['export enum Colors', 'red = "red"', 'blue = "blue"']); // passes
+ * ```
+ */
+export function expectStringsOnConsecutiveLines(
   text: string,
   expectedStrings: string[]
 ): void {
   const lines = text.split('\n');
-  
-  // If text is single-line or has very few lines, use position-based checking
-  if (lines.length <= 2) {
-    let searchStartIndex = 0;
-    
-    for (let i = 0; i < expectedStrings.length; i++) {
-      const expectedStr = expectedStrings[i];
-      const index = text.indexOf(expectedStr, searchStartIndex);
-      
-      if (index === -1) {
-        const previous = i > 0 ? expectedStrings[i - 1] : "(start of text)";
-        throw new Error(
-          `Expected string "${expectedStr}" not found after "${previous}". ` +
-          `Searched from position ${searchStartIndex} in text of length ${text.length}.`
-        );
-      }
-      
-      // Update search position for next string to ensure consecutive order
-      searchStartIndex = index + expectedStr.length;
-    }
-    return;
-  }
-  
-  // For multi-line text, verify strings appear on consecutive lines
   let currentLineIndex = 0;
 
   for (let i = 0; i < expectedStrings.length; i++) {

@@ -1,5 +1,5 @@
 import { XmlRoot, XmlElement, XmlAnyAttribute, marshal, getMeta } from "../src";
-import { expectConsecutiveStrings } from "./test-utils";
+import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils";
 
 // Define classes at module level to avoid scoping issues
 @XmlRoot("Document")
@@ -36,13 +36,15 @@ describe("XmlAnyAttribute Integration Tests", () => {
     doc.additionalAttributes = { id: "123", version: "1.0", author: "John" };
 
     const xml = marshal(doc);
-    expectConsecutiveStrings(xml, [
+    // Verify that attributes appear on the same line as the opening tag
+    const firstLine = xml.split('\n')[0];
+    expectStringsOnSameLine(firstLine, [
       "<Document",
       'id="123"',
       'version="1.0"',
       'author="John"',
-      "<title>Test Document</title>",
     ]);
+    expect(xml).toContain("<title>Test Document</title>");
   });
 
   test("should create instance without errors", () => {
@@ -74,9 +76,13 @@ describe("XmlAnyAttribute Integration Tests", () => {
     obj.extraAttrs = { id: "100", type: "special" };
 
     const xml = marshal(obj);
-    expectConsecutiveStrings(xml, [
+    // Verify that attributes appear on the same line as the opening tag
+    const firstLine = xml.split('\n')[0];
+    expectStringsOnSameLine(firstLine, [
       'id="100"',
       'type="special"',
+    ]);
+    expectStringsOnConsecutiveLines(xml, [
       "<name>Test</name>",
       "<value>42</value>",
     ]);
@@ -90,7 +96,9 @@ describe("XmlAnyAttribute Integration Tests", () => {
 
     const xml = marshal(obj);
     expect(xml).toContain("<Complex");
-    expect(xml).toContain("<name>Test</name>");
-    expect(xml).toContain("<value>42</value>");
+    expectStringsOnConsecutiveLines(xml, [
+      "<name>Test</name>",
+      "<value>42</value>",
+    ]);
   });
 });
