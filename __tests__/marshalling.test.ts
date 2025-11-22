@@ -7,6 +7,7 @@ import {
   marshal,
   unmarshal,
 } from "../src";
+import { expectConsecutiveStrings } from "./test-utils";
 
 @XmlRoot("Person", { namespace: "http://example.com/ns" })
 class Person {
@@ -54,10 +55,12 @@ describe("Marshalling", () => {
       expect(p.alias).toEqual(["J", "Johnny"]);
 
       const xml = marshal(p);
-      expect(xml).toContain('<Person xmlns="http://example.com/ns"');
-      expect(xml).toMatch(/\sid="42"/);
-      expect(xml).toContain("<name>John Doe</name>");
-      expect(xml).toContain("<age>30</age>");
+      expectConsecutiveStrings(xml, [
+        '<Person xmlns="http://example.com/ns"',
+        'id="42"',
+        "<name>John Doe</name>",
+        "<age>30</age>",
+      ]);
       expect((xml.match(/<alias>/g) || []).length).toBeGreaterThanOrEqual(2);
 
       const p2 = unmarshal(Person, xml);
@@ -76,13 +79,15 @@ describe("Marshalling", () => {
       obj._any = [{ extra1: "v1" }, { extra2: { "@_attr": "y" } }];
 
       const xml = marshal(obj);
-      expect(xml).toContain("<Doc");
-      expect(xml).toContain('id="123"');
-      expect(xml).toContain('customAttr="x"');
-      expect(xml).toContain("<known>ok</known>");
-      expect(xml).toContain("<extra1>v1</extra1>");
-      expect(xml).toContain("<extra2");
-      expect(xml).toContain('attr="y"');
+      expectConsecutiveStrings(xml, [
+        "<Doc",
+        'id="123"',
+        'customAttr="x"',
+        "<known>ok</known>",
+        "<extra1>v1</extra1>",
+        "<extra2",
+        'attr="y"',
+      ]);
     });
   });
 
