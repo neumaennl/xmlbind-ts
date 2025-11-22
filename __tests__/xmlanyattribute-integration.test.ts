@@ -1,4 +1,5 @@
 import { XmlRoot, XmlElement, XmlAnyAttribute, marshal, getMeta } from "../src";
+import { expectConsecutiveStrings } from "./test-utils";
 
 // Define classes at module level to avoid scoping issues
 @XmlRoot("Document")
@@ -35,11 +36,13 @@ describe("XmlAnyAttribute Integration Tests", () => {
     doc.additionalAttributes = { id: "123", version: "1.0", author: "John" };
 
     const xml = marshal(doc);
-    expect(xml).toContain("<Document");
-    expect(xml).toContain('id="123"');
-    expect(xml).toContain('version="1.0"');
-    expect(xml).toContain('author="John"');
-    expect(xml).toContain("<title>Test Document</title>");
+    expectConsecutiveStrings(xml, [
+      "<Document",
+      'id="123"',
+      'version="1.0"',
+      'author="John"',
+      "<title>Test Document</title>",
+    ]);
   });
 
   test("should create instance without errors", () => {
@@ -71,10 +74,12 @@ describe("XmlAnyAttribute Integration Tests", () => {
     obj.extraAttrs = { id: "100", type: "special" };
 
     const xml = marshal(obj);
-    expect(xml).toContain('id="100"');
-    expect(xml).toContain('type="special"');
-    expect(xml).toContain("<name>Test</name>");
-    expect(xml).toContain("<value>42</value>");
+    expectConsecutiveStrings(xml, [
+      'id="100"',
+      'type="special"',
+      "<name>Test</name>",
+      "<value>42</value>",
+    ]);
   });
   
   test("should handle marshal with no extra attributes", () => {

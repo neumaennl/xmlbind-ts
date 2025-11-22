@@ -1,5 +1,6 @@
 import { marshal, unmarshal } from "../src/marshalling";
 import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators";
+import { expectConsecutiveStrings } from "./test-utils";
 
 afterEach(() => {
   // no-op, placeholder in case of future cleanup
@@ -35,9 +36,10 @@ describe("namespace prefixes honoring schema-defined names", () => {
     r.child = c;
 
     const xml = marshal(r);
-    expect(xml).toContain('<Root xmlns="http://a.example/ns"');
-    // expected explicit prefix b for child element and attribute code
-    expect(xml).toContain('xmlns:b="http://b.example/ns"');
+    expectConsecutiveStrings(xml, [
+      '<Root xmlns="http://a.example/ns"',
+      'xmlns:b="http://b.example/ns"',
+    ]);
     expect(xml).toMatch(/<b:child\b/);
     expect(xml).toMatch(/b:code=/);
 

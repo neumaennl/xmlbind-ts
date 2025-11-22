@@ -10,7 +10,7 @@ import { generateFromXsd } from "../src/xsd/TsGenerator";
 import { readFileSync } from "fs";
 
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir";
+import { withTmpDir, expectConsecutiveStrings } from "./test-utils";
 
 // Define test enums
 enum StatusEnum {
@@ -100,12 +100,14 @@ describe("Enums", () => {
 
       const xml = marshal(task);
 
-      expect(xml).toContain('id="2"');
-      expect(xml).toContain("<title>Fix bug</title>");
-      expect(xml).toContain("<status>approved</status>");
-      expect(xml).toContain("<priority>medium</priority>");
-      expect(xml).toContain("<tags>bugfix</tags>");
-      expect(xml).toContain("<tags>backend</tags>");
+      expectConsecutiveStrings(xml, [
+        'id="2"',
+        "<title>Fix bug</title>",
+        "<status>approved</status>",
+        "<priority>medium</priority>",
+        "<tags>bugfix</tags>",
+        "<tags>backend</tags>",
+      ]);
     });
 
     it("should marshal enum values correctly with XmlEnum decorator", () => {
@@ -292,10 +294,12 @@ describe("Enums", () => {
         // Enums are now in consolidated enums.ts file
         const enumsFile = path.join(tmp, "enums.ts");
         const enumsContent = readFileSync(enumsFile, "utf8");
-        expect(enumsContent).toContain("export enum ColorType");
-        expect(enumsContent).toContain('red = "red"');
-        expect(enumsContent).toContain('green = "green"');
-        expect(enumsContent).toContain('blue = "blue"');
+        expectConsecutiveStrings(enumsContent, [
+          "export enum ColorType",
+          'red = "red"',
+          'green = "green"',
+          'blue = "blue"',
+        ]);
 
         const productFile = path.join(tmp, "Product.ts");
         const productContent = readFileSync(productFile, "utf8");
@@ -333,10 +337,12 @@ describe("Enums", () => {
         // Enums are now in consolidated enums.ts file
         const enumsFile = path.join(tmp, "enums.ts");
         const enumsContent = readFileSync(enumsFile, "utf8");
-        expect(enumsContent).toContain("export enum statusEnum");
-        expect(enumsContent).toContain('pending = "pending"');
-        expect(enumsContent).toContain('shipped = "shipped"');
-        expect(enumsContent).toContain('delivered = "delivered"');
+        expectConsecutiveStrings(enumsContent, [
+          "export enum statusEnum",
+          'pending = "pending"',
+          'shipped = "shipped"',
+          'delivered = "delivered"',
+        ]);
 
         const orderFile = path.join(tmp, "Order.ts");
         const orderContent = readFileSync(orderFile, "utf8");
@@ -396,10 +402,12 @@ describe("Enums", () => {
         // Enums are now in consolidated enums.ts file
         const enumsFile = path.join(tmp, "enums.ts");
         const enumsContent = readFileSync(enumsFile, "utf8");
-        expect(enumsContent).toContain("export enum PriorityEnum");
-        expect(enumsContent).toContain('low = "low"');
-        expect(enumsContent).toContain('medium = "medium"');
-        expect(enumsContent).toContain('high = "high"');
+        expectConsecutiveStrings(enumsContent, [
+          "export enum PriorityEnum",
+          'low = "low"',
+          'medium = "medium"',
+          'high = "high"',
+        ]);
 
         const priorityFile = path.join(tmp, "Priority.ts");
         const priorityContent = readFileSync(priorityFile, "utf8");
@@ -430,9 +438,11 @@ describe("Enums", () => {
         const enumsFile = path.join(tmp, "enums.ts");
         const content = readFileSync(enumsFile, "utf8");
 
-        expect(content).toContain('value_with_dash = "value-with-dash"');
-        expect(content).toContain('value_with_dot = "value.with.dot"');
-        expect(content).toContain('_123numeric = "123numeric"');
+        expectConsecutiveStrings(content, [
+          'value_with_dash = "value-with-dash"',
+          'value_with_dot = "value.with.dot"',
+          '_123numeric = "123numeric"',
+        ]);
       });
     });
 

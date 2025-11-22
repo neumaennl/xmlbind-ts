@@ -7,6 +7,7 @@ import { XmlRoot } from "../src/decorators/XmlRoot";
 import { XmlText } from "../src/decorators/XmlText";
 import { getMeta } from "../src/metadata/MetadataRegistry";
 import { marshal, unmarshal } from "../src/marshalling";
+import { expectConsecutiveStrings } from "./test-utils";
 
 enum TestEnum {
   One = "one",
@@ -134,9 +135,11 @@ describe("Decorators", () => {
       const list = new List();
       list.values = [1, 2, 3];
       const xml = marshal(list);
-      expect(xml).toContain("<values>1</values>");
-      expect(xml).toContain("<values>2</values>");
-      expect(xml).toContain("<values>3</values>");
+      expectConsecutiveStrings(xml, [
+        "<values>1</values>",
+        "<values>2</values>",
+        "<values>3</values>",
+      ]);
     });
 
     it("should handle element with nested class", () => {
@@ -157,8 +160,7 @@ describe("Decorators", () => {
       parent.child.name = "test";
 
       const xml = marshal(parent);
-      expect(xml).toContain("<child>");
-      expect(xml).toContain("<name>test</name>");
+      expectConsecutiveStrings(xml, ["<child>", "<name>test</name>"]);
     });
 
     it("should handle element without options", () => {
@@ -573,8 +575,10 @@ describe("Decorators", () => {
       doc.title = "Test Document";
 
       const xml = marshal(doc);
-      expect(xml).toContain('id="123"');
-      expect(xml).toContain("<title>Test Document</title>");
+      expectConsecutiveStrings(xml, [
+        'id="123"',
+        "<title>Test Document</title>",
+      ]);
 
       const unmarshalled = unmarshal(Document, xml);
       expect(unmarshalled.id).toBe("123");

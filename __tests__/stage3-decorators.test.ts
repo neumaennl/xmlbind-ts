@@ -7,6 +7,7 @@
  */
 
 import { XmlRoot, XmlElement, XmlAttribute, XmlAnyAttribute, XmlAnyElement, XmlText, XmlEnum, marshal, getMeta } from "../src";
+import { expectConsecutiveStrings } from "./test-utils";
 
 enum TestEnum {
   Value1 = "value1",
@@ -103,11 +104,13 @@ describe("Stage 3 Decorators Support", () => {
     obj.extraAttrs = { custom1: "a", custom2: "b" };
 
     const xml = marshal(obj);
-    expect(xml).toContain("<MarshalTest");
-    expect(xml).toContain('id="123"');
-    expect(xml).toContain('custom1="a"');
-    expect(xml).toContain('custom2="b"');
-    expect(xml).toContain("<value>test</value>");
+    expectConsecutiveStrings(xml, [
+      "<MarshalTest",
+      'id="123"',
+      'custom1="a"',
+      'custom2="b"',
+      "<value>test</value>",
+    ]);
   });
 
   test("should handle enum decorators", () => {
@@ -147,9 +150,7 @@ describe("Stage 3 Decorators Support", () => {
     const xml1 = marshal(instance1);
     const xml2 = marshal(instance2);
 
-    expect(xml1).toContain('id="1"');
-    expect(xml1).toContain("<value>first</value>");
-    expect(xml2).toContain('id="2"');
-    expect(xml2).toContain("<value>second</value>");
+    expectConsecutiveStrings(xml1, ['id="1"', "<value>first</value>"]);
+    expectConsecutiveStrings(xml2, ['id="2"', "<value>second</value>"]);
   });
 });
