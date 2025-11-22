@@ -5,7 +5,8 @@ import path from "path";
 import {
   setupGeneratedRuntime,
   loadGeneratedClasses,
-} from "./test-utils/generated-runtime";
+  expectConsecutiveStrings,
+} from "./test-utils";
 
 const ADDRESS_XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
@@ -150,14 +151,16 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
 
       const xml = marshal(person);
 
-      expect(xml).toContain("<Person");
-      expect(xml).toContain('xmlns="http://example.com/person"');
-      expect(xml).toContain('id="P456"');
-      expect(xml).toContain("<name>Bob Johnson</name>");
-      expect(xml).toContain("<homeAddress>");
-      expect(xml).toContain("<addr:street>789 Elm St</addr:street>");
-      expect(xml).toContain("<addr:city>Portland</addr:city>");
-      expect(xml).toContain("</homeAddress>");
+      expectConsecutiveStrings(xml, [
+        "<Person",
+        'xmlns="http://example.com/person"',
+        'id="P456"',
+        "<name>Bob Johnson</name>",
+        "<homeAddress>",
+        "<addr:street>789 Elm St</addr:street>",
+        "<addr:city>Portland</addr:city>",
+        "</homeAddress>",
+      ]);
     });
 
     test("roundtrip marshal and unmarshal with cross-namespace types", () => {
@@ -250,9 +253,11 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
 
       const xml = marshal(company);
 
-      expect(xml).toContain("<Company");
-      expect(xml).toContain('xmlns="http://example.com/company"');
-      expect(xml).toContain("<companyName>Startup Inc</companyName>");
+      expectConsecutiveStrings(xml, [
+        "<Company",
+        'xmlns="http://example.com/company"',
+        "<companyName>Startup Inc</companyName>",
+      ]);
       expect((xml.match(/<departments/g) || []).length).toBe(2);
       expect(xml).toContain('code="SALES"');
       expect(xml).toContain('code="MKT"');
