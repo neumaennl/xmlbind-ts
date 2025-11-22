@@ -129,7 +129,11 @@ export function emitAttrsExcludingProhibited(
     // Handle attribute references
     const refAttr = a.getAttribute("ref");
     if (refAttr && !a.getAttribute("name")) {
-      emitAttributeRef(refAttr, lines, unit, state, use || undefined);
+      const refLocal = localName(refAttr)!;
+      const refDef = state.schemaContext.topLevelAttributes.get(refLocal);
+      if (refDef) {
+        emitSingleAttribute(refDef, lines, unit, state, use || undefined);
+      }
       continue;
     }
 
@@ -146,29 +150,5 @@ export function emitAttrsExcludingProhibited(
   );
   if (anyAttrs.length > 0) {
     emitAnyAttributeIfNeeded(lines);
-  }
-}
-
-/**
- * Helper function to emit a single attribute reference.
- * Looks up the referenced attribute and generates the appropriate decorator.
- *
- * @param refAttr - The attribute reference QName
- * @param lines - The output lines array
- * @param unit - The generation unit
- * @param state - The generator state
- * @param referencingUse - The use constraint from the referencing element
- */
-function emitAttributeRef(
-  refAttr: string,
-  lines: string[],
-  unit: GenUnit,
-  state: GeneratorState,
-  referencingUse?: string
-): void {
-  const refLocal = localName(refAttr)!;
-  const refDef = state.schemaContext.topLevelAttributes.get(refLocal);
-  if (refDef) {
-    emitSingleAttribute(refDef, lines, unit, state, referencingUse);
   }
 }
