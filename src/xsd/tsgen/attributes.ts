@@ -1,5 +1,5 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getChildrenByLocalName } from "./utils";
+import { localName, getChildrenByLocalName, getDocumentation, formatTsDoc } from "./utils";
 import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { sanitizeTypeName } from "./types";
@@ -90,6 +90,13 @@ export function emitAttrs(
       state.schemaContext.attributeFormDefault
     );
     const propName = toPropertyName(an, state.reservedWords);
+    
+    // Emit documentation comment if present
+    const doc = getDocumentation(a, state.xsdPrefix);
+    if (doc) {
+      lines.push(...formatTsDoc(doc, "  "));
+    }
+    
     lines.push(
       ans
         ? `  @XmlAttribute('${an}', { namespace: '${ans}' })`
@@ -156,6 +163,13 @@ function emitAttributeRef(
     );
     if (an) {
       const propName = toPropertyName(an, state.reservedWords);
+      
+      // Emit documentation comment if present
+      const doc = getDocumentation(refDef, state.xsdPrefix);
+      if (doc) {
+        lines.push(...formatTsDoc(doc, "  "));
+      }
+      
       lines.push(
         ans
           ? `  @XmlAttribute('${an}', { namespace: '${ans}' })`

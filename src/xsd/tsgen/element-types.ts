@@ -1,5 +1,5 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getChildByLocalName, getChildrenByLocalName } from "./utils";
+import { localName, getChildByLocalName, getChildrenByLocalName, formatTsDoc } from "./utils";
 import { typeMapping, sanitizeTypeName } from "./types";
 import { toClassName, toPropertyName } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
@@ -181,7 +181,8 @@ export function emitElementDecorator(
   lines: string[],
   unit: GenUnit,
   state: GeneratorState,
-  makeRequired: boolean
+  makeRequired: boolean,
+  doc?: string
 ): void {
   const propName = toPropertyName(en, state.reservedWords);
   const decoratorOpts: string[] = [];
@@ -204,6 +205,10 @@ export function emitElementDecorator(
   const decoratorBody = decoratorOpts.length
     ? `{ ${decoratorOpts.join(", ")} }`
     : "";
+  // Emit documentation comment if present
+  if (doc) {
+    lines.push(...formatTsDoc(doc, "  "));
+  }
   lines.push(
     decoratorBody
       ? `  @XmlElement('${en}', ${decoratorBody})`
