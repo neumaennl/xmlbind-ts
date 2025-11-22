@@ -128,10 +128,10 @@ describe("Marshalling", () => {
       expect(xml).toContain("  <alias>");
 
       // Verify structure: opening tag on one line, child elements indented, closing tag on separate line
-      const lines = xml.split("\n");
+      const lines = xml.split("\n").filter((line) => line.trim() !== "");
       expect(lines.length).toBeGreaterThan(3);
       expect(lines[0]).toContain("<Person");
-      expect(lines[lines.length - 2]).toBe("</Person>");
+      expect(lines[lines.length - 1]).toBe("</Person>");
     });
 
     test("pretty-printed XML can be unmarshalled correctly", () => {
