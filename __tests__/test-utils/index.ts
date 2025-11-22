@@ -7,4 +7,4 @@ export {
   setupGeneratedRuntime,
   loadGeneratedClasses,
 } from "./generated-runtime";
-export { expectConsecutiveStrings } from "./assertions";
+export { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./assertions";

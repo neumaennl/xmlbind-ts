@@ -7,6 +7,8 @@ const builder = new XMLBuilder({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   textNodeName: "#text",
+  format: true,
+  indentBy: "  ",
 });
 
 type NsContext = {

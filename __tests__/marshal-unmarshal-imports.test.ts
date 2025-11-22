@@ -5,7 +5,8 @@ import path from "path";
 import {
   setupGeneratedRuntime,
   loadGeneratedClasses,
-  expectConsecutiveStrings,
+  expectStringsOnConsecutiveLines,
+  expectStringsOnSameLine,
 } from "./test-utils";
 
 const ADDRESS_XSD = `<?xml version="1.0"?>
@@ -151,10 +152,14 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
 
       const xml = marshal(person);
 
-      expectConsecutiveStrings(xml, [
+      // Verify that attributes appear on the same line as the opening tag
+      const firstLine = xml.split('\n')[0];
+      expectStringsOnSameLine(firstLine, [
         "<Person",
         'xmlns="http://example.com/person"',
         'id="P456"',
+      ]);
+      expectStringsOnConsecutiveLines(xml, [
         "<name>Bob Johnson</name>",
         "<homeAddress>",
         "<addr:street>789 Elm St</addr:street>",
@@ -253,11 +258,13 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
 
       const xml = marshal(company);
 
-      expectConsecutiveStrings(xml, [
+      // Verify that namespace attribute appears on the same line as the opening tag
+      const firstLine = xml.split('\n')[0];
+      expectStringsOnSameLine(firstLine, [
         "<Company",
         'xmlns="http://example.com/company"',
-        "<companyName>Startup Inc</companyName>",
       ]);
+      expect(xml).toContain("<companyName>Startup Inc</companyName>");
       expect((xml.match(/<departments/g) || []).length).toBe(2);
       expect(xml).toContain('code="SALES"');
       expect(xml).toContain('code="MKT"');

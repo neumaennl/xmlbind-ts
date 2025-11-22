@@ -7,7 +7,7 @@ import { XmlRoot } from "../src/decorators/XmlRoot";
 import { XmlText } from "../src/decorators/XmlText";
 import { getMeta } from "../src/metadata/MetadataRegistry";
 import { marshal, unmarshal } from "../src/marshalling";
-import { expectConsecutiveStrings } from "./test-utils";
+import { expectStringsOnConsecutiveLines } from "./test-utils";
 
 enum TestEnum {
   One = "one",
@@ -135,7 +135,7 @@ describe("Decorators", () => {
       const list = new List();
       list.values = [1, 2, 3];
       const xml = marshal(list);
-      expectConsecutiveStrings(xml, [
+      expectStringsOnConsecutiveLines(xml, [
         "<values>1</values>",
         "<values>2</values>",
         "<values>3</values>",
@@ -160,7 +160,7 @@ describe("Decorators", () => {
       parent.child.name = "test";
 
       const xml = marshal(parent);
-      expectConsecutiveStrings(xml, ["<child>", "<name>test</name>"]);
+      expectStringsOnConsecutiveLines(xml, ["<child>", "<name>test</name>"]);
     });
 
     it("should handle element without options", () => {
@@ -575,7 +575,7 @@ describe("Decorators", () => {
       doc.title = "Test Document";
 
       const xml = marshal(doc);
-      expectConsecutiveStrings(xml, [
+      expectStringsOnConsecutiveLines(xml, [
         'id="123"',
         "<title>Test Document</title>",
       ]);

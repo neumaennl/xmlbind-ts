@@ -1,6 +1,6 @@
 import { marshal, unmarshal } from "../src/marshalling";
 import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators";
-import { expectConsecutiveStrings } from "./test-utils";
+import { expectStringsOnSameLine } from "./test-utils";
 
 afterEach(() => {
   // no-op, placeholder in case of future cleanup
@@ -36,7 +36,9 @@ describe("namespace prefixes honoring schema-defined names", () => {
     r.child = c;
 
     const xml = marshal(r);
-    expectConsecutiveStrings(xml, [
+    // Verify that namespace attributes appear on the same line as the opening tag
+    const firstLine = xml.split('\n')[0];
+    expectStringsOnSameLine(firstLine, [
       '<Root xmlns="http://a.example/ns"',
       'xmlns:b="http://b.example/ns"',
     ]);
