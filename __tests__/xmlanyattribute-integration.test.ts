@@ -96,7 +96,9 @@ describe("XmlAnyAttribute Integration Tests", () => {
 
     const xml = marshal(obj);
     expect(xml).toContain("<Complex");
-    expect(xml).toContain("<name>Test</name>");
-    expect(xml).toContain("<value>42</value>");
+    expectStringsOnConsecutiveLines(xml, [
+      "<name>Test</name>",
+      "<value>42</value>",
+    ]);
   });
 });
