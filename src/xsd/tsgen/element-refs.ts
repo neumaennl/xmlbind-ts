@@ -1,5 +1,5 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName } from "./utils";
+import { localName, getDocumentation, formatTsDoc } from "./utils";
 import { typeMapping, sanitizeTypeName } from "./types";
 import { toPropertyName } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
@@ -140,6 +140,12 @@ export function emitElementRef(
     // Check if this property name has already been emitted to avoid duplicates
     if (isPropertyAlreadyEmitted(propName, lines)) {
       return;
+    }
+    
+    // Extract documentation from the referenced element
+    const doc = getDocumentation(referencedElement, state.xsdPrefix);
+    if (doc) {
+      lines.push(...formatTsDoc(doc, "  "));
     }
     
     const decoratorOpts: string[] = [];
