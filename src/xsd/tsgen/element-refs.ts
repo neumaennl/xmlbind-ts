@@ -44,6 +44,39 @@ function isPropertyAlreadyEmitted(propName: string, lines: string[]): boolean {
 }
 
 /**
+ * Finds the referenced top-level element with proper namespace matching.
+ * @param refLocalName - The local name of the referenced element
+ * @param refNamespace - The namespace of the reference (may be undefined)
+ * @param state - The generator state
+ * @returns The referenced element, or undefined if not found
+ */
+function findReferencedElement(
+  refLocalName: string,
+  refNamespace: string | undefined,
+  state: GeneratorState
+): XmldomElement | undefined {
+  return state.schemaContext.topLevelElements.find((el) => {
+    const elName = el.getAttribute("name");
+    if (elName !== refLocalName) {
+      return false;
+    }
+    
+    // Get element's namespace
+    const elementNs = el.getAttribute("targetNamespace") || 
+                      (el.parentNode as any)?.getAttribute?.("targetNamespace") ||
+                      state.schemaContext.targetNs;
+    
+    // If reference has no prefix, it refers to target namespace
+    if (!refNamespace) {
+      return elementNs === state.schemaContext.targetNs || !elementNs;
+    }
+    
+    // If reference has a prefix, namespaces must match exactly
+    return elementNs === refNamespace;
+  });
+}
+
+/**
  * Emits code for an element reference (ref attribute).
  * Resolves the referenced element and generates the appropriate decorator and property.
  *
@@ -88,25 +121,7 @@ export function emitElementRef(
   const refNamespace = resolveNamespace(refAttr, e);
   
   // Find referenced element with proper namespace matching
-  const referencedElement = state.schemaContext.topLevelElements.find((el) => {
-    const elName = el.getAttribute("name");
-    if (elName !== refLocalName) {
-      return false;
-    }
-    
-    // Get element's namespace
-    const elementNs = el.getAttribute("targetNamespace") || 
-                      (el.parentNode as any)?.getAttribute?.("targetNamespace") ||
-                      state.schemaContext.targetNs;
-    
-    // If reference has no prefix, it refers to target namespace
-    if (!refNamespace) {
-      return elementNs === state.schemaContext.targetNs || !elementNs;
-    }
-    
-    // If reference has a prefix, namespaces must match exactly
-    return elementNs === refNamespace;
-  });
+  const referencedElement = findReferencedElement(refLocalName, refNamespace, state);
 
   if (referencedElement) {
     const refType = referencedElement.getAttribute("type");
