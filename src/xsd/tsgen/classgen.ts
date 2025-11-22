@@ -5,7 +5,7 @@ import {
   getDocumentation,
   formatTsDoc,
 } from "./utils";
-import { isBuiltinType } from "./types";
+import { isBuiltinType, typeMapping } from "./types";
 import { emitAttrs } from "./attributes";
 import { emitElements } from "./elements";
 import type { GeneratorState, GenUnit } from "./codegen";
