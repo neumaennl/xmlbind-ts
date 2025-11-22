@@ -61,7 +61,16 @@ export function expectConsecutiveStrings(
     for (let lineIdx = currentLineIndex; lineIdx < lines.length; lineIdx++) {
       if (lines[lineIdx].includes(expectedStr)) {
         found = true;
-        currentLineIndex = lineIdx + 1; // Move to next line for next search
+        // Only move to next line if we're not going to search for another string on the same line
+        // Check if the next expected string (if any) is also on this line
+        const nextExpectedStr = i + 1 < expectedStrings.length ? expectedStrings[i + 1] : null;
+        if (nextExpectedStr && lines[lineIdx].includes(nextExpectedStr)) {
+          // Next string is on the same line, stay on this line
+          currentLineIndex = lineIdx;
+        } else {
+          // Move to next line for next search
+          currentLineIndex = lineIdx + 1;
+        }
         break;
       }
     }
