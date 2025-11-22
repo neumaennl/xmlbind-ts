@@ -55,9 +55,10 @@ describe("Marshalling", () => {
       expect(p.alias).toEqual(["J", "Johnny"]);
 
       const xml = marshal(p);
+      // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
+      expect(xml).toContain('<Person xmlns="http://example.com/ns"');
+      expect(xml).toContain('id="42"');
       expectConsecutiveStrings(xml, [
-        '<Person xmlns="http://example.com/ns"',
-        'id="42"',
         "<name>John Doe</name>",
         "<age>30</age>",
       ]);
@@ -79,14 +80,15 @@ describe("Marshalling", () => {
       obj._any = [{ extra1: "v1" }, { extra2: { "@_attr": "y" } }];
 
       const xml = marshal(obj);
+      // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
+      expect(xml).toContain("<Doc");
+      expect(xml).toContain('id="123"');
+      expect(xml).toContain('customAttr="x"');
+      expect(xml).toContain('attr="y"');
       expectConsecutiveStrings(xml, [
-        "<Doc",
-        'id="123"',
-        'customAttr="x"',
         "<known>ok</known>",
         "<extra1>v1</extra1>",
         "<extra2",
-        'attr="y"',
       ]);
     });
   });

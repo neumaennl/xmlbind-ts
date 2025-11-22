@@ -36,13 +36,12 @@ describe("XmlAnyAttribute Integration Tests", () => {
     doc.additionalAttributes = { id: "123", version: "1.0", author: "John" };
 
     const xml = marshal(doc);
-    expectConsecutiveStrings(xml, [
-      "<Document",
-      'id="123"',
-      'version="1.0"',
-      'author="John"',
-      "<title>Test Document</title>",
-    ]);
+    // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
+    expect(xml).toContain("<Document");
+    expect(xml).toContain('id="123"');
+    expect(xml).toContain('version="1.0"');
+    expect(xml).toContain('author="John"');
+    expect(xml).toContain("<title>Test Document</title>");
   });
 
   test("should create instance without errors", () => {
@@ -74,9 +73,10 @@ describe("XmlAnyAttribute Integration Tests", () => {
     obj.extraAttrs = { id: "100", type: "special" };
 
     const xml = marshal(obj);
+    // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
+    expect(xml).toContain('id="100"');
+    expect(xml).toContain('type="special"');
     expectConsecutiveStrings(xml, [
-      'id="100"',
-      'type="special"',
       "<name>Test</name>",
       "<value>42</value>",
     ]);

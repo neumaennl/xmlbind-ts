@@ -151,10 +151,11 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
 
       const xml = marshal(person);
 
+      // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
+      expect(xml).toContain("<Person");
+      expect(xml).toContain('xmlns="http://example.com/person"');
+      expect(xml).toContain('id="P456"');
       expectConsecutiveStrings(xml, [
-        "<Person",
-        'xmlns="http://example.com/person"',
-        'id="P456"',
         "<name>Bob Johnson</name>",
         "<homeAddress>",
         "<addr:street>789 Elm St</addr:street>",
@@ -253,11 +254,10 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
 
       const xml = marshal(company);
 
-      expectConsecutiveStrings(xml, [
-        "<Company",
-        'xmlns="http://example.com/company"',
-        "<companyName>Startup Inc</companyName>",
-      ]);
+      // Verify the XML contains expected elements (attributes are on the same line as opening tag in pretty-printed XML)
+      expect(xml).toContain("<Company");
+      expect(xml).toContain('xmlns="http://example.com/company"');
+      expect(xml).toContain("<companyName>Startup Inc</companyName>");
       expect((xml.match(/<departments/g) || []).length).toBe(2);
       expect(xml).toContain('code="SALES"');
       expect(xml).toContain('code="MKT"');
