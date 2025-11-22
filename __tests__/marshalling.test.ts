@@ -108,4 +108,44 @@ describe("Marshalling", () => {
       expect(obj._anyAttributes?.customAttr).toBe("x");
     });
   });
+
+  describe("Pretty-printing", () => {
+    test("marshal produces pretty-printed XML with proper indentation", () => {
+      const person = new Person();
+      person.id = 42;
+      person.name = "John Doe";
+      person.age = 30;
+      person.alias = ["J", "Johnny"];
+
+      const xml = marshal(person);
+
+      // Verify the XML is pretty-printed with newlines
+      expect(xml.includes("\n")).toBe(true);
+
+      // Verify proper indentation (child elements should be indented)
+      expect(xml).toContain("  <name>");
+      expect(xml).toContain("  <age>");
+      expect(xml).toContain("  <alias>");
+
+      // Verify structure: opening tag on one line, child elements indented, closing tag on separate line
+      const lines = xml.split("\n");
+      expect(lines.length).toBeGreaterThan(3);
+      expect(lines[0]).toContain("<Person");
+      expect(lines[lines.length - 2]).toBe("</Person>");
+    });
+
+    test("pretty-printed XML can be unmarshalled correctly", () => {
+      const person = new Person();
+      person.id = 99;
+      person.name = "Jane Smith";
+      person.age = 25;
+
+      const xml = marshal(person);
+      const unmarshalled = unmarshal(Person, xml);
+
+      expect(Number(unmarshalled.id)).toBe(person.id);
+      expect(unmarshalled.name).toBe(person.name);
+      expect(unmarshalled.age).toBe(person.age);
+    });
+  });
 });
