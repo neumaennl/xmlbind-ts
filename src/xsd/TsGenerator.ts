@@ -124,8 +124,28 @@ export function generateFromXsd(xsdText: string, outDir: string): void {
     ensureClass(className, ct, state, name);
   }
 
-  // Generate classes from top-level elements
-  processTopLevelElements(schemaContext.topLevelElements, state, ensureClass);
+  // Determine which top-level element names are referenced via ref="" anywhere in the schema
+  const referencedTopLevels = new Set<string>();
+  const visit = (node: any) => {
+    if (!node) return;
+    if (node.nodeType === 1) {
+      const tag = node.tagName || "";
+      const local = tag.includes(":") ? tag.split(":").pop() : tag;
+      if (local === "element") {
+        const ref = node.getAttribute && node.getAttribute("ref");
+        if (ref) {
+          const refLocal = ref.split(":").pop();
+          if (refLocal) referencedTopLevels.add(refLocal);
+        }
+      }
+      const children = Array.from(node.childNodes || []);
+      for (const c of children) visit(c);
+    }
+  };
+  visit(schema);
+
+  // Generate classes from top-level elements (conditionally creating underlying *Type only for referenced inline complexTypes)
+  processTopLevelElements(schemaContext.topLevelElements, referencedTopLevels, state, ensureClass);
 
   // Write all generated files
   writeGeneratedFiles(generated, generatedEnums, outDir);

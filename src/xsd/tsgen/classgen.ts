@@ -94,6 +94,55 @@ export function ensureClass(
 }
 
 /**
+ * Generates a class without emitting an @XmlRoot decorator.
+ * Used for underlying anonymous inline complex types that will be wrapped.
+ */
+export function ensureClassNoRoot(
+  name: string,
+  el: XmldomElement,
+  state: GeneratorState
+): GenUnit {
+  if (state.generated.has(name)) return state.generated.get(name)!;
+  const unit: GenUnit = { lines: [], deps: new Set(), className: name };
+  state.generated.set(name, unit);
+  const lines = unit.lines;
+  const mixed = el.getAttribute("mixed") === "true";
+  const complexContent = getChildByLocalName(
+    el,
+    "complexContent",
+    state.xsdPrefix
+  );
+  const simpleContent = getChildByLocalName(
+    el,
+    "simpleContent",
+    state.xsdPrefix
+  );
+  const doc = getDocumentation(el, state.xsdPrefix);
+  if (doc) lines.push(...formatTsDoc(doc));
+  if (simpleContent) {
+    handleSimpleContent(name, simpleContent, lines, unit, state);
+    return unit;
+  }
+  if (complexContent) {
+    const handled = handleComplexContent(
+      name,
+      complexContent,
+      lines,
+      unit,
+      state,
+      mixed
+    );
+    if (handled) return unit;
+  }
+  lines.push(`export class ${name} {`);
+  emitAttrs(el, lines, unit, state);
+  emitElements(el, lines, unit, state, (n, e, x) => ensureClass(n, e, state, x));
+  if (mixed) emitMixedText(lines);
+  lines.push("}");
+  return unit;
+}
+
+/**
  * Emits the @XmlRoot decorator for a class.
  * Includes namespace and prefix configuration if present in the schema.
  *
