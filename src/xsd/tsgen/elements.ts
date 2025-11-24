@@ -325,7 +325,8 @@ export function emitElement(
       insideChoice,
       compositorIsArray,
       compositorIsOptional,
-      isArrayFromMaxOccurs
+      isArrayFromMaxOccurs,
+      ensureClass
     );
     return;
   }

@@ -3,6 +3,7 @@ import { localName, getChildByLocalName, getDocumentation, formatTsDoc } from ".
 import { typeMapping, sanitizeTypeName, isBuiltinType } from "./types";
 import { extractEnumValues, generateEnumCode } from "./enum";
 import { toClassName } from "./codegen";
+import { ensureClassNoRoot } from "./classgen";
 import type { GeneratorState, GenUnit } from "./codegen";
 
 /**
@@ -18,6 +19,7 @@ import type { GeneratorState, GenUnit } from "./codegen";
  */
 export function processTopLevelElements(
   topLevelElements: XmldomElement[],
+  referencedTopLevels: Set<string>,
   state: GeneratorState,
   ensureClass: (
     name: string,
@@ -44,7 +46,26 @@ export function processTopLevelElements(
     if (typeAttr) {
       processElementWithType(className, en, typeAttr, state, el);
     } else if (inlineCT) {
-      ensureClass(className, inlineCT as any, state, en);
+      // If this top-level element is referenced elsewhere, generate underlying + wrapper.
+      // Otherwise, generate a single class with inline content (backwards compatible with existing tests).
+      if (referencedTopLevels.has(en)) {
+        const underlyingBase = en + "Type";
+        let underlyingName = toClassName(underlyingBase, state.reservedWords);
+        let uniquifier = 1;
+        while (
+          state.generated.has(underlyingName) ||
+          state.schemaContext.complexTypesMap.has(underlyingName) ||
+          state.schemaContext.simpleTypesMap.has(underlyingName)
+        ) {
+          underlyingName = toClassName(underlyingBase + "_" + uniquifier, state.reservedWords);
+          uniquifier++;
+        }
+        ensureClassNoRoot(underlyingName, inlineCT as any, state);
+        createWrapperClass(className, en, underlyingName, state, el);
+      } else {
+        // Single class with root + content
+        ensureClass(className, inlineCT as any, state, en);
+      }
     } else if (inlineST) {
       processElementWithInlineSimpleType(className, en, inlineST, state, el);
     }

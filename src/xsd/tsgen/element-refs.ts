@@ -1,8 +1,10 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getDocumentation, formatTsDoc } from "./utils";
+import { localName, getDocumentation, formatTsDoc, getChildByLocalName } from "./utils";
 import { typeMapping, sanitizeTypeName } from "./types";
 import { toPropertyName } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
+import { handleInlineType } from "./element-types";
+import { toClassName } from "./codegen";
 
 /**
  * Resolves the namespace URI for a qualified name in the context of an element.
@@ -99,7 +101,13 @@ export function emitElementRef(
   insideChoice: boolean,
   compositorIsArray: boolean,
   compositorIsOptional: boolean,
-  isArrayFromMaxOccurs: (maxOccurs: string | null) => boolean
+  isArrayFromMaxOccurs: (maxOccurs: string | null) => boolean,
+  /**
+   * Callback used to ensure a generated class exists for an inline complexType.
+   * Provided by the caller (elements emitter) so that referenced elements with
+   * anonymous inline types can be properly materialized instead of defaulting to 'any'.
+   */
+  ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit
 ): void {
   const refLocalName = localName(refAttr)!;
   const minOccursAttr = e.getAttribute("minOccurs");
@@ -131,6 +139,7 @@ export function emitElementRef(
 
     let tsType = "any";
     if (refType) {
+      // Referenced element explicitly names a type
       const local = localName(refType)!;
       const sanitized = sanitizeTypeName(local);
       if (state.schemaContext.enumTypesMap.has(local)) {
@@ -138,7 +147,6 @@ export function emitElementRef(
         unit.deps.add(sanitized);
       } else {
         tsType = typeMapping(refType);
-        // Only add dependency if the resolved type is actually the custom type (not a built-in)
         if (
           tsType !== "String" &&
           tsType !== "Number" &&
@@ -147,6 +155,32 @@ export function emitElementRef(
         ) {
           unit.deps.add(sanitized);
         }
+      }
+    } else {
+      // Referenced element has no explicit type attribute. Use robust naming:
+      // Top-level inline complexType => underlying *Type class; inline simpleType => wrapper class.
+      const isTopLevel = state.schemaContext.topLevelElements.includes(referencedElement);
+      if (isTopLevel) {
+        const inlineCT = getChildByLocalName(referencedElement, "complexType", state.xsdPrefix);
+        const inlineST = getChildByLocalName(referencedElement, "simpleType", state.xsdPrefix);
+        if (inlineCT) {
+          const underlyingName = toClassName(refLocalName + "Type", state.reservedWords);
+          if (underlyingName !== unit.className) unit.deps.add(underlyingName);
+          tsType = underlyingName;
+        } else if (inlineST) {
+          // Wrapper name for simpleType (may collide -> suffix handled in top-level processing)
+          const hasCollision = state.schemaContext.complexTypesMap.has(refLocalName) ||
+            state.schemaContext.simpleTypesMap.has(refLocalName) ||
+            state.generated.has(toClassName(refLocalName, state.reservedWords));
+          const baseName = hasCollision ? `${refLocalName}Element` : refLocalName;
+          const wrapperName = toClassName(baseName, state.reservedWords);
+          if (wrapperName !== unit.className) unit.deps.add(wrapperName);
+          tsType = wrapperName;
+        } else {
+          tsType = "any";
+        }
+      } else {
+        tsType = handleInlineType(referencedElement, refLocalName, unit, state, ensureClass);
       }
     }
 
