@@ -1,9 +1,7 @@
 import { generateFromXsd } from "../src/xsd/TsGenerator";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir";
-
-
+import { withTmpDir, expectStringsOnConsecutiveLines } from "./test-utils";
 
 describe("XSD Generator - Groups", () => {
   test("generates classes with group references", () => {
@@ -44,12 +42,12 @@ describe("XSD Generator - Groups", () => {
       expect(content).toContain("@XmlElement('zipCode'");
       expect(content).toContain("@XmlElement('phone'");
 
-  // Required group elements are non-optional; optional phone stays optional
-  expect(content).toMatch(/\bname!?:/);
-  expect(content).toMatch(/\bstreet!?:/);
-  expect(content).toMatch(/\bcity!?:/);
-  expect(content).toMatch(/\bzipCode!?:/);
-  expect(content).toContain("phone?:");
+      // Required group elements are non-optional; optional phone stays optional
+      expect(content).toMatch(/\bname!?:/);
+      expect(content).toMatch(/\bstreet!?:/);
+      expect(content).toMatch(/\bcity!?:/);
+      expect(content).toMatch(/\bzipCode!?:/);
+      expect(content).toContain("phone?:");
     });
   });
 
@@ -134,6 +132,162 @@ describe("XSD Generator - Groups", () => {
       expect(content).toContain("@XmlElement('creditCard'");
       expect(content).toContain("@XmlElement('bankTransfer'");
       expect(content).toContain("@XmlElement('cash'");
+    });
+  });
+
+  test("handles group references with maxOccurs > 1", () => {
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  
+  <xs:group name="ItemGroup">
+    <xs:choice>
+      <xs:element name="product" type="xs:string"/>
+      <xs:element name="service" type="xs:string"/>
+      <xs:element name="discount" type="xs:string"/>
+    </xs:choice>
+  </xs:group>
+  
+  <xs:complexType name="ShoppingCart">
+    <xs:sequence>
+      <xs:element name="cartId" type="xs:string"/>
+      <xs:group ref="ItemGroup" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="total" type="xs:decimal"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:element name="ShoppingCart" type="ShoppingCart"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+
+      const cartFile = path.join(dir, "ShoppingCart.ts");
+      expect(existsSync(cartFile)).toBe(true);
+
+      const content = readFileSync(cartFile, "utf-8");
+
+      // Elements from the group should be arrays because maxOccurs="unbounded"
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('product', { type: String, array: true })",
+        "product?: String[];",
+      ]);
+
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('service', { type: String, array: true })",
+        "service?: String[];",
+      ]);
+
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('discount', { type: String, array: true })",
+        "discount?: String[];",
+      ]);
+
+      // Regular elements should not be arrays
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('cartId', { type: String })",
+        "cartId!: String;",
+      ]);
+
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('total', { type: Number })",
+        "total!: Number;",
+      ]);
+    });
+  });
+
+  test("handles group references with minOccurs=0", () => {
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  
+  <xs:group name="OptionalInfoGroup">
+    <xs:sequence>
+      <xs:element name="notes" type="xs:string"/>
+      <xs:element name="comments" type="xs:string"/>
+    </xs:sequence>
+  </xs:group>
+  
+  <xs:complexType name="Document">
+    <xs:sequence>
+      <xs:element name="title" type="xs:string"/>
+      <xs:group ref="OptionalInfoGroup" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:element name="Document" type="Document"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+
+      const docFile = path.join(dir, "Document.ts");
+      expect(existsSync(docFile)).toBe(true);
+
+      const content = readFileSync(docFile, "utf-8");
+
+      // Elements from the optional group should be optional
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('notes', { type: String })",
+        "notes?: String;",
+      ]);
+
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('comments', { type: String })",
+        "comments?: String;",
+      ]);
+
+      // Title should be required
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('title', { type: String })",
+        "title!: String;",
+      ]);
+    });
+  });
+
+  test("handles group references with both minOccurs=0 and maxOccurs > 1", () => {
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  
+  <xs:group name="TagGroup">
+    <xs:sequence>
+      <xs:element name="tag" type="xs:string"/>
+      <xs:element name="category" type="xs:string"/>
+    </xs:sequence>
+  </xs:group>
+  
+  <xs:complexType name="Article">
+    <xs:sequence>
+      <xs:element name="id" type="xs:string"/>
+      <xs:group ref="TagGroup" minOccurs="0" maxOccurs="5"/>
+    </xs:sequence>
+  </xs:complexType>
+  
+  <xs:element name="Article" type="Article"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+
+      const articleFile = path.join(dir, "Article.ts");
+      expect(existsSync(articleFile)).toBe(true);
+
+      const content = readFileSync(articleFile, "utf-8");
+
+      // Elements from the group should be optional arrays
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('tag', { type: String, array: true })",
+        "tag?: String[];",
+      ]);
+
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('category', { type: String, array: true })",
+        "category?: String[];",
+      ]);
+
+      // ID should be required and not an array
+      expectStringsOnConsecutiveLines(content, [
+        "@XmlElement('id', { type: String })",
+        "id!: String;",
+      ]);
     });
   });
 });

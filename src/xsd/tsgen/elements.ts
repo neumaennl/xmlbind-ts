@@ -3,7 +3,11 @@ import { localName, getChildrenByLocalName, getDocumentation } from "./utils";
 import { elementNamespaceFor } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { emitElementRef } from "./element-refs";
-import { resolveElementType, handleInlineType, emitElementDecorator } from "./element-types";
+import {
+  resolveElementType,
+  handleInlineType,
+  emitElementDecorator,
+} from "./element-types";
 
 /**
  * Determines if a maxOccurs attribute value indicates an array.
@@ -66,16 +70,36 @@ function emitElementsWithMultiplicity(
   compositorIsArray: boolean = false,
   compositorIsOptional: boolean = false
 ): void {
-  function processGroup(grp: XmldomElement, compositorIsArray: boolean = false, compositorIsOptional: boolean = false) {
+  function processGroup(
+    grp: XmldomElement,
+    compositorIsArray: boolean = false,
+    compositorIsOptional: boolean = false
+  ) {
     const ref = grp.getAttribute("ref");
     if (ref) {
       const refLocal = localName(ref)!;
       const def = state.schemaContext.groupDefs.get(refLocal);
       if (def) {
-        emitElementsWithMultiplicity(def, lines, unit, state, ensureClass, compositorIsArray, compositorIsOptional);
+        emitElementsWithMultiplicity(
+          def,
+          lines,
+          unit,
+          state,
+          ensureClass,
+          compositorIsArray,
+          compositorIsOptional
+        );
       }
     } else {
-      emitElementsWithMultiplicity(grp, lines, unit, state, ensureClass, compositorIsArray, compositorIsOptional);
+      emitElementsWithMultiplicity(
+        grp,
+        lines,
+        unit,
+        state,
+        ensureClass,
+        compositorIsArray,
+        compositorIsOptional
+      );
     }
   }
 
@@ -137,7 +161,16 @@ function emitElementsWithMultiplicity(
   );
   for (const grp of directGroups) {
     if ((grp.parentNode as any) !== ctx) continue;
-    processGroup(grp, compositorIsArray, compositorIsOptional);
+    // Check if this group itself has maxOccurs > 1 or minOccurs = 0
+    const groupIsArray = isArrayFromMaxOccurs(grp.getAttribute("maxOccurs"));
+    const groupIsOptional = isOptionalFromMinOccurs(
+      grp.getAttribute("minOccurs")
+    );
+    processGroup(
+      grp,
+      compositorIsArray || groupIsArray,
+      compositorIsOptional || groupIsOptional
+    );
   }
 }
 
@@ -151,7 +184,15 @@ export function emitElements(
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit
 ): void {
-  emitElementsWithMultiplicity(ctx, lines, unit, state, ensureClass, false, false);
+  emitElementsWithMultiplicity(
+    ctx,
+    lines,
+    unit,
+    state,
+    ensureClass,
+    false,
+    false
+  );
 }
 
 /**
@@ -176,7 +217,11 @@ function processElementContainer(
   unit: GenUnit,
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
-  processGroup: (grp: XmldomElement, compositorIsArray?: boolean, compositorIsOptional?: boolean) => void,
+  processGroup: (
+    grp: XmldomElement,
+    compositorIsArray?: boolean,
+    compositorIsOptional?: boolean
+  ) => void,
   ensureAnyElement: (lines: string[]) => void,
   parentCompositorIsArray: boolean = false,
   parentCompositorIsOptional: boolean = false
@@ -191,14 +236,19 @@ function processElementContainer(
     if ((container.parentNode as any) !== ctx) continue;
 
     // Check if this compositor itself has maxOccurs > 1
-    const thisCompositorIsArray = isArrayFromMaxOccurs(container.getAttribute("maxOccurs"));
-    
+    const thisCompositorIsArray = isArrayFromMaxOccurs(
+      container.getAttribute("maxOccurs")
+    );
+
     // Check if this compositor itself has minOccurs = 0
-    const thisCompositorIsOptional = isOptionalFromMinOccurs(container.getAttribute("minOccurs"));
-    
+    const thisCompositorIsOptional = isOptionalFromMinOccurs(
+      container.getAttribute("minOccurs")
+    );
+
     // Combine with parent compositor flags
     const compositorIsArray = parentCompositorIsArray || thisCompositorIsArray;
-    const compositorIsOptional = parentCompositorIsOptional || thisCompositorIsOptional;
+    const compositorIsOptional =
+      parentCompositorIsOptional || thisCompositorIsOptional;
 
     processCompositorChildren(
       container,
@@ -236,7 +286,11 @@ function processCompositorChildren(
   unit: GenUnit,
   state: GeneratorState,
   ensureClass: (name: string, el: XmldomElement, xmlName?: string) => GenUnit,
-  processGroup: (grp: XmldomElement, compositorIsArray?: boolean, compositorIsOptional?: boolean) => void,
+  processGroup: (
+    grp: XmldomElement,
+    compositorIsArray?: boolean,
+    compositorIsOptional?: boolean
+  ) => void,
   ensureAnyElement: (lines: string[]) => void,
   insideChoice: boolean,
   compositorIsArray: boolean = false,
@@ -263,15 +317,34 @@ function processCompositorChildren(
         compositorIsOptional
       );
     } else if (localN === "group") {
-      processGroup(childNode as XmldomElement, compositorIsArray, compositorIsOptional);
+      // Check if this group itself has maxOccurs > 1 or minOccurs = 0
+      const groupIsArray = isArrayFromMaxOccurs(
+        childNode.getAttribute("maxOccurs")
+      );
+      const groupIsOptional = isOptionalFromMinOccurs(
+        childNode.getAttribute("minOccurs")
+      );
+      processGroup(
+        childNode as XmldomElement,
+        compositorIsArray || groupIsArray,
+        compositorIsOptional || groupIsOptional
+      );
     } else if (localN === "any") {
       ensureAnyElement(lines);
-    } else if (localN === "sequence" || localN === "choice" || localN === "all") {
+    } else if (
+      localN === "sequence" ||
+      localN === "choice" ||
+      localN === "all"
+    ) {
       // Check if this nested compositor itself has maxOccurs > 1
-      const thisCompositorIsArray = isArrayFromMaxOccurs(childNode.getAttribute("maxOccurs"));
+      const thisCompositorIsArray = isArrayFromMaxOccurs(
+        childNode.getAttribute("maxOccurs")
+      );
       // Check if this nested compositor itself has minOccurs = 0
-      const thisCompositorIsOptional = isOptionalFromMinOccurs(childNode.getAttribute("minOccurs"));
-      
+      const thisCompositorIsOptional = isOptionalFromMinOccurs(
+        childNode.getAttribute("minOccurs")
+      );
+
       // Recursively process nested compositors, combining flags
       processCompositorChildren(
         childNode as XmldomElement,
@@ -336,18 +409,20 @@ export function emitElement(
   const typeAttr = e.getAttribute("type");
   const minOccursAttr = e.getAttribute("minOccurs");
   const maxOccursAttr = e.getAttribute("maxOccurs");
-  
+
   const elementIsArrayFromMax = isArrayFromMaxOccurs(maxOccursAttr);
   const elementIsArrayFromMin = isArrayFromMinOccurs(minOccursAttr);
   // Element is an array if:
   // 1. maxOccurs > 1 (can appear multiple times)
   // 2. minOccurs > 1 (must appear multiple times)
   // 3. Inside a compositor with maxOccurs > 1
-  const isArray = elementIsArrayFromMax || elementIsArrayFromMin || compositorIsArray;
+  const isArray =
+    elementIsArrayFromMax || elementIsArrayFromMin || compositorIsArray;
   const nillable = e.getAttribute("nillable") === "true";
   const min = minOccursAttr ?? "1";
   // Element is required only if it's not in a choice, has minOccurs >= 1, and is not inside an optional compositor
-  const makeRequired = !insideChoice && Number(min) >= 1 && !compositorIsOptional;
+  const makeRequired =
+    !insideChoice && Number(min) >= 1 && !compositorIsOptional;
   const ens = elementNamespaceFor(
     e,
     false,
