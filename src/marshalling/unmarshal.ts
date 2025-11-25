@@ -205,7 +205,19 @@ function xmlValueToObject<T>(
 
   const inst = new cls();
   ensureMeta(cls);
-  if (!isParsedXmlNode(node)) return inst;
+
+  // Handle case where node is a plain primitive value (string/number/boolean)
+  // This happens when an element contains only text with no attributes or child elements
+  // E.g., <documentation>text here</documentation> is parsed as just "text here"
+  if (!isParsedXmlNode(node)) {
+    const target = inst as Record<string, unknown>;
+    const fields = getAllFields(cls);
+    const textField = fields.find((f) => f.kind === "text");
+    if (textField) {
+      target[textField.key] = castValue(node, textField.type);
+    }
+    return inst;
+  }
 
   const target = inst as Record<string, unknown>;
   const hereNs = collectNs(node, nsMap);
