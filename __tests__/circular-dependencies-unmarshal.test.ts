@@ -214,4 +214,67 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     expect(restriction.enumeration[0].constructor.name).toBe("noFixedFacet");
     expect(restriction.enumeration[0].value).toBe("error");
   });
+
+  test("unmarshals root element with anonymous complexType sequence correctly", async () => {
+    // This test specifically verifies the unmarshalling of elements in lines 10-11
+    // of example.xsd: the "meta" and "product" elements inside the root element's
+    // anonymous complexType sequence. The original bug showed these as raw JSON
+    // objects with "xs:element" property instead of typed "element" array.
+
+    // Generate classes from XMLSchema.xsd
+    const xmlSchemaXsd = readFileSync(
+      join(__dirname, "test-resources/XMLSchema.xsd"),
+      "utf-8"
+    );
+    generateAndFixImports(xmlSchemaXsd);
+
+    // Import the generated schema class
+    const { schema } = await import(join(tmpDir, "schema"));
+
+    // Read and unmarshal example.xsd
+    const exampleXsd = readFileSync(
+      join(__dirname, "test-resources/example.xsd"),
+      "utf-8"
+    );
+    const result = unmarshal(schema, exampleXsd) as any;
+
+    // Get the root "example" element - this is a top-level element with anonymous complexType
+    const exampleElement = result.element;
+    expect(exampleElement).toBeDefined();
+    expect(exampleElement.name).toBe("example");
+
+    // The element should have a complexType with a sequence
+    const complexType = exampleElement.complexType;
+    expect(complexType).toBeDefined();
+    expect(complexType.constructor.name).toBe("localComplexType");
+
+    // The complexType should have a sequence (not raw JSON)
+    const sequence = complexType.sequence;
+    expect(sequence).toBeDefined();
+    expect(sequence.constructor.name).toBe("explicitGroup");
+
+    // The sequence should have an "element" property that is an array of localElement
+    // NOT a raw "xs:element" property from the parser
+    expect(sequence.element).toBeDefined();
+    expect(Array.isArray(sequence.element)).toBe(true);
+    expect(sequence.element.length).toBe(2);
+
+    // Verify there is no raw "xs:element" property (this was the bug)
+    expect(sequence["xs:element"]).toBeUndefined();
+
+    // Verify the first element is "meta" (line 10 of example.xsd)
+    const metaElement = sequence.element[0];
+    expect(metaElement.constructor.name).toBe("localElement");
+    expect(metaElement.name).toBe("meta");
+    expect(metaElement.type_).toBe("choiceType");
+    expect(metaElement.minOccurs).toBe("0");
+
+    // Verify the second element is "product" (line 11 of example.xsd)
+    const productElement = sequence.element[1];
+    expect(productElement.constructor.name).toBe("localElement");
+    expect(productElement.name).toBe("product");
+    expect(productElement.type_).toBe("loggingType");
+    expect(productElement.minOccurs).toBe("0");
+    expect(productElement.maxOccurs).toBe("unbounded");
+  });
 });
