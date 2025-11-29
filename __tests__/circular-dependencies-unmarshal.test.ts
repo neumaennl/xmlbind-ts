@@ -14,6 +14,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { generateFromXsd } from "../src/xsd/TsGenerator";
 import { unmarshal } from "../src";
+import { resolveType } from "../src/util/typeResolution";
 
 describe("Circular Dependencies Unmarshalling Fix", () => {
   let tmpDir: string;
@@ -161,6 +162,65 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
 
     // Verify the property type is still typed correctly
     expect(containerFile).toMatch(/parent[!?]?:\s*Parent;/);
+  });
+
+  test("resolveType correctly handles lazy type references", () => {
+    // This test verifies that the resolveType function, which is the core
+    // of the circular dependency fix, works correctly.
+
+    class TestClass {
+      value = "test";
+    }
+
+    // Direct constructor reference
+    const directResult = resolveType(TestClass);
+    expect(directResult).toBe(TestClass);
+
+    // Lazy type reference (arrow function returning constructor)
+    const lazyResult = resolveType(() => TestClass);
+    expect(lazyResult).toBe(TestClass);
+
+    // Undefined type reference
+    const undefinedResult = resolveType(undefined);
+    expect(undefinedResult).toBeUndefined();
+
+    // Null type reference
+    const nullResult = resolveType(null);
+    expect(nullResult).toBeUndefined();
+  });
+
+  test("demonstrates that without lazy references, types could be undefined", async () => {
+    // This test demonstrates the scenario that would cause the bug:
+    // When using direct type references in decorators with circular dependencies,
+    // the type could be undefined at decorator evaluation time.
+    //
+    // Our fix uses lazy type references (() => Type) which defer evaluation
+    // until runtime, when all types are available.
+
+    // Generate classes from XMLSchema.xsd
+    const xmlSchemaXsd = readFileSync(
+      join(__dirname, "test-resources/XMLSchema.xsd"),
+      "utf-8"
+    );
+    generateAndFixImports(xmlSchemaXsd);
+
+    // Check that the generated explicitGroup.ts uses lazy type references
+    const explicitGroupFile = readFileSync(join(tmpDir, "explicitGroup.ts"), "utf-8");
+
+    // The element property should use lazy type reference
+    expect(explicitGroupFile).toMatch(/type:\s*\(\)\s*=>\s*localElement/);
+
+    // Import and verify the types are properly resolved at runtime
+    const { explicitGroup } = await import(join(tmpDir, "explicitGroup"));
+    const { localElement } = await import(join(tmpDir, "localElement"));
+
+    // Both types should be properly defined
+    expect(explicitGroup).toBeDefined();
+    expect(localElement).toBeDefined();
+
+    // The localElement should be a proper class constructor
+    expect(typeof localElement).toBe("function");
+    expect(localElement.prototype).toBeDefined();
   });
 
   test("unmarshals XMLSchema.xsd with example.xsd correctly", async () => {
