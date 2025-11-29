@@ -29,34 +29,23 @@ export function resolveType<T>(typeRef: TypeReference<T> | undefined | null): (n
     return undefined;
   }
 
-  // Check if it's a function that returns a constructor (lazy reference)
-  // We need to distinguish between a constructor function and a factory function.
-  // A constructor function typically has a prototype with a constructor property pointing to itself,
-  // while a factory function (arrow function or regular function returning a class) does not.
-  if (typeof typeRef === "function") {
-    // Check if it's a class constructor
-    // Class constructors have a prototype object with a constructor property
-    // Arrow functions and regular functions that return a constructor don't have meaningful prototypes
-    const proto = typeRef.prototype;
-    
-    // If it has a proper prototype with constructor, it's likely a class constructor
-    if (proto && proto.constructor === typeRef) {
-      return typeRef as new (...args: any[]) => T;
-    }
-    
-    // Otherwise, try to call it as a factory function
-    try {
-      const result = (typeRef as () => new (...args: any[]) => T)();
-      if (typeof result === "function" && result.prototype) {
-        return result;
-      }
-    } catch {
-      // If calling it throws, it was probably a constructor, not a factory
-    }
-    
-    // Fall back to treating it as a constructor
-    return typeRef as new (...args: any[]) => T;
+  if (typeof typeRef !== "function") {
+    return undefined;
   }
 
-  return undefined;
+  // Try calling it as a factory function first.
+  // Arrow functions (lazy references) will return the constructor.
+  // Class constructors will throw or return undefined when called without 'new'.
+  try {
+    const result = (typeRef as () => new (...args: any[]) => T)();
+    // If result is a valid constructor (function with prototype), return it
+    if (typeof result === "function" && result.prototype) {
+      return result;
+    }
+  } catch {
+    // Calling failed, it's likely a class constructor
+  }
+
+  // If calling didn't work, treat it as a direct constructor
+  return typeRef as new (...args: any[]) => T;
 }

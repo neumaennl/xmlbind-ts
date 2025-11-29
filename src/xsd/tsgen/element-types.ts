@@ -1,6 +1,6 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
 import { localName, getChildByLocalName, getChildrenByLocalName, formatTsDoc } from "./utils";
-import { typeMapping, sanitizeTypeName } from "./types";
+import { typeMapping, sanitizeTypeName, isPrimitiveTypeName } from "./types";
 import { toClassName, toPropertyName } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { extractEnumValues, generateEnumCode } from "./enum";
@@ -190,9 +190,6 @@ export function emitElementDecorator(
   // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)
   const isSelfReference = tsType === unit.className;
 
-  // Check if the type is a primitive (built-in) type that doesn't need lazy resolution
-  const isPrimitiveType = ["String", "Number", "Boolean"].includes(tsType);
-
   if (
     tsType &&
     tsType !== "any" &&
@@ -200,7 +197,7 @@ export function emitElementDecorator(
     !isSelfReference
   ) {
     // Use lazy type reference (arrow function) for non-primitive types to avoid circular dependency issues
-    if (isPrimitiveType) {
+    if (isPrimitiveTypeName(tsType)) {
       decoratorOpts.push(`type: ${tsType}`);
     } else {
       decoratorOpts.push(`type: () => ${tsType}`);
