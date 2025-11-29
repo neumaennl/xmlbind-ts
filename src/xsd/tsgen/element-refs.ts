@@ -200,13 +200,20 @@ export function emitElementRef(
     const decoratorOpts: string[] = [];
     // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)
     const isSelfReference = tsType === unit.className;
+    // Check if the type is a primitive (built-in) type that doesn't need lazy resolution
+    const isPrimitiveType = ["String", "Number", "Boolean"].includes(tsType);
     if (
       tsType &&
       tsType !== "any" &&
       /^[A-Za-z0-9_]+$/.test(tsType) &&
       !isSelfReference
     ) {
-      decoratorOpts.push(`type: ${tsType}`);
+      // Use lazy type reference (arrow function) for non-primitive types to avoid circular dependency issues
+      if (isPrimitiveType) {
+        decoratorOpts.push(`type: ${tsType}`);
+      } else {
+        decoratorOpts.push(`type: () => ${tsType}`);
+      }
     }
     if (isArray) decoratorOpts.push("array: true");
     if (nillable) decoratorOpts.push("nillable: true");

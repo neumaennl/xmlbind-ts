@@ -132,9 +132,9 @@ describe("Issue: Weather Schema Unmarshalling", () => {
       expect(schemaTs).toContain("@XmlElement('import'");
       expect(schemaTs).toContain("@XmlElement('annotation'");
 
-      // These should have types specified
-      expect(schemaTs).toContain("type: topLevelSimpleType");
-      expect(schemaTs).toContain("type: topLevelComplexType");
+      // These should have types specified (lazy type references to avoid circular dependency issues)
+      expect(schemaTs).toContain("type: () => topLevelSimpleType");
+      expect(schemaTs).toContain("type: () => topLevelComplexType");
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }

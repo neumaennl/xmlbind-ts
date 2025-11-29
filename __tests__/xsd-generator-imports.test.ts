@@ -51,8 +51,9 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
       expect(personFile).toContain("@XmlRoot('Person'");
       expect(personFile).toContain("namespace: 'http://example.com/person'");
       expect(personFile).toContain("import { Address } from './Address';");
+      // Lazy type reference to avoid circular dependency issues
       expect(personFile).toMatch(
-        /@XmlElement\('homeAddress',\s*\{\s*type:\s*Address/
+        /@XmlElement\('homeAddress',\s*\{\s*type:\s*\(\)\s*=>\s*Address/
       );
         expect(personFile).toMatch(/homeAddress!?:\s*Address;/);
 

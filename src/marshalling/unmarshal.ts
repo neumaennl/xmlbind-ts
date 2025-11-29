@@ -5,6 +5,7 @@ import {
   getAllFields,
 } from "../metadata/MetadataRegistry";
 import { castValue } from "../util/valueCasting";
+import { resolveType } from "../util/typeResolution";
 import {
   ParsedXmlNode,
   ParsedXmlValue,
@@ -186,7 +187,7 @@ function collectWildcardElements(
  */
 function xmlValueToObject<T>(
   node: ParsedXmlValue,
-  cls: new () => T,
+  cls: (new () => T) | undefined,
   nsMap: NsMap
 ): T {
   // If no type specified (cls is undefined), return the raw parsed value
@@ -214,7 +215,7 @@ function xmlValueToObject<T>(
     const fields = getAllFields(cls);
     const textField = fields.find((f) => f.kind === "text");
     if (textField) {
-      target[textField.key] = castValue(node, textField.type);
+      target[textField.key] = castValue(node, resolveType(textField.type));
     }
     return inst;
   }
@@ -233,7 +234,7 @@ function xmlValueToObject<T>(
         hereNs
       );
       if (k && (node as any)[k] !== undefined) {
-        target[f.key] = castValue((node as any)[k], f.type);
+        target[f.key] = castValue((node as any)[k], resolveType(f.type));
       }
     } else if (f.kind === "element") {
       const k = matchElementKey(
@@ -244,12 +245,13 @@ function xmlValueToObject<T>(
       );
       if (k && (node as any)[k] !== undefined) {
         const val = (node as any)[k];
+        const resolvedType = resolveType(f.type);
         if (Array.isArray(val)) {
-          target[f.key] = val.map((v) => xmlValueToObject(v, f.type, hereNs));
+          target[f.key] = val.map((v) => xmlValueToObject(v, resolvedType, hereNs));
         } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
           target[f.key] = null;
         } else {
-          target[f.key] = xmlValueToObject(val, f.type, hereNs);
+          target[f.key] = xmlValueToObject(val, resolvedType, hereNs);
         }
       }
     }
@@ -277,7 +279,7 @@ function xmlValueToObject<T>(
 
   const textField = fields.find((f) => f.kind === "text");
   if (textField && node["#text"] !== undefined) {
-    target[textField.key] = castValue(node["#text"], textField.type);
+    target[textField.key] = castValue(node["#text"], resolveType(textField.type));
   }
 
   return inst;
@@ -321,7 +323,7 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     const fields = getAllFields(cls);
     const textField = fields.find((f) => f.kind === "text");
     if (textField) {
-      (inst as any)[textField.key] = castValue(node, textField.type);
+      (inst as any)[textField.key] = castValue(node, resolveType(textField.type));
     }
     return inst;
   }
@@ -340,7 +342,7 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     const k = matchAttributeKey(node, f.name, f.namespace ?? undefined, nsMap);
     if (k) {
       const value = (node as any)[k];
-      if (value !== undefined) target[f.key] = castValue(value, f.type);
+      if (value !== undefined) target[f.key] = castValue(value, resolveType(f.type));
     }
   }
 
@@ -349,14 +351,15 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     const k = matchElementKey(node, f.name, f.namespace ?? undefined, nsMap);
     if (!k) continue;
     const val = (node as any)[k];
+    const resolvedType = resolveType(f.type);
     if (Array.isArray(val) || (f.isArray && Array.isArray(val))) {
       target[f.key] = (Array.isArray(val) ? val : [val]).map((v) =>
-        xmlValueToObject(v, f.type, nsMap)
+        xmlValueToObject(v, resolvedType, nsMap)
       );
     } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
       target[f.key] = null;
     } else {
-      target[f.key] = xmlValueToObject(val, f.type, nsMap);
+      target[f.key] = xmlValueToObject(val, resolvedType, nsMap);
     }
   }
 
@@ -378,7 +381,7 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
 
   const textField = fields.find((f) => f.kind === "text");
   if (textField && node["#text"] !== undefined) {
-    target[textField.key] = castValue(node["#text"], textField.type);
+    target[textField.key] = castValue(node["#text"], resolveType(textField.type));
   }
 
   return inst;

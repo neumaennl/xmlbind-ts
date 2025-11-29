@@ -310,8 +310,9 @@ describe("Enums", () => {
         expect(productContent).toContain(
           "import { ColorType } from './enums';"
         );
+        // Lazy type reference to avoid circular dependency issues
         expect(productContent).toMatch(
-          /@XmlElement\('color',\s*\{\s*type:\s*ColorType,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
+          /@XmlElement\('color',\s*\{\s*type:\s*\(\)\s*=>\s*ColorType,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
         );
         expect(productContent).toMatch(/color!?:\s*ColorType;/);
       });
@@ -475,8 +476,9 @@ describe("Enums", () => {
         const taskContent = readFileSync(taskFile, "utf8");
 
         expect(taskContent).toContain("import { TagType } from './enums';");
+        // Lazy type reference to avoid circular dependency issues
         expect(taskContent).toMatch(
-          /@XmlElement\('tags',\s*\{\s*type:\s*TagType,\s*array:\s*true,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
+          /@XmlElement\('tags',\s*\{\s*type:\s*\(\)\s*=>\s*TagType,\s*array:\s*true,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
         );
         expect(taskContent).toMatch(/tags\?:\s*TagType\[\];/);
       });
