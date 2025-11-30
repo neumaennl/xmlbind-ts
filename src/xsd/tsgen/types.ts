@@ -1,6 +1,23 @@
 import { localName } from "./utils";
 
 /**
+ * TypeScript primitive type names that don't require lazy type references.
+ * These types are always available and don't have circular dependency issues.
+ */
+export const TS_PRIMITIVE_TYPES = ["String", "Number", "Boolean"];
+
+/**
+ * Checks if a TypeScript type name is a primitive type.
+ * Primitive types don't need lazy type references since they're always available.
+ *
+ * @param tsType - The TypeScript type name
+ * @returns True if the type is a primitive TypeScript type
+ */
+export function isPrimitiveTypeName(tsType: string): boolean {
+  return TS_PRIMITIVE_TYPES.includes(tsType);
+}
+
+/**
  * Maps an XSD type to its corresponding TypeScript type.
  *
  * Handles all built-in XSD types (string, number, boolean, date, etc.)
