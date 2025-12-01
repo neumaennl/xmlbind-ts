@@ -1,6 +1,6 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
 import { localName, getDocumentation, formatTsDoc, getChildByLocalName } from "./utils";
-import { typeMapping, sanitizeTypeName } from "./types";
+import { typeMapping, sanitizeTypeName, isPrimitiveTypeName } from "./types";
 import { toPropertyName } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { handleInlineType } from "./element-types";
@@ -206,7 +206,12 @@ export function emitElementRef(
       /^[A-Za-z0-9_]+$/.test(tsType) &&
       !isSelfReference
     ) {
-      decoratorOpts.push(`type: ${tsType}`);
+      // Use lazy type reference (arrow function) for non-primitive types to avoid circular dependency issues
+      if (isPrimitiveTypeName(tsType)) {
+        decoratorOpts.push(`type: ${tsType}`);
+      } else {
+        decoratorOpts.push(`type: () => ${tsType}`);
+      }
     }
     if (isArray) decoratorOpts.push("array: true");
     if (nillable) decoratorOpts.push("nillable: true");

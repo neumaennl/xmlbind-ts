@@ -66,7 +66,8 @@ describe("XSD Generator", () => {
           const content = readFileSync(path.join(tmp, "Record.ts"), "utf8");
 
           expect(content).toContain("import { StatusEnum } from './enums'");
-          expect(content).toContain("type: StatusEnum");
+          // Lazy type reference to avoid circular dependency issues
+          expect(content).toContain("type: () => StatusEnum");
         });
       });
 
