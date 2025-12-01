@@ -25,8 +25,9 @@ describe("XSD Generator advanced features", () => {
       generateFromXsd(XSD, tmp);
       const person = readFileSync(path.join(tmp, "Person.ts"), "utf8");
       expect(person).toContain("import { Address } from './Address';");
+      // Lazy type reference to avoid circular dependency issues
       expect(person).toMatch(
-        /@XmlElement\('address',\s*\{\s*type:\s*Address,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
+        /@XmlElement\('address',\s*\{\s*type:\s*\(\)\s*=>\s*Address,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
       );
       expect(person).toMatch(/address!?:\s*Address;/);
     });

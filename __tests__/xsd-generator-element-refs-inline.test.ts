@@ -49,7 +49,8 @@ describe('XSD Generator - element ref inline type resolution', () => {
       expect(childContent).toMatch(/export class child extends childType/);
 
       // Container references childType as array with explicit type decorator option
-      expect(containerContent).toMatch(/@XmlElement\('child', \{ type: childType, array: true/);
+      // Lazy type reference to avoid circular dependency issues
+      expect(containerContent).toMatch(/@XmlElement\('child', \{ type: \(\) => childType, array: true/);
       expect(containerContent).toMatch(/child!: childType\[];/);
     });
   });

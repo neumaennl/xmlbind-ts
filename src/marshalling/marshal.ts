@@ -1,6 +1,7 @@
 import { XMLBuilder } from "fast-xml-parser";
 import { getMeta, getAllFields } from "../metadata/MetadataRegistry";
 import { serializePrimitive } from "../util/valueCasting";
+import { resolveType } from "../util/typeResolution";
 import { isPrimitiveCtor } from "./types";
 
 const builder = new XMLBuilder({
@@ -129,16 +130,17 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
     const v = val[nf.key];
     if (v !== undefined && v !== null)
       nestedNode[`@_${qName(nf.name, nf.namespace ?? undefined, ctx, true)}`] =
-        serializePrimitive(v, nf.type);
+        serializePrimitive(v, resolveType(nf.type));
   }
   for (const nf of nestedFields.filter((ff: any) => ff.kind === "element")) {
     const v = val[nf.key];
     if (v === undefined) continue;
     const key = qName(nf.name, nf.namespace ?? undefined, ctx, false);
+    const resolvedNfType = resolveType(nf.type);
     if (v === null) nestedNode[key] = { "@_xsi:nil": "true" };
     else if (nf.isArray && Array.isArray(v))
-      nestedNode[key] = v.map((el: any) => elementToXmlValue(el, nf.type, ctx));
-    else nestedNode[key] = elementToXmlValue(v, nf.type, ctx);
+      nestedNode[key] = v.map((el: any) => elementToXmlValue(el, resolvedNfType, ctx));
+    else nestedNode[key] = elementToXmlValue(v, resolvedNfType, ctx);
   }
   // wildcard attributes on nested objects
   const anyAttrF = nestedFields.find((ff: any) => ff.kind === "anyAttribute");
@@ -209,30 +211,33 @@ export function marshal(obj: any): string {
     const val = obj[f.key];
     if (val === undefined || val === null) continue;
     const key = qName(f.name, f.namespace ?? undefined, ctx, true);
-    node[`@_${key}`] = serializePrimitive(val, f.type);
+    node[`@_${key}`] = serializePrimitive(val, resolveType(f.type));
   }
 
   for (const f of fields.filter((f: any) => f.kind === "element")) {
     const val = obj[f.key];
     if (val === undefined) continue;
     const key = qName(f.name, f.namespace ?? undefined, ctx, false);
+    const resolvedFType = resolveType(f.type);
     if (val === null) {
       node[key] = { "@_xsi:nil": "true" };
       continue;
     }
     if (f.isArray && Array.isArray(val))
-      node[key] = val.map((el: any) => elementToXmlValue(el, f.type, ctx));
+      node[key] = val.map((el: any) => elementToXmlValue(el, resolvedFType, ctx));
     else {
-      node[key] = elementToXmlValue(val, f.type, ctx);
+      node[key] = elementToXmlValue(val, resolvedFType, ctx);
       // Merge child class-known prefixes into context for future siblings if not already present
-      const childMeta = getMeta(f.type);
-      if (childMeta?.prefixes) {
-        for (const [uri, pfx] of Object.entries(childMeta.prefixes)) {
-          if (!ctx.uriToPrefix.has(uri)) {
-            ctx.uriToPrefix.set(uri, pfx);
-            if (!ctx.declared.has(pfx)) {
-              node[`@_xmlns:${pfx}`] = uri;
-              ctx.declared.add(pfx);
+      if (resolvedFType) {
+        const childMeta = getMeta(resolvedFType);
+        if (childMeta?.prefixes) {
+          for (const [uri, pfx] of Object.entries(childMeta.prefixes)) {
+            if (!ctx.uriToPrefix.has(uri)) {
+              ctx.uriToPrefix.set(uri, pfx);
+              if (!ctx.declared.has(pfx)) {
+                node[`@_xmlns:${pfx}`] = uri;
+                ctx.declared.add(pfx);
+              }
             }
           }
         }
