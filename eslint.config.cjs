@@ -49,6 +49,17 @@ module.exports = defineConfig([
       ],
 
       "@typescript-eslint/no-explicit-any": "off",
+
+      "jest/expect-expect": [
+        "warn",
+        {
+          assertFunctionNames: [
+            "expect*",
+            "expectStringsOnConsecutiveLines",
+            "expectStringsOnSameLine",
+          ],
+        },
+      ],
     },
   },
   globalIgnores([

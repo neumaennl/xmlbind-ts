@@ -96,7 +96,11 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
       path.join(tmpDir, "Department.ts"),
       path.join(tmpDir, "Company.ts"),
     ];
-    for (const f of expectedFiles) expect(existsSync(f)).toBe(true);
+    /* eslint-disable jest/no-standalone-expect */
+    expectedFiles.forEach((f) => {
+      expect(existsSync(f)).toBe(true);
+    });
+    /* eslint-enable jest/no-standalone-expect */
 
     const loaded = loadGeneratedClasses(tmpDir, [
       "Address",
@@ -295,6 +299,7 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
       expect(restored.companyName).toBe("RoundTrip Co");
 
       // departments may not be restored as array if it's a single element
+      /* eslint-disable jest/no-conditional-expect */
       if (Array.isArray(restored.departments)) {
         expect(restored.departments.length).toBe(1);
         const restoredDept = restored.departments[0];
@@ -312,6 +317,7 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
         expect(restoredDept.contactEmail.address).toBe("it@roundtrip.com");
         expect(restoredDept.contactEmail.isPrimary).toBe(true);
       }
+      /* eslint-enable jest/no-conditional-expect */
     });
   });
 });

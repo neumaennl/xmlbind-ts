@@ -173,6 +173,7 @@ describe("XsdParser", () => {
 
       if (schema) {
         const prefix = getXsdPrefix(schema);
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(prefix).toBe("xsd");
       }
     });
