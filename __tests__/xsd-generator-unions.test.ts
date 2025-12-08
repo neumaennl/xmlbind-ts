@@ -79,7 +79,7 @@ describe("XSD Generator - Union Types", () => {
       const enumsPath = path.join(dir, "enums.ts");
       if (existsSync(enumsPath)) {
         const enumsContent = readFileSync(enumsPath, "utf-8");
-        // eslint-disable-next-line jest/no-conditional-expect
+        // eslint-disable-next-line jest/no-conditional-expect -- Conditional expect needed because enums.ts file is optional
         expect(enumsContent).not.toContain("enum allNNI");
       }
     });
