@@ -173,6 +173,7 @@ describe("XsdParser", () => {
 
       if (schema) {
         const prefix = getXsdPrefix(schema);
+        // eslint-disable-next-line jest/no-conditional-expect -- Conditional expect needed because schema can be null from getSchemaRoot
         expect(prefix).toBe("xsd");
       }
     });

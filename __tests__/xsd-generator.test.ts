@@ -471,6 +471,7 @@ describe("XSD Generator", () => {
         const fieldMatch = content.match(/@XmlElement\('field'.*?\)/s);
         expect(fieldMatch).toBeTruthy();
         if (fieldMatch) {
+          // eslint-disable-next-line jest/no-conditional-expect -- Conditional expect needed to validate regex match result before accessing it
           expect(fieldMatch[0]).not.toContain("namespace:");
         }
       });
