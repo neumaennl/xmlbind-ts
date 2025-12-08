@@ -4,7 +4,6 @@ import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir";
 
 describe("XSD Generator advanced features", () => {
-
   test("adds imports for referenced complex types", () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
@@ -54,7 +53,7 @@ describe("XSD Generator advanced features", () => {
       expect(book).toMatch(
         /@XmlElement\('title',\s*\{\s*type:\s*String,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
       );
-      expect(book).toMatch(/title!?: String/);
+      expect(book).toMatch(/title!?: string/);
     });
   });
 
@@ -149,10 +148,10 @@ describe("XSD Generator advanced features", () => {
         const content = readFileSync(path.join(tmp, "ShoeSize.ts"), "utf8");
 
         expect(content).toContain("@XmlText()");
-        expect(content).toContain("value?: Number;");
+        expect(content).toContain("value?: number;");
 
         expect(content).toContain("@XmlAttribute('country')");
-        expect(content).toContain("country?: String;");
+        expect(content).toContain("country?: string;");
       });
     });
 
@@ -174,7 +173,7 @@ describe("XSD Generator advanced features", () => {
         const content = readFileSync(path.join(tmp, "PostalCode.ts"), "utf8");
 
         expect(content).toContain("@XmlText()");
-        expect(content).toContain("value?: String;");
+        expect(content).toContain("value?: string;");
 
         expect(content).toContain("@XmlAttribute('region')");
       });
@@ -198,7 +197,7 @@ describe("XSD Generator advanced features", () => {
         const content = readFileSync(path.join(tmp, "SimpleValue.ts"), "utf8");
 
         expect(content).toContain("@XmlText()");
-        expect(content).toContain("value?: String;");
+        expect(content).toContain("value?: string;");
       });
     });
 
@@ -230,7 +229,7 @@ describe("XSD Generator advanced features", () => {
           path.join(tmp, "BooleanValue.ts"),
           "utf8"
         );
-        expect(boolContent).toContain("value?: Boolean;");
+        expect(boolContent).toContain("value?: boolean;");
 
         const dateContent = readFileSync(
           path.join(tmp, "DateValue.ts"),
@@ -324,7 +323,7 @@ describe("XSD Generator advanced features", () => {
         const content = readFileSync(path.join(tmp, "MixedContent.ts"), "utf8");
 
         expect(content).toContain("@XmlText()");
-        expect(content).toContain("value?: String;");
+        expect(content).toContain("value?: string;");
 
         expect(content).toContain("@XmlElement('bold'");
         expect(content).toContain("@XmlElement('italic'");
@@ -361,7 +360,7 @@ describe("XSD Generator advanced features", () => {
         expect(content).toContain("extends BaseType");
 
         expect(content).toContain("@XmlText()");
-        expect(content).toContain("value?: String;");
+        expect(content).toContain("value?: string;");
 
         expect(content).toContain("@XmlElement('description'");
       });
@@ -397,7 +396,7 @@ describe("XSD Generator advanced features", () => {
         expect(content).not.toContain("extends BaseType");
 
         expect(content).toContain("@XmlText()");
-        expect(content).toContain("value?: String;");
+        expect(content).toContain("value?: string;");
       });
     });
   });

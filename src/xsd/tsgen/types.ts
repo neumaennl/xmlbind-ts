@@ -4,7 +4,7 @@ import { localName } from "./utils";
  * TypeScript primitive type names that don't require lazy type references.
  * These types are always available and don't have circular dependency issues.
  */
-export const TS_PRIMITIVE_TYPES = ["String", "Number", "Boolean"];
+export const TS_PRIMITIVE_TYPES = ["string", "number", "boolean"];
 
 /**
  * Checks if a TypeScript type name is a primitive type.
@@ -18,6 +18,26 @@ export function isPrimitiveTypeName(tsType: string): boolean {
 }
 
 /**
+ * Converts a TypeScript primitive type to its JavaScript constructor for use in decorators.
+ * Decorators need the actual constructor function (String, Number, Boolean), not the TypeScript type.
+ *
+ * @param tsType - The TypeScript type name (string, number, boolean)
+ * @returns The JavaScript constructor name (String, Number, Boolean) or the original type if not primitive
+ */
+export function toDecoratorType(tsType: string): string {
+  switch (tsType) {
+    case "string":
+      return "String";
+    case "number":
+      return "Number";
+    case "boolean":
+      return "Boolean";
+    default:
+      return tsType;
+  }
+}
+
+/**
  * Maps an XSD type to its corresponding TypeScript type.
  *
  * Handles all built-in XSD types (string, number, boolean, date, etc.)
@@ -27,7 +47,7 @@ export function isPrimitiveTypeName(tsType: string): boolean {
  * @returns The corresponding TypeScript type name
  */
 export function typeMapping(xsdType?: string | null): string {
-  if (!xsdType) return "String";
+  if (!xsdType) return "string";
   const local = localName(xsdType)!;
   switch (local) {
     case "string":
@@ -43,9 +63,9 @@ export function typeMapping(xsdType?: string | null): string {
     case "anyURI":
     case "QName":
     case "NOTATION":
-      return "String";
+      return "string";
     case "boolean":
-      return "Boolean";
+      return "boolean";
     case "int":
     case "integer":
     case "long":
@@ -62,7 +82,7 @@ export function typeMapping(xsdType?: string | null): string {
     case "negativeInteger":
     case "nonPositiveInteger":
     case "nonNegativeInteger":
-      return "Number";
+      return "number";
     case "date":
     case "dateTime":
     case "time":
@@ -75,7 +95,7 @@ export function typeMapping(xsdType?: string | null): string {
       return "Date";
     case "hexBinary":
     case "base64Binary":
-      return "String";
+      return "string";
     case "anyType":
     case "anySimpleType":
       return "any";

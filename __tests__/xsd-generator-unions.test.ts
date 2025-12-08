@@ -3,8 +3,6 @@ import { readFileSync, existsSync } from "fs";
 import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir";
 
-
-
 describe("XSD Generator - Union Types", () => {
   test("generates type alias for union with memberTypes", () => {
     const xsd = `<?xml version="1.0"?>
@@ -28,7 +26,7 @@ describe("XSD Generator - Union Types", () => {
 
       // Should generate a union type
       expect(content).toContain("export type StringOrNumber");
-      expect(content).toContain("String | Number");
+      expect(content).toContain("string | number");
     });
   });
 
@@ -50,7 +48,7 @@ describe("XSD Generator - Union Types", () => {
       const typeFile = path.join(dir, "types.ts");
       const content = readFileSync(typeFile, "utf-8");
 
-      expect(content).toContain("String | Number | Boolean | Date");
+      expect(content).toContain("string | number | boolean | Date");
     });
   });
 
@@ -105,7 +103,7 @@ describe("XSD Generator - Union Types", () => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "UnionType.ts"), "utf8");
 
-        expect(content).toContain("String | Number | Boolean");
+        expect(content).toContain("string | number | boolean");
       });
     });
 
@@ -138,12 +136,9 @@ describe("XSD Generator - Union Types", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = readFileSync(
-          path.join(tmp, "ComplexUnion.ts"),
-          "utf8"
-        );
+        const content = readFileSync(path.join(tmp, "ComplexUnion.ts"), "utf8");
 
-        expect(content).toContain("String");
+        expect(content).toContain("string");
       });
     });
 
@@ -165,10 +160,7 @@ describe("XSD Generator - Union Types", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = readFileSync(
-          path.join(tmp, "EmptyUnion.ts"),
-          "utf8"
-        );
+        const content = readFileSync(path.join(tmp, "EmptyUnion.ts"), "utf8");
 
         expect(content).toContain("value!: any");
       });
@@ -201,7 +193,7 @@ describe("XSD Generator - Union Types", () => {
           "utf8"
         );
 
-        expect(content).toContain("value!: String");
+        expect(content).toContain("value!: string");
       });
     });
 
@@ -230,7 +222,7 @@ describe("XSD Generator - Union Types", () => {
           "utf8"
         );
 
-        expect(content).toContain("field!: String");
+        expect(content).toContain("field!: string");
       });
     });
   });

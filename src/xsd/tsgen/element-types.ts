@@ -1,6 +1,16 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getChildByLocalName, getChildrenByLocalName, formatTsDoc } from "./utils";
-import { typeMapping, sanitizeTypeName, isPrimitiveTypeName } from "./types";
+import {
+  localName,
+  getChildByLocalName,
+  getChildrenByLocalName,
+  formatTsDoc,
+} from "./utils";
+import {
+  typeMapping,
+  sanitizeTypeName,
+  isPrimitiveTypeName,
+  toDecoratorType,
+} from "./types";
 import { toClassName, toPropertyName } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { extractEnumValues, generateEnumCode } from "./enum";
@@ -33,9 +43,9 @@ export function resolveElementType(
     const tsType = typeMapping(typeAttr);
     // Only add dependency if the resolved type is actually the custom type (not a built-in)
     if (
-      tsType !== "String" &&
-      tsType !== "Number" &&
-      tsType !== "Boolean" &&
+      tsType !== "string" &&
+      tsType !== "number" &&
+      tsType !== "boolean" &&
       tsType === sanitized
     ) {
       // Don't add self-references to deps
@@ -193,12 +203,14 @@ export function emitElementDecorator(
   if (
     tsType &&
     tsType !== "any" &&
+    tsType !== "unknown" &&
     /^[A-Za-z0-9_]+$/.test(tsType) &&
     !isSelfReference
   ) {
     // Use lazy type reference (arrow function) for non-primitive types to avoid circular dependency issues
     if (isPrimitiveTypeName(tsType)) {
-      decoratorOpts.push(`type: ${tsType}`);
+      // Convert TypeScript primitive to JavaScript constructor for decorator
+      decoratorOpts.push(`type: ${toDecoratorType(tsType)}`);
     } else {
       decoratorOpts.push(`type: () => ${tsType}`);
     }

@@ -143,9 +143,6 @@ describe("Manual Verification - Undefined Types Fix", () => {
     expect(result.untypedElement).toBeDefined();
     expect(typeof result.untypedElement).toBe("object");
     expect(result.typedArray).toEqual(["First", "Second"]);
-    expect(result.untypedArray).toEqual([
-      "First untyped",
-      "Second untyped",
-    ]);
+    expect(result.untypedArray).toEqual(["First untyped", "Second untyped"]);
   });
 });

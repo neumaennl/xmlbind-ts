@@ -37,7 +37,7 @@ describe("namespace prefixes honoring schema-defined names", () => {
 
     const xml = marshal(r);
     // Verify that namespace attributes appear on the same line as the opening tag
-    const firstLine = xml.split('\n')[0];
+    const firstLine = xml.split("\n")[0];
     expectStringsOnSameLine(firstLine, [
       '<Root xmlns="http://a.example/ns"',
       'xmlns:b="http://b.example/ns"',

@@ -1,5 +1,10 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getChildByLocalName, getDocumentation, formatTsDoc } from "./utils";
+import {
+  localName,
+  getChildByLocalName,
+  getDocumentation,
+  formatTsDoc,
+} from "./utils";
 import { typeMapping, sanitizeTypeName, isBuiltinType } from "./types";
 import { extractEnumValues, generateEnumCode } from "./enum";
 import { toClassName } from "./codegen";
@@ -57,7 +62,10 @@ export function processTopLevelElements(
           state.schemaContext.complexTypesMap.has(underlyingName) ||
           state.schemaContext.simpleTypesMap.has(underlyingName)
         ) {
-          underlyingName = toClassName(underlyingBase + "_" + uniquifier, state.reservedWords);
+          underlyingName = toClassName(
+            underlyingBase + "_" + uniquifier,
+            state.reservedWords
+          );
           uniquifier++;
         }
         ensureClassNoRoot(underlyingName, inlineCT as any, state);
@@ -265,7 +273,7 @@ function processElementWithInlineSimpleType(
       tsType = typeMapping(base || "string");
     }
   } else {
-    tsType = "any";
+    tsType = "unknown";
   }
 
   const unit: GenUnit = {

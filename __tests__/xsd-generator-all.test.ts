@@ -3,8 +3,6 @@ import { readFileSync, existsSync } from "fs";
 import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir";
 
-
-
 describe("XSD Generator - xs:all Compositor", () => {
   test("generates class with xs:all elements", () => {
     const xsd = `<?xml version="1.0"?>
@@ -34,10 +32,10 @@ describe("XSD Generator - xs:all Compositor", () => {
       expect(content).toContain("@XmlElement('lastName'");
       expect(content).toContain("@XmlElement('email'");
 
-  // Elements in xs:all are required by default -> non-optional
-  expect(content).toMatch(/firstName!?:\s*String/);
-  expect(content).toMatch(/lastName!?:\s*String/);
-  expect(content).toMatch(/email!?:\s*String/);
+      // Elements in xs:all are required by default -> non-optional
+      expect(content).toMatch(/firstName!?:\s*string/);
+      expect(content).toMatch(/lastName!?:\s*string/);
+      expect(content).toMatch(/email!?:\s*string/);
     });
   });
 
@@ -63,9 +61,9 @@ describe("XSD Generator - xs:all Compositor", () => {
       const content = readFileSync(contactFile, "utf-8");
 
       // All elements should be optional (marked with ?)
-      expect(content).toContain("phone?: String");
-      expect(content).toContain("email?: String");
-      expect(content).toContain("address?: String");
+      expect(content).toContain("phone?: string");
+      expect(content).toContain("email?: string");
+      expect(content).toContain("address?: string");
     });
   });
 

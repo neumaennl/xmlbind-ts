@@ -13,9 +13,7 @@ import {
   collectExcludedAttributesInRestrictionChain,
   emitAttrsExcludingProhibited,
 } from "./restriction-helpers";
-import {
-  emitBaseAttributes,
-} from "./base-attribute-helpers";
+import { emitBaseAttributes } from "./base-attribute-helpers";
 
 /**
  * Ensures a class is generated for a given XSD element, creating it if it doesn't exist.
@@ -136,7 +134,9 @@ export function ensureClassNoRoot(
   }
   lines.push(`export class ${name} {`);
   emitAttrs(el, lines, unit, state);
-  emitElements(el, lines, unit, state, (n, e, x) => ensureClass(n, e, state, x));
+  emitElements(el, lines, unit, state, (n, e, x) =>
+    ensureClass(n, e, state, x)
+  );
   if (mixed) emitMixedText(lines);
   lines.push("}");
   return unit;
@@ -189,7 +189,7 @@ function handleSimpleContent(
   const ext =
     getChildByLocalName(simpleContent as any, "extension", state.xsdPrefix) ||
     getChildByLocalName(simpleContent as any, "restriction", state.xsdPrefix);
-  let textTs = "String";
+  let textTs = "string";
   if (ext) {
     const base = (ext as XmldomElement).getAttribute("base");
     if (base) textTs = typeMapping(base);
@@ -331,8 +331,6 @@ function handleRestriction(
   lines.push("}");
 }
 
-
-
 /**
  * Emits a text content property for mixed content elements.
  * Mixed content allows elements to contain both text and child elements.
@@ -341,8 +339,6 @@ function handleRestriction(
  */
 function emitMixedText(lines: string[]): void {
   lines.push(`  @XmlText()`);
-  lines.push(`  value?: String;`);
+  lines.push(`  value?: string;`);
   lines.push("");
 }
-
-

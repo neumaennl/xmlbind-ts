@@ -30,9 +30,9 @@ export function emitSingleAttribute(
   // Track enum dependencies for attributes
   if (
     at &&
-    tsType !== "String" &&
-    tsType !== "Number" &&
-    tsType !== "Boolean"
+    tsType !== "string" &&
+    tsType !== "number" &&
+    tsType !== "boolean"
   ) {
     const local = localName(at);
     const sanitized = sanitizeTypeName(local!);

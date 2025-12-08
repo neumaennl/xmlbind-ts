@@ -84,9 +84,9 @@ function processUnion(
       // If the mapped type is the same as the member type, it's a custom type that needs importing
       if (
         mapped === sanitizeTypeName(memberType) &&
-        mapped !== "String" &&
-        mapped !== "Number" &&
-        mapped !== "Boolean"
+        mapped !== "string" &&
+        mapped !== "number" &&
+        mapped !== "boolean"
       ) {
         imports.push(`import { ${mapped} } from './${mapped}';`);
       }
@@ -167,9 +167,9 @@ function processRestriction(
     if (
       baseLocal &&
       tsType === sanitizeTypeName(baseLocal) &&
-      tsType !== "String" &&
-      tsType !== "Number" &&
-      tsType !== "Boolean"
+      tsType !== "string" &&
+      tsType !== "number" &&
+      tsType !== "boolean"
     ) {
       importLine = `import { ${tsType} } from './${tsType}';\n`;
     }

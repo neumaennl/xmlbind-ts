@@ -1,12 +1,22 @@
 /**
  * Tests for Stage 3 decorator support (without experimentalDecorators flag)
- * 
+ *
  * This test file verifies that decorators work correctly with both:
  * - Legacy decorators (with experimentalDecorators: true)
  * - Stage 3 decorators (without experimentalDecorators)
  */
 
-import { XmlRoot, XmlElement, XmlAttribute, XmlAnyAttribute, XmlAnyElement, XmlText, XmlEnum, marshal, getMeta } from "../src";
+import {
+  XmlRoot,
+  XmlElement,
+  XmlAttribute,
+  XmlAnyAttribute,
+  XmlAnyElement,
+  XmlText,
+  XmlEnum,
+  marshal,
+  getMeta,
+} from "../src";
 import { expectStringsOnSameLine } from "./test-utils";
 
 enum TestEnum {
@@ -45,19 +55,19 @@ describe("Stage 3 Decorators Support", () => {
     const meta = getMeta(ComplexTest);
     expect(meta).toBeDefined();
     expect(meta?.rootName).toBe("ComplexTest");
-    
+
     const fields = meta?.fields || [];
     expect(fields.length).toBeGreaterThan(0);
-    
+
     // Verify each field type is registered
     const idField = fields.find((f: any) => f.key === "id");
     expect(idField).toBeDefined();
     expect((idField as any)?.kind).toBe("attribute");
-    
+
     const nameField = fields.find((f: any) => f.key === "name");
     expect(nameField).toBeDefined();
     expect((nameField as any)?.kind).toBe("element");
-    
+
     const anyAttrField = fields.find((f: any) => f.key === "anyAttributes");
     expect(anyAttrField).toBeDefined();
     expect((anyAttrField as any)?.kind).toBe("anyAttribute");
@@ -105,7 +115,7 @@ describe("Stage 3 Decorators Support", () => {
 
     const xml = marshal(obj);
     // Verify that attributes appear on the same line as the opening tag
-    const firstLine = xml.split('\n')[0];
+    const firstLine = xml.split("\n")[0];
     expectStringsOnSameLine(firstLine, [
       "<MarshalTest",
       'id="123"',
@@ -153,12 +163,12 @@ describe("Stage 3 Decorators Support", () => {
     const xml2 = marshal(instance2);
 
     // Verify attributes are on the opening tag line
-    const firstLine1 = xml1.split('\n')[0];
-    expectStringsOnSameLine(firstLine1, ['<MultiInstance', 'id="1"']);
+    const firstLine1 = xml1.split("\n")[0];
+    expectStringsOnSameLine(firstLine1, ["<MultiInstance", 'id="1"']);
     expect(xml1).toContain("<value>first</value>");
 
-    const firstLine2 = xml2.split('\n')[0];
-    expectStringsOnSameLine(firstLine2, ['<MultiInstance', 'id="2"']);
+    const firstLine2 = xml2.split("\n")[0];
+    expectStringsOnSameLine(firstLine2, ["<MultiInstance", 'id="2"']);
     expect(xml2).toContain("<value>second</value>");
   });
 });

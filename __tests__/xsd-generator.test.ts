@@ -6,7 +6,6 @@ import { withTmpDir } from "./test-utils/temp-dir";
 const SAMPLE_XSD = `<?xml version="1.0" encoding="utf-8"?>\n<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">\n  <xsd:complexType name="Person">\n    <xsd:sequence>\n      <xsd:element name="name" type="xsd:string"/>\n      <xsd:element name="age" type="xsd:int"/>\n      <xsd:element name="alias" type="xsd:string" maxOccurs="unbounded" minOccurs="0"/>\n    </xsd:sequence>\n    <xsd:attribute name="id" type="xsd:int"/>\n  </xsd:complexType>\n</xsd:schema>`;
 
 describe("XSD Generator", () => {
-
   test("xsd generator applies correct decorators to class members", () => {
     withTmpDir((tmpDir) => {
       generateFromXsd(SAMPLE_XSD, tmpDir);
@@ -22,20 +21,20 @@ describe("XSD Generator", () => {
       expect(gen).toContain("namespace: 'http://example.com/ns'");
 
       // Check @XmlAttribute decorator for id
-      expect(gen).toMatch(/@XmlAttribute\('id'\)\s+id\?: Number/);
+      expect(gen).toMatch(/@XmlAttribute\('id'\)\s+id\?: number/);
 
       // Check @XmlElement decorators for required elements (now non-optional)
       expect(gen).toMatch(
-        /@XmlElement\('name',\s*\{\s*type:\s*String,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+name!?: String/
+        /@XmlElement\('name',\s*\{\s*type:\s*String,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+name!?: string/
       );
 
       expect(gen).toMatch(
-        /@XmlElement\('age',\s*\{\s*type:\s*Number,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+age!?: Number/
+        /@XmlElement\('age',\s*\{\s*type:\s*Number,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+age!?: number/
       );
 
       // Check @XmlElement decorator with array option for alias
       expect(gen).toMatch(
-        /@XmlElement\('alias',\s*\{\s*type:\s*String,\s*array:\s*true,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+alias\?: String\[\]/
+        /@XmlElement\('alias',\s*\{\s*type:\s*String,\s*array:\s*true,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)\s+alias\?: string\[\]/
       );
     }, "xmlbind-ts-");
   });
@@ -252,9 +251,9 @@ describe("XSD Generator", () => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "BasicTypes.ts"), "utf8");
 
-          expect(content).toContain("text!: String");
-          expect(content).toContain("number_!: Number");
-          expect(content).toContain("flag!: Boolean");
+          expect(content).toContain("text!: string");
+          expect(content).toContain("number_!: number");
+          expect(content).toContain("flag!: boolean");
           expect(content).toContain("timestamp!: Date");
         });
       });
@@ -313,8 +312,8 @@ describe("XSD Generator", () => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "NoTypeAttr.ts"), "utf8");
 
-          // Attribute without type should default to String
-          expect(content).toContain("myAttr?: String");
+          // Attribute without type should default to string
+          expect(content).toContain("myAttr?: string");
         });
       });
 
@@ -397,7 +396,7 @@ describe("XSD Generator", () => {
           // RestrictedString should be a type alias in types.ts
           const typesContent = readFileSync(path.join(tmp, "types.ts"), "utf8");
           expect(typesContent).toContain(
-            "export type RestrictedString = String"
+            "export type RestrictedString = string"
           );
         });
       });

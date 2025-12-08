@@ -20,26 +20,32 @@ describe("XSD Generator requiredness", () => {
   test("emits non-optional properties for required members", () => {
     const tmpDir = mkdtempSync(path.join(os.tmpdir(), "xmlbind-ts-"));
     try {
-  generateFromXsd(SAMPLE_XSD, tmpDir);
+      generateFromXsd(SAMPLE_XSD, tmpDir);
       const target = path.join(tmpDir, "Sample.ts");
       const gen = readFileSync(target, "utf8");
 
       // Required attribute becomes non-optional
-      expect(gen).toMatch(/@XmlAttribute\('id'\)[\s\S]*?\bid!?: Number;/);
+      expect(gen).toMatch(/@XmlAttribute\('id'\)[\s\S]*?\bid!?: number;/);
 
       // Optional attribute stays optional
-      expect(gen).toMatch(/@XmlAttribute\('note'\)[\s\S]*?\bnote\?: String;/);
+      expect(gen).toMatch(/@XmlAttribute\('note'\)[\s\S]*?\bnote\?: string;/);
 
       // Required element (default minOccurs=1) becomes non-optional
-      expect(gen).toMatch(/@XmlElement\('name',[^)]*\)[\s\S]*?\bname!?: String;/);
+      expect(gen).toMatch(
+        /@XmlElement\('name',[^)]*\)[\s\S]*?\bname!?: string;/
+      );
 
       // Optional element (minOccurs=0) stays optional
-      expect(gen).toMatch(/@XmlElement\('alias',[^)]*\)[\s\S]*?\balias\?: String;/);
+      expect(gen).toMatch(
+        /@XmlElement\('alias',[^)]*\)[\s\S]*?\balias\?: string;/
+      );
 
       // Required array element becomes non-optional but remains an array
-      expect(gen).toMatch(/@XmlElement\('tags',[^)]*array:\s*true[\s\S]*\)[\s\S]*?\btags!?: String\[\];/);
+      expect(gen).toMatch(
+        /@XmlElement\('tags',[^)]*array:\s*true[\s\S]*\)[\s\S]*?\btags!?: string\[\];/
+      );
 
-  // (No choice in this sample)
+      // (No choice in this sample)
     } finally {
       try {
         rmSync(tmpDir, { recursive: true, force: true });

@@ -430,7 +430,7 @@ export function emitElement(
     state.schemaContext.elementFormDefault
   );
 
-  let tsType = "any";
+  let tsType = "unknown";
 
   if (typeAttr) {
     tsType = resolveElementType(typeAttr, unit, state);
