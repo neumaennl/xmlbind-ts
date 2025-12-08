@@ -2,6 +2,7 @@ const { defineConfig, globalIgnores } = require("eslint/config");
 
 const tsParser = require("@typescript-eslint/parser");
 const typescriptEslint = require("@typescript-eslint/eslint-plugin");
+const jestPlugin = require("eslint-plugin-jest");
 const globals = require("globals");
 const js = require("@eslint/js");
 
@@ -28,11 +29,13 @@ module.exports = defineConfig([
 
     plugins: {
       "@typescript-eslint": typescriptEslint,
+      jest: jestPlugin,
     },
 
     extends: compat.extends(
       "eslint:recommended",
-      "plugin:@typescript-eslint/recommended"
+      "plugin:@typescript-eslint/recommended",
+      "plugin:jest/recommended"
     ),
 
     rules: {
