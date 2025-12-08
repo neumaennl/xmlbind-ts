@@ -81,13 +81,11 @@ describe("Decorators", () => {
       const returned = decorator({});
 
       expect(typeof returned).toBe("function");
-      if (typeof returned === "function") {
-        returned(TestClass.prototype, "testProp");
+      (returned as any)(TestClass.prototype, "testProp");
 
-        const meta = getMeta(TestClass);
-        expect(meta).toBeDefined();
-        expect(meta?.fields.length).toBeGreaterThan(0);
-      }
+      const meta = getMeta(TestClass);
+      expect(meta).toBeDefined();
+      expect(meta?.fields.length).toBeGreaterThan(0);
     });
 
     it("should handle namespace in legacy path", () => {
@@ -101,13 +99,11 @@ describe("Decorators", () => {
       const returned = decorator({});
 
       expect(typeof returned).toBe("function");
-      if (typeof returned === "function") {
-        returned(TestClass.prototype, "testProp");
+      (returned as any)(TestClass.prototype, "testProp");
 
-        const meta = getMeta(TestClass);
-        const field = meta?.fields.find((f: any) => f.key === "testProp");
-        expect((field as any)?.namespace).toBe("http://test.com");
-      }
+      const meta = getMeta(TestClass);
+      const field = meta?.fields.find((f: any) => f.key === "testProp");
+      expect((field as any)?.namespace).toBe("http://test.com");
     });
   });
 
@@ -184,13 +180,11 @@ describe("Decorators", () => {
       const returned = decorator({});
 
       expect(typeof returned).toBe("function");
-      if (typeof returned === "function") {
-        returned(TestClass.prototype, "testProp");
+      (returned as any)(TestClass.prototype, "testProp");
 
-        const meta = getMeta(TestClass);
-        expect(meta).toBeDefined();
-        expect(meta?.fields.length).toBeGreaterThan(0);
-      }
+      const meta = getMeta(TestClass);
+      expect(meta).toBeDefined();
+      expect(meta?.fields.length).toBeGreaterThan(0);
     });
 
     it("should handle options in legacy path", () => {
@@ -206,13 +200,11 @@ describe("Decorators", () => {
       const returned = decorator({});
 
       expect(typeof returned).toBe("function");
-      if (typeof returned === "function") {
-        returned(TestClass.prototype, "testProp");
+      (returned as any)(TestClass.prototype, "testProp");
 
-        const meta = getMeta(TestClass);
-        const field = meta?.fields.find((f: any) => f.key === "testProp");
-        expect((field as any)?.namespace).toBe("http://test.com");
-      }
+      const meta = getMeta(TestClass);
+      const field = meta?.fields.find((f: any) => f.key === "testProp");
+      expect((field as any)?.namespace).toBe("http://test.com");
     });
   });
 
@@ -258,13 +250,12 @@ describe("Decorators", () => {
       const decorator = XmlRoot("rootName");
       const returned = decorator({});
 
-      if (typeof returned === "function") {
-        class TestClass {}
-        returned(TestClass);
+      expect(typeof returned).toBe("function");
+      class TestClass {}
+      (returned as any)(TestClass);
 
-        const meta = getMeta(TestClass);
-        expect(meta).toBeDefined();
-      }
+      const meta = getMeta(TestClass);
+      expect(meta).toBeDefined();
     });
 
     it("should handle options in legacy path", () => {
@@ -273,13 +264,12 @@ describe("Decorators", () => {
       });
       const returned = decorator({});
 
-      if (typeof returned === "function") {
-        class TestClass {}
-        returned(TestClass);
+      expect(typeof returned).toBe("function");
+      class TestClass {}
+      (returned as any)(TestClass);
 
-        const meta = getMeta(TestClass);
-        expect((meta as any)?.namespace).toBe("http://test.com");
-      }
+      const meta = getMeta(TestClass);
+      expect((meta as any)?.namespace).toBe("http://test.com");
     });
   });
 
@@ -319,13 +309,11 @@ describe("Decorators", () => {
       const returned = decorator({});
 
       expect(typeof returned).toBe("function");
-      if (typeof returned === "function") {
-        returned(TestClass.prototype, "textProp");
+      (returned as any)(TestClass.prototype, "textProp");
 
-        const meta = getMeta(TestClass);
-        const field = meta?.fields.find((f: any) => f.key === "textProp");
-        expect((field as any)?.kind).toBe("text");
-      }
+      const meta = getMeta(TestClass);
+      const field = meta?.fields.find((f: any) => f.key === "textProp");
+      expect((field as any)?.kind).toBe("text");
     });
   });
 
@@ -364,13 +352,11 @@ describe("Decorators", () => {
       const returned = decorator({});
 
       expect(typeof returned).toBe("function");
-      if (typeof returned === "function") {
-        returned(TestClass.prototype, "anyElems");
+      (returned as any)(TestClass.prototype, "anyElems");
 
-        const meta = getMeta(TestClass);
-        const field = meta?.fields.find((f: any) => f.key === "anyElems");
-        expect((field as any)?.kind).toBe("anyElement");
-      }
+      const meta = getMeta(TestClass);
+      const field = meta?.fields.find((f: any) => f.key === "anyElems");
+      expect((field as any)?.kind).toBe("anyElement");
     });
   });
 
@@ -409,13 +395,11 @@ describe("Decorators", () => {
       const returned = decorator({});
 
       expect(typeof returned).toBe("function");
-      if (typeof returned === "function") {
-        returned(TestClass.prototype, "anyAttrs");
+      (returned as any)(TestClass.prototype, "anyAttrs");
 
-        const meta = getMeta(TestClass);
-        const field = meta?.fields.find((f: any) => f.key === "anyAttrs");
-        expect((field as any)?.kind).toBe("anyAttribute");
-      }
+      const meta = getMeta(TestClass);
+      const field = meta?.fields.find((f: any) => f.key === "anyAttrs");
+      expect((field as any)?.kind).toBe("anyAttribute");
     });
   });
 
@@ -470,21 +454,18 @@ describe("Decorators", () => {
 
       const elemDecorator = XmlElement("enumProp");
       const elemReturned = elemDecorator({});
-      if (typeof elemReturned === "function") {
-        elemReturned(TestClass.prototype, "enumProp");
-      }
+      expect(typeof elemReturned).toBe("function");
+      (elemReturned as any)(TestClass.prototype, "enumProp");
 
       const decorator = XmlEnum(TestEnum);
       const returned = decorator({});
 
       expect(typeof returned).toBe("function");
-      if (typeof returned === "function") {
-        returned(TestClass.prototype, "enumProp");
+      (returned as any)(TestClass.prototype, "enumProp");
 
-        const meta = getMeta(TestClass);
-        const field = meta?.fields.find((f: any) => f.key === "enumProp");
-        expect((field as any)?.enumType).toBe(TestEnum);
-      }
+      const meta = getMeta(TestClass);
+      const field = meta?.fields.find((f: any) => f.key === "enumProp");
+      expect((field as any)?.enumType).toBe(TestEnum);
     });
 
     it("should handle XmlEnum legacy path when field exists", () => {
@@ -615,12 +596,10 @@ describe("Decorators", () => {
       const returned = decorator({});
 
       expect(typeof returned).toBe("function");
-      if (typeof returned === "function") {
-        returned(TestClass.prototype, symbolKey);
+      (returned as any)(TestClass.prototype, symbolKey);
 
-        const meta = getMeta(TestClass);
-        expect(meta).toBeDefined();
-      }
+      const meta = getMeta(TestClass);
+      expect(meta).toBeDefined();
     });
   });
 });
