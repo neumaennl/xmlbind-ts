@@ -1,6 +1,5 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
 import { directChildren } from "./xmlutils";
-import { getChildByLocalName } from "./utils";
 import { extractEnumValues } from "./enum";
 
 /**
@@ -66,7 +65,11 @@ export function indexSchema(
     const name = st.getAttribute("name");
     if (name) {
       simpleTypesMap.set(name, st);
-      const restriction = getChildByLocalName(st, "restriction", xsdPrefix);
+      const restriction = directChildren(
+        st as any,
+        ["restriction"],
+        xsdPrefix
+      )[0];
       if (restriction) {
         const enumValues = extractEnumValues(
           restriction as XmldomElement,

@@ -52,6 +52,38 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
+  test("preserves literal members from inline enumerations", () => {
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="allNNI">
+    <xs:union memberTypes="xs:nonNegativeInteger">
+      <xs:simpleType>
+        <xs:restriction base="xs:NMTOKEN">
+          <xs:enumeration value="unbounded"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
+  </xs:simpleType>
+
+  <xs:element name="maxOccurs" type="allNNI"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+
+      const typesContent = readFileSync(path.join(dir, "types.ts"), "utf-8");
+      expect(typesContent).toContain(
+        'export type allNNI = number | "unbounded"'
+      );
+
+      const enumsPath = path.join(dir, "enums.ts");
+      if (existsSync(enumsPath)) {
+        const enumsContent = readFileSync(enumsPath, "utf-8");
+        expect(enumsContent).not.toContain("enum allNNI");
+      }
+    });
+  });
+
   test("handles union with inline simpleType members", () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
