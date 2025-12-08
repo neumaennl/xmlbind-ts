@@ -4,10 +4,32 @@ import {
   getChildByLocalName,
   getChildrenByLocalName,
 } from "./utils";
-import { typeMapping, sanitizeTypeName } from "./types";
-import { generateEnumCode } from "./enum";
+import { typeMapping, sanitizeTypeName, isPrimitiveTypeName } from "./types";
+import { generateEnumCode, extractEnumValues } from "./enum";
 import { toClassName } from "./codegen";
 import type { SchemaContext } from "./schema";
+
+/**
+ * Adds an import statement for a referenced enum type when needed.
+ *
+ * Type aliases are consolidated into a single file, so only enums require
+ * explicit imports from the shared enums file.
+ *
+ * @param typeName - The referenced type name
+ * @param generatedEnums - Map containing generated enum and type alias code
+ * @param imports - Mutable array collecting import statements
+ */
+function addEnumImportIfNeeded(
+  typeName: string,
+  generatedEnums: Map<string, string>,
+  imports: string[]
+): void {
+  if (isPrimitiveTypeName(typeName)) return;
+  const generated = generatedEnums.get(typeName);
+  if (generated && /export\s+enum/.test(generated)) {
+    imports.push(`import { ${typeName} } from './enums';`);
+  }
+}
 
 /**
  * Processes all named simple types in the schema, generating unions and lists.
@@ -69,36 +91,70 @@ function processUnion(
   generatedEnums: Map<string, string>
 ): void {
   const memberTypesAttr = union.getAttribute("memberTypes");
-  let memberTypes: string[] = [];
+  const memberTypes: string[] = [];
   const imports: string[] = [];
 
   if (memberTypesAttr) {
-    memberTypes = memberTypesAttr
+    const memberTypesFromAttr = memberTypesAttr
       .split(/\s+/)
       .map(localName)
       .filter((t): t is string => !!t);
 
-    // Collect imports for non-builtin types
-    for (const memberType of memberTypes) {
+    for (const memberType of memberTypesFromAttr) {
       const mapped = typeMapping(memberType);
-      // If the mapped type is the same as the member type, it's a custom type that needs importing
-      if (
-        mapped === sanitizeTypeName(memberType) &&
-        mapped !== "string" &&
-        mapped !== "number" &&
-        mapped !== "boolean"
-      ) {
-        imports.push(`import { ${mapped} } from './${mapped}';`);
-      }
+      addEnumImportIfNeeded(mapped, generatedEnums, imports);
+      memberTypes.push(mapped);
     }
   }
 
   const inlineMembers = getChildrenByLocalName(union, "simpleType", xsdPrefix);
-  memberTypes.push(...inlineMembers.map(() => "string"));
+
+  for (const inline of inlineMembers) {
+    const restriction = getChildByLocalName(inline, "restriction", xsdPrefix);
+    if (restriction) {
+      const enumValues = extractEnumValues(restriction, xsdPrefix);
+      if (enumValues.length > 0) {
+        for (const value of enumValues) {
+          memberTypes.push(JSON.stringify(value));
+        }
+        continue;
+      }
+
+      const base = restriction.getAttribute("base");
+      if (base) {
+        const mappedBase = typeMapping(base);
+
+        addEnumImportIfNeeded(mappedBase, generatedEnums, imports);
+
+        memberTypes.push(mappedBase);
+        continue;
+      }
+    }
+
+    const list = getChildByLocalName(inline, "list", xsdPrefix);
+    if (list) {
+      const itemType = list.getAttribute("itemType");
+      if (itemType) {
+        const mappedItemType = typeMapping(itemType);
+
+        addEnumImportIfNeeded(mappedItemType, generatedEnums, imports);
+
+        memberTypes.push(`${mappedItemType}[]`);
+      } else {
+        memberTypes.push("string[]");
+      }
+      continue;
+    }
+
+    memberTypes.push("string");
+  }
 
   if (memberTypes.length > 0) {
-    const tsType = memberTypes.map(typeMapping).join(" | ");
-    const importLines = imports.length > 0 ? imports.join("\n") + "\n" : "";
+    const uniqueMemberTypes = Array.from(new Set(memberTypes));
+    const uniqueImports = Array.from(new Set(imports));
+    const tsType = uniqueMemberTypes.join(" | ");
+    const importLines =
+      uniqueImports.length > 0 ? uniqueImports.join("\n") + "\n" : "";
     generatedEnums.set(
       typeName,
       `${importLines}export type ${typeName} = ${tsType};`
@@ -123,18 +179,12 @@ function processList(
     const itemLocal = localName(itemType);
     const tsType = typeMapping(itemType);
 
-    // Add import if it's a custom type
-    let importLine = "";
-    if (
-      itemLocal &&
-      tsType === sanitizeTypeName(itemLocal) &&
-      tsType !== "String" &&
-      tsType !== "Number" &&
-      tsType !== "Boolean"
-    ) {
-      importLine = `import { ${tsType} } from './${tsType}';\n`;
+    const imports: string[] = [];
+    if (itemLocal && tsType === sanitizeTypeName(itemLocal)) {
+      addEnumImportIfNeeded(tsType, generatedEnums, imports);
     }
 
+    const importLine = imports.length > 0 ? `${imports.join("\n")}\n` : "";
     generatedEnums.set(
       typeName,
       `${importLine}export type ${typeName} = ${tsType}[];`
@@ -162,18 +212,12 @@ function processRestriction(
     const baseLocal = localName(base);
     const tsType = typeMapping(base);
 
-    // Add import if it's a custom type
-    let importLine = "";
-    if (
-      baseLocal &&
-      tsType === sanitizeTypeName(baseLocal) &&
-      tsType !== "string" &&
-      tsType !== "number" &&
-      tsType !== "boolean"
-    ) {
-      importLine = `import { ${tsType} } from './${tsType}';\n`;
+    const imports: string[] = [];
+    if (baseLocal && tsType === sanitizeTypeName(baseLocal)) {
+      addEnumImportIfNeeded(tsType, generatedEnums, imports);
     }
 
+    const importLine = imports.length > 0 ? `${imports.join("\n")}\n` : "";
     generatedEnums.set(
       typeName,
       `${importLine}export type ${typeName} = ${tsType};`
