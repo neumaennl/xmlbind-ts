@@ -3,8 +3,6 @@ import { readFileSync, existsSync } from "fs";
 import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir";
 
-
-
 describe("XSD Generator - List Types", () => {
   test("generates array type for list with itemType", () => {
     const xsd = `<?xml version="1.0"?>
@@ -28,7 +26,7 @@ describe("XSD Generator - List Types", () => {
 
       // Should generate an array type
       expect(content).toContain("export type StringList");
-      expect(content).toContain("String[]");
+      expect(content).toContain("string[]");
     });
   });
 
@@ -50,7 +48,7 @@ describe("XSD Generator - List Types", () => {
       const typeFile = path.join(dir, "types.ts");
       const content = readFileSync(typeFile, "utf-8");
 
-      expect(content).toContain("Number[]");
+      expect(content).toContain("number[]");
     });
   });
 

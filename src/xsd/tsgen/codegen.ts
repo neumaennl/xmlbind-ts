@@ -93,7 +93,7 @@ export function resolveType(
   typeAttr: string | null | undefined,
   state: GeneratorState
 ): string {
-  if (!typeAttr) return "String";
+  if (!typeAttr) return "string";
 
   const local = localName(typeAttr)!;
 

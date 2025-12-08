@@ -66,10 +66,10 @@ describe("CLI tool (xsd2ts)", () => {
     // Verify the content of the generated file
     const generatedContent = readFileSync(outputFile, "utf8");
     expect(generatedContent).toContain("export class Book");
-    expect(generatedContent).toMatch(/title.*: String|title\?: String/);
-    expect(generatedContent).toMatch(/author.*: String|author\?: String/);
-    expect(generatedContent).toMatch(/year.*: Number|year\?: Number/);
-    expect(generatedContent).toMatch(/isbn.*: String|isbn\?: String/);
+    expect(generatedContent).toMatch(/title[!?]: string/);
+    expect(generatedContent).toMatch(/author[!?]: string/);
+    expect(generatedContent).toMatch(/year[!?]: number/);
+    expect(generatedContent).toMatch(/isbn[!?]: string/);
 
     // Verify decorators are present
     expect(generatedContent).toContain("@XmlRoot");

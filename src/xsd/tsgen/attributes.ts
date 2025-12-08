@@ -1,5 +1,10 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getChildrenByLocalName, getDocumentation, formatTsDoc } from "./utils";
+import {
+  localName,
+  getChildrenByLocalName,
+  getDocumentation,
+  formatTsDoc,
+} from "./utils";
 import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { sanitizeTypeName } from "./types";
@@ -73,9 +78,9 @@ export function emitAttrs(
     // Track enum dependencies for attributes - only add if tsType is actually using the custom type
     if (
       at &&
-      tsType !== "String" &&
-      tsType !== "Number" &&
-      tsType !== "Boolean"
+      tsType !== "string" &&
+      tsType !== "number" &&
+      tsType !== "boolean"
     ) {
       const local = localName(at);
       const sanitized = sanitizeTypeName(local!);
@@ -90,13 +95,13 @@ export function emitAttrs(
       state.schemaContext.attributeFormDefault
     );
     const propName = toPropertyName(an, state.reservedWords);
-    
+
     // Emit documentation comment if present
     const doc = getDocumentation(a, state.xsdPrefix);
     if (doc) {
       lines.push(...formatTsDoc(doc, "  "));
     }
-    
+
     lines.push(
       ans
         ? `  @XmlAttribute('${an}', { namespace: '${ans}' })`
@@ -145,9 +150,9 @@ function emitAttributeRef(
     // Track enum dependencies for referenced attributes - only add if tsType is actually using the custom type
     if (
       at &&
-      tsType !== "String" &&
-      tsType !== "Number" &&
-      tsType !== "Boolean"
+      tsType !== "string" &&
+      tsType !== "number" &&
+      tsType !== "boolean"
     ) {
       const local = localName(at);
       const sanitized = sanitizeTypeName(local!);
@@ -163,13 +168,13 @@ function emitAttributeRef(
     );
     if (an) {
       const propName = toPropertyName(an, state.reservedWords);
-      
+
       // Emit documentation comment if present
       const doc = getDocumentation(refDef, state.xsdPrefix);
       if (doc) {
         lines.push(...formatTsDoc(doc, "  "));
       }
-      
+
       lines.push(
         ans
           ? `  @XmlAttribute('${an}', { namespace: '${ans}' })`

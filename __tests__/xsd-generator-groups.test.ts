@@ -169,28 +169,28 @@ describe("XSD Generator - Groups", () => {
       // Elements from the group should be arrays because maxOccurs="unbounded"
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('product', { type: String, array: true })",
-        "product?: String[];",
+        "product?: string[];",
       ]);
 
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('service', { type: String, array: true })",
-        "service?: String[];",
+        "service?: string[];",
       ]);
 
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('discount', { type: String, array: true })",
-        "discount?: String[];",
+        "discount?: string[];",
       ]);
 
       // Regular elements should not be arrays
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('cartId', { type: String })",
-        "cartId!: String;",
+        "cartId!: string;",
       ]);
 
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('total', { type: Number })",
-        "total!: Number;",
+        "total!: number;",
       ]);
     });
   });
@@ -227,18 +227,18 @@ describe("XSD Generator - Groups", () => {
       // Elements from the optional group should be optional
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('notes', { type: String })",
-        "notes?: String;",
+        "notes?: string;",
       ]);
 
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('comments', { type: String })",
-        "comments?: String;",
+        "comments?: string;",
       ]);
 
       // Title should be required
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('title', { type: String })",
-        "title!: String;",
+        "title!: string;",
       ]);
     });
   });
@@ -275,18 +275,18 @@ describe("XSD Generator - Groups", () => {
       // Elements from the group should be optional arrays
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('tag', { type: String, array: true })",
-        "tag?: String[];",
+        "tag?: string[];",
       ]);
 
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('category', { type: String, array: true })",
-        "category?: String[];",
+        "category?: string[];",
       ]);
 
       // ID should be required and not an array
       expectStringsOnConsecutiveLines(content, [
         "@XmlElement('id', { type: String })",
-        "id!: String;",
+        "id!: string;",
       ]);
     });
   });

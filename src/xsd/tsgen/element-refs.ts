@@ -1,6 +1,16 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getDocumentation, formatTsDoc, getChildByLocalName } from "./utils";
-import { typeMapping, sanitizeTypeName, isPrimitiveTypeName } from "./types";
+import {
+  localName,
+  getDocumentation,
+  formatTsDoc,
+  getChildByLocalName,
+} from "./utils";
+import {
+  typeMapping,
+  sanitizeTypeName,
+  isPrimitiveTypeName,
+  toDecoratorType,
+} from "./types";
 import { toPropertyName } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { handleInlineType } from "./element-types";
@@ -12,7 +22,10 @@ import { toClassName } from "./codegen";
  * @param contextElement - The element in which the QName appears (for namespace resolution)
  * @returns The namespace URI, or undefined if no prefix (refers to target namespace)
  */
-export function resolveNamespace(qname: string, contextElement: XmldomElement): string | undefined {
+export function resolveNamespace(
+  qname: string,
+  contextElement: XmldomElement
+): string | undefined {
   if (!qname.includes(":")) {
     // No prefix - refers to target namespace
     return undefined;
@@ -62,17 +75,18 @@ function findReferencedElement(
     if (elName !== refLocalName) {
       return false;
     }
-    
+
     // Get element's namespace
-    const elementNs = el.getAttribute("targetNamespace") || 
-                      (el.parentNode as any)?.getAttribute?.("targetNamespace") ||
-                      state.schemaContext.targetNs;
-    
+    const elementNs =
+      el.getAttribute("targetNamespace") ||
+      (el.parentNode as any)?.getAttribute?.("targetNamespace") ||
+      state.schemaContext.targetNs;
+
     // If reference has no prefix, it refers to target namespace
     if (!refNamespace) {
       return elementNs === state.schemaContext.targetNs || !elementNs;
     }
-    
+
     // If reference has a prefix, namespaces must match exactly
     return elementNs === refNamespace;
   });
@@ -112,24 +126,30 @@ export function emitElementRef(
   const refLocalName = localName(refAttr)!;
   const minOccursAttr = e.getAttribute("minOccurs");
   const maxOccursAttr = e.getAttribute("maxOccurs");
-  
+
   const elementIsArrayFromMax = isArrayFromMaxOccurs(maxOccursAttr);
   const elementIsArrayFromMin = isArrayFromMinOccurs(minOccursAttr);
   // Element is an array if:
   // 1. maxOccurs > 1 (can appear multiple times)
   // 2. minOccurs > 1 (must appear multiple times)
   // 3. Inside a compositor with maxOccurs > 1
-  const isArray = elementIsArrayFromMax || elementIsArrayFromMin || compositorIsArray;
+  const isArray =
+    elementIsArrayFromMax || elementIsArrayFromMin || compositorIsArray;
   const nillable = e.getAttribute("nillable") === "true";
   const min = minOccursAttr ?? "1";
   // Element is required only if it's not in a choice, has minOccurs >= 1, and is not inside an optional compositor
-  const makeRequired = !insideChoice && Number(min) >= 1 && !compositorIsOptional;
+  const makeRequired =
+    !insideChoice && Number(min) >= 1 && !compositorIsOptional;
 
   // Resolve the namespace of the reference
   const refNamespace = resolveNamespace(refAttr, e);
-  
+
   // Find referenced element with proper namespace matching
-  const referencedElement = findReferencedElement(refLocalName, refNamespace, state);
+  const referencedElement = findReferencedElement(
+    refLocalName,
+    refNamespace,
+    state
+  );
 
   if (referencedElement) {
     const refType = referencedElement.getAttribute("type");
@@ -137,7 +157,7 @@ export function emitElementRef(
       referencedElement.getAttribute("targetNamespace") ||
       (referencedElement.parentNode as any)?.getAttribute?.("targetNamespace");
 
-    let tsType = "any";
+    let tsType = "unknown";
     if (refType) {
       // Referenced element explicitly names a type
       const local = localName(refType)!;
@@ -148,9 +168,9 @@ export function emitElementRef(
       } else {
         tsType = typeMapping(refType);
         if (
-          tsType !== "String" &&
-          tsType !== "Number" &&
-          tsType !== "Boolean" &&
+          tsType !== "string" &&
+          tsType !== "number" &&
+          tsType !== "boolean" &&
           tsType === sanitized
         ) {
           unit.deps.add(sanitized);
@@ -159,56 +179,79 @@ export function emitElementRef(
     } else {
       // Referenced element has no explicit type attribute. Use robust naming:
       // Top-level inline complexType => underlying *Type class; inline simpleType => wrapper class.
-      const isTopLevel = state.schemaContext.topLevelElements.includes(referencedElement);
+      const isTopLevel =
+        state.schemaContext.topLevelElements.includes(referencedElement);
       if (isTopLevel) {
-        const inlineCT = getChildByLocalName(referencedElement, "complexType", state.xsdPrefix);
-        const inlineST = getChildByLocalName(referencedElement, "simpleType", state.xsdPrefix);
+        const inlineCT = getChildByLocalName(
+          referencedElement,
+          "complexType",
+          state.xsdPrefix
+        );
+        const inlineST = getChildByLocalName(
+          referencedElement,
+          "simpleType",
+          state.xsdPrefix
+        );
         if (inlineCT) {
-          const underlyingName = toClassName(refLocalName + "Type", state.reservedWords);
+          const underlyingName = toClassName(
+            refLocalName + "Type",
+            state.reservedWords
+          );
           if (underlyingName !== unit.className) unit.deps.add(underlyingName);
           tsType = underlyingName;
         } else if (inlineST) {
           // Wrapper name for simpleType (may collide -> suffix handled in top-level processing)
-          const hasCollision = state.schemaContext.complexTypesMap.has(refLocalName) ||
+          const hasCollision =
+            state.schemaContext.complexTypesMap.has(refLocalName) ||
             state.schemaContext.simpleTypesMap.has(refLocalName) ||
             state.generated.has(toClassName(refLocalName, state.reservedWords));
-          const baseName = hasCollision ? `${refLocalName}Element` : refLocalName;
+          const baseName = hasCollision
+            ? `${refLocalName}Element`
+            : refLocalName;
           const wrapperName = toClassName(baseName, state.reservedWords);
           if (wrapperName !== unit.className) unit.deps.add(wrapperName);
           tsType = wrapperName;
         } else {
-          tsType = "any";
+          tsType = "unknown";
         }
       } else {
-        tsType = handleInlineType(referencedElement, refLocalName, unit, state, ensureClass);
+        tsType = handleInlineType(
+          referencedElement,
+          refLocalName,
+          unit,
+          state,
+          ensureClass
+        );
       }
     }
 
     const propName = toPropertyName(refLocalName, state.reservedWords);
-    
+
     // Check if this property name has already been emitted to avoid duplicates
     if (isPropertyAlreadyEmitted(propName, lines)) {
       return;
     }
-    
+
     // Extract documentation from the referenced element
     const doc = getDocumentation(referencedElement, state.xsdPrefix);
     if (doc) {
       lines.push(...formatTsDoc(doc, "  "));
     }
-    
+
     const decoratorOpts: string[] = [];
     // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)
     const isSelfReference = tsType === unit.className;
     if (
       tsType &&
       tsType !== "any" &&
+      tsType !== "unknown" &&
       /^[A-Za-z0-9_]+$/.test(tsType) &&
       !isSelfReference
     ) {
       // Use lazy type reference (arrow function) for non-primitive types to avoid circular dependency issues
       if (isPrimitiveTypeName(tsType)) {
-        decoratorOpts.push(`type: ${tsType}`);
+        // Convert TypeScript primitive to JavaScript constructor for decorator
+        decoratorOpts.push(`type: ${toDecoratorType(tsType)}`);
       } else {
         decoratorOpts.push(`type: () => ${tsType}`);
       }

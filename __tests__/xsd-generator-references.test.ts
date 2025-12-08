@@ -3,8 +3,6 @@ import { readFileSync, existsSync } from "fs";
 import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir";
 
-
-
 describe("XSD Generator - Element and Attribute References", () => {
   test("handles element references", () => {
     const xsd = `<?xml version="1.0"?>
@@ -32,11 +30,11 @@ describe("XSD Generator - Element and Attribute References", () => {
 
       // Should have the referenced element
       expect(content).toContain("@XmlElement('Title'");
-      expect(content).toMatch(/\bTitle!?:\s*String/);
+      expect(content).toMatch(/\bTitle!?:\s*string/);
 
       // And the direct element
       expect(content).toContain("@XmlElement('content'");
-      expect(content).toMatch(/\bcontent!?:\s*String/);
+      expect(content).toMatch(/\bcontent!?:\s*string/);
     });
   });
 
@@ -67,11 +65,11 @@ describe("XSD Generator - Element and Attribute References", () => {
 
       // Should have the referenced attribute
       expect(content).toContain("@XmlAttribute('version'");
-      expect(content).toContain("version?: String");
+      expect(content).toContain("version?: string");
 
       // And the direct attribute
       expect(content).toContain("@XmlAttribute('status'");
-      expect(content).toContain("status?: String");
+      expect(content).toContain("status?: string");
     });
   });
 
@@ -97,7 +95,7 @@ describe("XSD Generator - Element and Attribute References", () => {
       const content = readFileSync(listFile, "utf-8");
 
       // Should generate an array
-      expect(content).toMatch(/\bItem!?:\s*String\[\]/);
+      expect(content).toMatch(/\bItem!?:\s*string\[\]/);
       expect(content).toContain("array: true");
     });
   });
@@ -148,8 +146,8 @@ describe("XSD Generator - Element and Attribute References", () => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "Choice.ts"), "utf8");
 
-        expect(content).toContain("OptionA?: String");
-        expect(content).toContain("OptionB?: Number");
+        expect(content).toContain("OptionA?: string");
+        expect(content).toContain("OptionB?: number");
       });
     });
 
@@ -195,10 +193,7 @@ describe("XSD Generator - Element and Attribute References", () => {
 
       withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
-        const content = readFileSync(
-          path.join(tmp, "Namespaced.ts"),
-          "utf8"
-        );
+        const content = readFileSync(path.join(tmp, "Namespaced.ts"), "utf8");
 
         expect(content).toContain("namespace: 'http://example.com/ns'");
       });
