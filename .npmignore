@@ -1,0 +1,17 @@
+# Exclude development sources and artifacts from the published package
+src/
+__tests__/
+test-resources/
+test-results/
+coverage/
+.vscode/
+.idea/
+.eslintcache
+npm-debug.log*
+*.tgz
+.eslintrc*
+jest.config.cjs
+tsx.config.*
+tsconfig.json
+tsconfig.eslint.json
+eslint.config.cjs
