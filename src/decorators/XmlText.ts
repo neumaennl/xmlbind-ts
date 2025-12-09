@@ -17,15 +17,22 @@ import { ensureMeta } from "../metadata/MetadataRegistry";
  *   @XmlText()
  *   text?: string;
  * }
- * // Maps to: <Comment author="John">Hello World</Comment>
+ * // Maps to: &lt;Comment author="John">Hello World&lt;/Comment>
  * ```
  */
 export function XmlText() {
-  return function (contextOrTarget: any, propertyKeyOrContext?: string | symbol | any) {
+  return function (
+    contextOrTarget: any,
+    propertyKeyOrContext?: string | symbol | any
+  ) {
     // Stage 3 decorators: contextOrTarget is undefined/value, propertyKeyOrContext is context object
-    if (propertyKeyOrContext && typeof propertyKeyOrContext === "object" && "kind" in propertyKeyOrContext) {
+    if (
+      propertyKeyOrContext &&
+      typeof propertyKeyOrContext === "object" &&
+      "kind" in propertyKeyOrContext
+    ) {
       const context = propertyKeyOrContext;
-      context.addInitializer(function(this: any) {
+      context.addInitializer(function (this: any) {
         const ctor = this.constructor;
         const m = ensureMeta(ctor);
         m.fields.push({
@@ -37,9 +44,12 @@ export function XmlText() {
       });
       return;
     }
-    
+
     // Legacy decorators: contextOrTarget is the target, propertyKeyOrContext is the property key
-    if (typeof propertyKeyOrContext === "string" || typeof propertyKeyOrContext === "symbol") {
+    if (
+      typeof propertyKeyOrContext === "string" ||
+      typeof propertyKeyOrContext === "symbol"
+    ) {
       const target = contextOrTarget as any;
       if (!target || !target.constructor) {
         return;
@@ -54,7 +64,7 @@ export function XmlText() {
       });
       return;
     }
-    
+
     // Fallback for other decorator patterns
     return function (target: any, prop: string | symbol) {
       if (!target || !target.constructor) {

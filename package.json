@@ -1,6 +1,6 @@
 {
   "name": "@neumaennl/xmlbind-ts",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "JAXB-like XML binding for TypeScript",
   "author": "Martin Neumann <neumaennl@gmx.net>",
   "license": "GPL-3.0-only",
@@ -19,7 +19,6 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "ts-node src/xsd/cli.ts",
     "test": "jest --runInBand",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",

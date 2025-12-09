@@ -180,8 +180,15 @@ function writeClassFile(
 
   const code = lines.join("\n");
   const file = join(outDir, filename + ".ts");
-  writeFileSync(file, code, "utf8");
-  console.log("Wrote", file);
+  try {
+    writeFileSync(file, code, "utf8");
+    console.log("Wrote", file);
+  } catch (error: any) {
+    console.error(
+      `✗ Failed to write ${file}: ${error.message || String(error)}`
+    );
+    throw error;
+  }
 }
 
 /**
@@ -226,8 +233,15 @@ function writeConsolidatedTypes(
   ].join("\n");
 
   const file = join(outDir, "types.ts");
-  writeFileSync(file, content, "utf8");
-  console.log("Wrote", file);
+  try {
+    writeFileSync(file, content, "utf8");
+    console.log("Wrote", file);
+  } catch (error: any) {
+    console.error(
+      `✗ Failed to write ${file}: ${error.message || String(error)}`
+    );
+    throw error;
+  }
 }
 
 /**
@@ -251,8 +265,15 @@ function writeConsolidatedEnums(
   ].join("\n");
 
   const file = join(outDir, "enums.ts");
-  writeFileSync(file, content, "utf8");
-  console.log("Wrote", file);
+  try {
+    writeFileSync(file, content, "utf8");
+    console.log("Wrote", file);
+  } catch (error: any) {
+    console.error(
+      `✗ Failed to write ${file}: ${error.message || String(error)}`
+    );
+    throw error;
+  }
 }
 
 /**
@@ -271,6 +292,13 @@ function writeBarrelExport(exports: string[], outDir: string): void {
   ].join("\n");
 
   const file = join(outDir, "index.ts");
-  writeFileSync(file, content, "utf8");
-  console.log("Wrote", file);
+  try {
+    writeFileSync(file, content, "utf8");
+    console.log("Wrote", file);
+  } catch (error: any) {
+    console.error(
+      `✗ Failed to write ${file}: ${error.message || String(error)}`
+    );
+    throw error;
+  }
 }
