@@ -309,6 +309,10 @@ export function marshal(obj: any): string {
   xmlObj[rootName] = node;
   let xml = builder.build(xmlObj);
   
+  console.log("=== XML AFTER BUILDER (before comment repositioning) ===");
+  console.log(xml);
+  console.log("=== END ===");
+  
   // Post-process to insert comments at correct positions for ALL elements (root and nested)
   xml = insertCommentsAtPositionsRecursive(xml);
   xml = postProcessComments(xml);
@@ -347,6 +351,8 @@ function insertCommentsAtPositionsRecursive(xml: string): string {
     
     if (!metaMatch) break; // No more markers
     
+    console.error(`DEBUG: Found marker at index ${metaMatch.index}, content: ${metaMatch[1].substring(0, 50)}`);
+    
     const posData = metaMatch[1];
     const metaStart = metaMatch.index!;
     const metaEnd = metaStart + metaMatch[0].length;
@@ -365,9 +371,21 @@ function insertCommentsAtPositionsRecursive(xml: string): string {
       }
     }
     
+    console.log(`DEBUG: Processing element with ${comments.length} comments:`, comments);
+    
+    console.error(`DEBUG: Step 1 - About to find parent element`);
+    console.error(`DEBUG: Full XML being processed (first 300 chars):`, xml.substring(0, 300));
+    
     // Find the element containing this marker
     const beforeMeta = xml.substring(0, metaStart);
+    
+    console.error(`DEBUG: beforeMeta length:`, beforeMeta.length);
+    console.error(`DEBUG: beforeMeta (last 150 chars):`, beforeMeta.substring(Math.max(0, beforeMeta.length - 150)));
+    console.error(`DEBUG: metaStart:`, metaStart);
+    
     const openTagMatch = beforeMeta.match(/<(\w+)([^>]*)>(?:(?!<\/\1>).)*$/);
+    
+    console.error(`DEBUG: Step 2 - openTagMatch:`, openTagMatch ? 'found' : 'not found');
     
     if (!openTagMatch) {
       // Can't find parent element, just remove marker
@@ -399,29 +417,97 @@ function insertCommentsAtPositionsRecursive(xml: string): string {
     // Extract content between open and close tags
     let content = xml.substring(contentStart, contentEnd);
     
-    // Remove the metadata marker and ALL <#comment> tags from content
+    // Remove the metadata marker
     content = content.replace(metaPattern, '');
-    content = content.replace(/<#comment>.*?<\/#comment>/g, '');
     
-    // Find child elements in content
-    const childElements: Array<{start: number; text: string}> = [];
+    // Find child elements FIRST (before removing any comments)
+    // Exclude metadata and comment elements
+    const childElements: Array<{start: number; end: number; text: string}> = [];
     const childPattern = /<(\w+)(?:\s[^>]*)?>[\s\S]*?<\/\1>|<(\w+)[^>]*\/>/g;
     let childMatch;
     
     while ((childMatch = childPattern.exec(content)) !== null) {
+      const elementName = childMatch[1] || childMatch[2];
+      // Skip metadata and comment elements
+      if (elementName === '_commentsWithPositions' || elementName === '#comment') {
+        continue;
+      }
       childElements.push({
         start: childMatch.index,
+        end: childMatch.index + childMatch[0].length,
         text: childMatch[0]
       });
     }
     
+    // Remove ONLY top-level <#comment> tags (not those inside child elements)
+    // We do this by building a set of ranges that are inside child elements
+    const childRanges = childElements.map(c => ({ start: c.start, end: c.end }));
+    
+    // DEBUG: Log content before removing comments
+    if (content.includes('Title')) {
+      console.error(`DEBUG: Content before removing comments (contains Title):`, content.substring(0, 200));
+    }
+    
+    // Find all comment tags and remove only those not inside children
+    const commentPattern = /<#comment>[\s\S]*?<\/#comment>/g;
+    let commentMatch;
+    const commentsToRemove: Array<{start: number; end: number}> = [];
+    
+    while ((commentMatch = commentPattern.exec(content)) !== null) {
+      const commentStart = commentMatch.index;
+      const commentEnd = commentStart + commentMatch[0].length;
+      
+      // Check if this comment is inside any child element
+      const isInsideChild = childRanges.some(range =>
+        commentStart >= range.start && commentEnd <= range.end
+      );
+      
+      if (!isInsideChild) {
+        commentsToRemove.push({ start: commentStart, end: commentEnd });
+      }
+    }
+    
+    // Remove comments in reverse order to preserve indices
+    for (let i = commentsToRemove.length - 1; i >= 0; i--) {
+      const { start, end } = commentsToRemove[i];
+      content = content.substring(0, start) + content.substring(end);
+    }
+    
+    console.error(`DEBUG: After removing comments, content length: ${content.length}`);
+    console.error(`DEBUG: Content preview: ${content.substring(0, 100)}`);
+    
+    // Re-find child elements after removing top-level comments
+    // Exclude metadata and comment elements
+    childElements.length = 0;
+    childPattern.lastIndex = 0;
+    while ((childMatch = childPattern.exec(content)) !== null) {
+      const elementName = childMatch[1] || childMatch[2];
+      // Skip metadata and comment elements
+      if (elementName === '_commentsWithPositions' || elementName === '#comment') {
+        continue;
+      }
+      childElements.push({
+        start: childMatch.index,
+        end: childMatch.index + childMatch[0].length,
+        text: childMatch[0]
+      });
+    }
+    
+    console.error(`DEBUG: Found ${childElements.length} child elements after cleanup`);
+    if (childElements.length > 0) {
+      console.error(`DEBUG: First child: ${childElements[0].text.substring(0, 80)}`);
+    }
+    
+    
     // Rebuild content with comments at correct positions
     let newContent = '';
-    let lastPos = 0;
+    
+    process.stderr.write(`DEBUG marshal.ts: Rebuilding content with ${childElements.length} child elements\n`);
     
     for (let i = 0; i <= childElements.length; i++) {
       // Add comments for position i (before element i)
       const commentsAtPos = comments.filter(c => c.position === i);
+      console.error(`DEBUG: Position ${i}: ${commentsAtPos.length} comments`);
       for (const comment of commentsAtPos) {
         newContent += '\n  <#comment>' + comment.text + '</#comment>';
       }
@@ -430,7 +516,6 @@ function insertCommentsAtPositionsRecursive(xml: string): string {
       if (i < childElements.length) {
         const child = childElements[i];
         newContent += '\n  ' + child.text;
-        lastPos = child.start + child.text.length;
       }
     }
     
