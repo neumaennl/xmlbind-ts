@@ -34,40 +34,44 @@ const commentParser = new XMLParser({
 type NsMap = { [prefix: string]: string };
 
 /**
- * Extracts comments from preserveOrder parsed structure.
- * The preserveOrder format is an array where comments have a "#comment" key.
+ * Extracts comments with position information from preserveOrder parsed structure.
+ * Returns an array of {comment: string, position: number} objects where position
+ * indicates the index where the comment should appear relative to child elements.
  *
  * @param preserveOrderArray - The parsed XML in preserveOrder format
  * @param elementName - The name of the root element to extract comments from
- * @returns An array of comment strings, or undefined if no comments found
+ * @returns An array of comment objects with positions, or undefined if no comments found
  */
 function extractCommentsFromPreserveOrder(
   preserveOrderArray: any,
   elementName: string
-): string[] | undefined {
+): Array<{text: string; position: number}> | undefined {
   if (!Array.isArray(preserveOrderArray)) return undefined;
 
-  // Find the element in the preserveOrder array
   for (const item of preserveOrderArray) {
     if (!item || typeof item !== "object") continue;
 
     const elementData = item[elementName];
     if (!elementData || !Array.isArray(elementData)) continue;
 
-    const comments: string[] = [];
+    const comments: Array<{text: string; position: number}> = [];
+    let elementIndex = 0;
+
     for (const child of elementData) {
       if (!child || typeof child !== "object") continue;
 
       // Check if this is a comment node
       if (child["#comment"]) {
         const commentData = child["#comment"];
-        // Comment data is an array with a single object containing #text
         if (Array.isArray(commentData) && commentData[0]) {
           const commentText = commentData[0]["#text"];
           if (typeof commentText === "string") {
-            comments.push(commentText);
+            comments.push({ text: commentText, position: elementIndex });
           }
         }
+      } else if (!child["#text"]) {
+        // Non-whitespace element, increment position counter
+        elementIndex++;
       }
     }
 

@@ -162,9 +162,17 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
     const arr = val[anyElemF.key];
     if (arr) writeAnyElements(nestedNode, arr);
   }
-  // Extract comments from metadata
-  if (val._comments && Array.isArray(val._comments)) {
-    nestedNode["#comment"] = val._comments;
+  // Extract comments from metadata with position info
+  const commentsData = val._comments;
+  if (commentsData && Array.isArray(commentsData)) {
+    // Support both old format (strings) and new format (objects with position)
+    if (commentsData.length > 0 && typeof commentsData[0] === 'object' && 'text' in commentsData[0]) {
+      // New format with positions - store for later interleaving
+      nestedNode._commentsWithPos = commentsData;
+    } else {
+      // Old format - just add at the end
+      nestedNode["#comment"] = commentsData;
+    }
   }
   const textF = nestedFields.find((ff: any) => ff.kind === "text");
   if (textF && val[textF.key] !== undefined && val[textF.key] !== null)
