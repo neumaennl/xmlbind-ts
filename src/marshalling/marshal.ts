@@ -332,15 +332,26 @@ export function marshal(obj: any): string {
  * @returns XML string with all comments properly positioned
  */
 function insertCommentsAtPositionsRecursive(xml: string): string {
-  // Process all _commentsWithPositions markers by converting them and repositioning comments
+  // Process from innermost to outermost by iterating until no more changes
+  let changed = true;
+  let iterations = 0;
+  const maxIterations = 20;
   
-  // First, extract all comment metadata and remove the markers
-  const metaPattern = /<_commentsWithPositions>(.*?)<\/_commentsWithPositions>/g;
-  const commentsByElement = new Map<number, Array<{text: string; position: number}>>();
-  let metaIndex = 0;
-  
-  xml = xml.replace(metaPattern, (match, posData) => {
-    // Parse this element's comment data
+  while (changed && iterations < maxIterations) {
+    changed = false;
+    iterations++;
+    
+    // Find ONE _commentsWithPositions marker to process
+    const metaPattern = /<_commentsWithPositions>(.*?)<\/_commentsWithPositions>/;
+    const metaMatch = xml.match(metaPattern);
+    
+    if (!metaMatch) break; // No more markers
+    
+    const posData = metaMatch[1];
+    const metaStart = metaMatch.index!;
+    const metaEnd = metaStart + metaMatch[0].length;
+    
+    // Parse comment data
     const comments: Array<{text: string; position: number}> = [];
     if (posData) {
       const parts = posData.split('|||');
@@ -353,106 +364,87 @@ function insertCommentsAtPositionsRecursive(xml: string): string {
         }
       }
     }
-    commentsByElement.set(metaIndex++, comments);
-    // Mark where this metadata was for replacement
-    return `___COMMENT_MARKER_${metaIndex - 1}___`;
-  });
-  
-  // Now remove all <#comment> tags (they'll be reinserted at correct positions)
-  xml = xml.replace(/<#comment>[\s\S]*?<\/#comment>/g, '');
-  
-  // Process each element that had comments
-  commentsByElement.forEach((comments, idx) => {
-    const marker = `___COMMENT_MARKER_${idx}___`;
-    const markerPos = xml.indexOf(marker);
-    if (markerPos === -1) return;
     
     // Find the element containing this marker
-    const beforeMarker = xml.substring(0, markerPos);
-    const afterMarker = xml.substring(markerPos + marker.length);
+    const beforeMeta = xml.substring(0, metaStart);
+    const openTagMatch = beforeMeta.match(/<(\w+)([^>]*)>(?:(?!<\/\1>).)*$/);
     
-    // Find the opening tag before the marker
-    const openTagMatch = beforeMarker.match(/<(\w+)([^>]*)>(?:(?!<\/\1>).)*$/);
     if (!openTagMatch) {
-      // Just remove the marker
-      xml = xml.replace(marker, '');
-      return;
+      // Can't find parent element, just remove marker
+      xml = xml.substring(0, metaStart) + xml.substring(metaEnd);
+      changed = true;
+      continue;
     }
     
     const elementName = openTagMatch[1];
     const elementStart = openTagMatch.index!;
-    const contentStart = elementStart + openTagMatch[0].length;
+    const elementOpenTag = openTagMatch[0];
+    const contentStart = elementStart + elementOpenTag.length;
     
-    // Find the closing tag
-    const afterOpen = xml.substring(contentStart);
-    const closeTagPattern = new RegExp(`<\\/${elementName}>`);
-    const closeMatch = afterOpen.match(closeTagPattern);
-    if (!closeMatch) {
-      xml = xml.replace(marker, '');
-      return;
+    // Find the closing tag for this element
+    const afterContent = xml.substring(contentStart);
+    const closePattern = new RegExp(`<\\/${elementName}>`);
+    const closeMatch = afterContent.match(closePattern);
+    
+    if (!closeMatch || closeMatch.index === undefined) {
+      // Can't find closing tag, just remove marker
+      xml = xml.substring(0, metaStart) + xml.substring(metaEnd);
+      changed = true;
+      continue;
     }
     
-    const contentEnd = contentStart + closeMatch.index!;
+    const contentEnd = contentStart + closeMatch.index;
+    const closeTag = closeMatch[0];
+    
+    // Extract content between open and close tags
     let content = xml.substring(contentStart, contentEnd);
     
-    // Remove the marker from content
-    content = content.replace(marker, '');
+    // Remove the metadata marker and ALL <#comment> tags from content
+    content = content.replace(metaPattern, '');
+    content = content.replace(/<#comment>.*?<\/#comment>/g, '');
     
-    // Find child elements in this content
-    const childElements: Array<{start: number; end: number; text: string}> = [];
+    // Find child elements in content
+    const childElements: Array<{start: number; text: string}> = [];
     const childPattern = /<(\w+)(?:\s[^>]*)?>[\s\S]*?<\/\1>|<(\w+)[^>]*\/>/g;
-    let match;
+    let childMatch;
     
-    while ((match = childPattern.exec(content)) !== null) {
+    while ((childMatch = childPattern.exec(content)) !== null) {
       childElements.push({
-        start: match.index,
-        end: match.index + match[0].length,
-        text: match[0]
+        start: childMatch.index,
+        text: childMatch[0]
       });
     }
     
-    // Build new content with comments at correct positions
+    // Rebuild content with comments at correct positions
     let newContent = '';
     let lastPos = 0;
     
     for (let i = 0; i <= childElements.length; i++) {
-      // Insert comments for this position
-      const commentsHere = comments.filter(c => c.position === i);
-      for (const comment of commentsHere) {
-        newContent += `\n  <#comment>${comment.text}</#comment>`;
+      // Add comments for position i (before element i)
+      const commentsAtPos = comments.filter(c => c.position === i);
+      for (const comment of commentsAtPos) {
+        newContent += '\n  <#comment>' + comment.text + '</#comment>';
       }
       
-      // Add the element
+      // Add child element if exists
       if (i < childElements.length) {
-        const elem = childElements[i];
-        const beforeText = content.substring(lastPos, elem.start);
-        if (beforeText.trim().length === 0) {
-          newContent += '\n  ';
-        } else {
-          newContent += beforeText;
-        }
-        newContent += elem.text;
-        lastPos = elem.end;
+        const child = childElements[i];
+        newContent += '\n  ' + child.text;
+        lastPos = child.start + child.text.length;
       }
     }
     
-    // Add trailing content
-    const trailing = content.substring(lastPos);
-    if (trailing.trim().length === 0) {
+    // Add final newline if we added anything
+    if (newContent) {
       newContent += '\n';
-    } else {
-      newContent += trailing;
     }
     
-    // Replace in xml
-    const openTag = openTagMatch[0].substring(0, openTagMatch[0].lastIndexOf('>') + 1);
-    const replacement = openTag + newContent + `</${elementName}>`;
-    const toReplace = xml.substring(elementStart, contentEnd + `</${elementName}>`.length);
-    xml = xml.replace(toReplace, replacement);
-  });
-  
-  // Clean up any remaining markers
-  xml = xml.replace(/___COMMENT_MARKER_\d+___/g, '');
+    const newElement = elementOpenTag + newContent + closeTag;
+    
+    // Replace in XML
+    xml = xml.substring(0, elementStart) + newElement + xml.substring(contentEnd + closeTag.length);
+    changed = true;
+  }
   
   return xml;
 }
