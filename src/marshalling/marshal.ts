@@ -112,6 +112,34 @@ function writeAnyElements(node: any, anyArr: unknown[]) {
 }
 
 /**
+ * Checks if comments data has position information (new format).
+ * Returns true if comments are objects with 'text' and 'position' properties.
+ *
+ * @param commentsData - The comments data array to check
+ * @returns True if comments have position information, false otherwise
+ */
+function hasPositionedComments(commentsData: any): boolean {
+  return commentsData && Array.isArray(commentsData) && commentsData.length > 0 &&
+    typeof commentsData[0] === 'object' && 'text' in commentsData[0] && 'position' in commentsData[0];
+}
+
+/**
+ * Groups comments by their position index for efficient lookup.
+ *
+ * @param commentsData - Array of comment objects with position information
+ * @returns Map from position index to array of comment texts
+ */
+function groupCommentsByPosition(commentsData: Array<{text: string; position: number}>): Map<number, string[]> {
+  const map = new Map<number, string[]>();
+  for (const comment of commentsData) {
+    const existing = map.get(comment.position) || [];
+    existing.push(comment.text);
+    map.set(comment.position, existing);
+  }
+  return map;
+}
+
+/**
  * Converts a JavaScript value to its XML representation.
  * Handles primitives, complex objects with metadata, and nested structures.
  *
@@ -134,15 +162,61 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
       nestedNode[`@_${qName(nf.name, nf.namespace ?? undefined, ctx, true)}`] =
         serializePrimitive(v, resolveType(nf.type));
   }
-  for (const nf of nestedFields.filter((ff: any) => ff.kind === "element")) {
-    const v = val[nf.key];
-    if (v === undefined) continue;
-    const key = qName(nf.name, nf.namespace ?? undefined, ctx, false);
-    const resolvedNfType = resolveType(nf.type);
-    if (v === null) nestedNode[key] = { "@_xsi:nil": "true" };
-    else if (nf.isArray && Array.isArray(v))
-      nestedNode[key] = v.map((el: any) => elementToXmlValue(el, resolvedNfType, ctx));
-    else nestedNode[key] = elementToXmlValue(v, resolvedNfType, ctx);
+  
+  // Get comments data for positioning
+  const commentsData = val._comments;
+  const hasPositioned = hasPositionedComments(commentsData);
+
+  const elementFields = nestedFields.filter((ff: any) => ff.kind === "element");
+  
+  // If we have positioned comments, interleave them with elements
+  if (hasPositioned) {
+    const commentsByPosition = groupCommentsByPosition(commentsData);
+    let commentCounter = 0;
+    
+    for (let i = 0; i <= elementFields.length; i++) {
+      // Add comments at position i (before element i)
+      const commentsAtPos = commentsByPosition.get(i) || [];
+      for (const commentText of commentsAtPos) {
+        // Use unique keys to ensure proper interleaving
+        nestedNode[`#comment${commentCounter}`] = commentText;
+        commentCounter++;
+      }
+      
+      // Add element i if it exists
+      if (i < elementFields.length) {
+        const nf = elementFields[i];
+        const v = val[nf.key];
+        if (v !== undefined) {
+          const key = qName(nf.name, nf.namespace ?? undefined, ctx, false);
+          const resolvedNfType = resolveType(nf.type);
+          if (v === null) {
+            nestedNode[key] = { "@_xsi:nil": "true" };
+          } else if (nf.isArray && Array.isArray(v)) {
+            nestedNode[key] = v.map((el: any) => elementToXmlValue(el, resolvedNfType, ctx));
+          } else {
+            nestedNode[key] = elementToXmlValue(v, resolvedNfType, ctx);
+          }
+        }
+      }
+    }
+  } else {
+    // No positioned comments, add elements normally
+    for (const nf of elementFields) {
+      const v = val[nf.key];
+      if (v === undefined) continue;
+      const key = qName(nf.name, nf.namespace ?? undefined, ctx, false);
+      const resolvedNfType = resolveType(nf.type);
+      if (v === null) nestedNode[key] = { "@_xsi:nil": "true" };
+      else if (nf.isArray && Array.isArray(v))
+        nestedNode[key] = v.map((el: any) => elementToXmlValue(el, resolvedNfType, ctx));
+      else nestedNode[key] = elementToXmlValue(v, resolvedNfType, ctx);
+    }
+    
+    // Add comments without positions at the end (legacy format)
+    if (commentsData && Array.isArray(commentsData) && commentsData.length > 0) {
+      nestedNode["#comment"] = commentsData;
+    }
   }
   // wildcard attributes on nested objects
   const anyAttrF = nestedFields.find((ff: any) => ff.kind === "anyAttribute");
@@ -161,21 +235,6 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
   if (anyElemF) {
     const arr = val[anyElemF.key];
     if (arr) writeAnyElements(nestedNode, arr);
-  }
-  // Extract comments from metadata with position info
-  const commentsData = val._comments;
-  if (commentsData && Array.isArray(commentsData)) {
-    // Support both old format (strings) and new format (objects with position)
-    if (commentsData.length > 0 && typeof commentsData[0] === 'object' && 'text' in commentsData[0]) {
-      // New format with positions - store metadata for repositioning
-      const metaStr = commentsData.map((c: any) => `${c.position}|${c.text}`).join('|||');
-      nestedNode["_commentsWithPositions"] = metaStr;
-      // Also add comments as regular nodes (will be repositioned later)
-      nestedNode["#comment"] = commentsData.map((c: any) => c.text);
-    } else {
-      // Old format - just add at the end
-      nestedNode["#comment"] = commentsData;
-    }
   }
   const textF = nestedFields.find((ff: any) => ff.kind === "text");
   if (textF && val[textF.key] !== undefined && val[textF.key] !== null)
@@ -233,34 +292,94 @@ export function marshal(obj: any): string {
     node[`@_${key}`] = serializePrimitive(val, resolveType(f.type));
   }
 
-  for (const f of fields.filter((f: any) => f.kind === "element")) {
-    const val = obj[f.key];
-    if (val === undefined) continue;
-    const key = qName(f.name, f.namespace ?? undefined, ctx, false);
-    const resolvedFType = resolveType(f.type);
-    if (val === null) {
-      node[key] = { "@_xsi:nil": "true" };
-      continue;
-    }
-    if (f.isArray && Array.isArray(val))
-      node[key] = val.map((el: any) => elementToXmlValue(el, resolvedFType, ctx));
-    else {
-      node[key] = elementToXmlValue(val, resolvedFType, ctx);
-      // Merge child class-known prefixes into context for future siblings if not already present
-      if (resolvedFType) {
-        const childMeta = getMeta(resolvedFType);
-        if (childMeta?.prefixes) {
-          for (const [uri, pfx] of Object.entries(childMeta.prefixes)) {
-            if (!ctx.uriToPrefix.has(uri)) {
-              ctx.uriToPrefix.set(uri, pfx);
-              if (!ctx.declared.has(pfx)) {
-                node[`@_xmlns:${pfx}`] = uri;
-                ctx.declared.add(pfx);
+  // Get comments data for positioning
+  const commentsData = (obj as any)._comments;
+  const hasPositioned = hasPositionedComments(commentsData);
+
+  const elementFields = fields.filter((f: any) => f.kind === "element");
+  
+  // If we have positioned comments, interleave them with elements
+  if (hasPositioned) {
+    const commentsByPosition = groupCommentsByPosition(commentsData);
+    let commentCounter = 0;
+    
+    for (let i = 0; i <= elementFields.length; i++) {
+      // Add comments at position i (before element i)
+      const commentsAtPos = commentsByPosition.get(i) || [];
+      for (const commentText of commentsAtPos) {
+        // Use unique keys to ensure proper interleaving
+        node[`#comment${commentCounter}`] = commentText;
+        commentCounter++;
+      }
+      
+      // Add element i if it exists
+      if (i < elementFields.length) {
+        const f = elementFields[i];
+        const val = obj[f.key];
+        if (val !== undefined) {
+          const key = qName(f.name, f.namespace ?? undefined, ctx, false);
+          const resolvedFType = resolveType(f.type);
+          if (val === null) {
+            node[key] = { "@_xsi:nil": "true" };
+          } else if (f.isArray && Array.isArray(val)) {
+            node[key] = val.map((el: any) => elementToXmlValue(el, resolvedFType, ctx));
+          } else {
+            node[key] = elementToXmlValue(val, resolvedFType, ctx);
+            // Merge child class-known prefixes into context for future siblings if not already present
+            if (resolvedFType) {
+              const childMeta = getMeta(resolvedFType);
+              if (childMeta?.prefixes) {
+                for (const [uri, pfx] of Object.entries(childMeta.prefixes)) {
+                  if (!ctx.uriToPrefix.has(uri)) {
+                    ctx.uriToPrefix.set(uri, pfx);
+                    if (!ctx.declared.has(pfx)) {
+                      node[`@_xmlns:${pfx}`] = uri;
+                      ctx.declared.add(pfx);
+                    }
+                  }
+                }
               }
             }
           }
         }
       }
+    }
+  } else {
+    // No positioned comments, add elements normally
+    for (const f of elementFields) {
+      const val = obj[f.key];
+      if (val === undefined) continue;
+      const key = qName(f.name, f.namespace ?? undefined, ctx, false);
+      const resolvedFType = resolveType(f.type);
+      if (val === null) {
+        node[key] = { "@_xsi:nil": "true" };
+        continue;
+      }
+      if (f.isArray && Array.isArray(val))
+        node[key] = val.map((el: any) => elementToXmlValue(el, resolvedFType, ctx));
+      else {
+        node[key] = elementToXmlValue(val, resolvedFType, ctx);
+        // Merge child class-known prefixes into context for future siblings if not already present
+        if (resolvedFType) {
+          const childMeta = getMeta(resolvedFType);
+          if (childMeta?.prefixes) {
+            for (const [uri, pfx] of Object.entries(childMeta.prefixes)) {
+              if (!ctx.uriToPrefix.has(uri)) {
+                ctx.uriToPrefix.set(uri, pfx);
+                if (!ctx.declared.has(pfx)) {
+                  node[`@_xmlns:${pfx}`] = uri;
+                  ctx.declared.add(pfx);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Add comments without positions at the end (legacy format)
+    if (commentsData && Array.isArray(commentsData) && commentsData.length > 0) {
+      node["#comment"] = commentsData;
     }
   }
 
@@ -290,29 +409,10 @@ export function marshal(obj: any): string {
     if (tv !== undefined && tv !== null) node["#text"] = tv.toString();
   }
 
-  // Handle comments with position information
-  const commentsData = (obj as any)._comments;
-  if (commentsData && Array.isArray(commentsData) && commentsData.length > 0) {
-    // Check if comments have position information
-    if (typeof commentsData[0] === 'object' && 'text' in commentsData[0] && 'position' in commentsData[0]) {
-      // Store position metadata and comments separately
-      const metaStr = commentsData.map((c: any) => `${c.position}|${c.text}`).join('|||');
-      node["_commentsWithPositions"] = metaStr;
-      // Also add comments as regular nodes (will be repositioned later)
-      node["#comment"] = commentsData.map((c: any) => c.text);
-    } else {
-      // Legacy format: just strings, add at end
-      node["#comment"] = commentsData;
-    }
-  }
-
   xmlObj[rootName] = node;
   let xml = builder.build(xmlObj);
   
-
-  
-  // Post-process to insert comments at correct positions for ALL elements (root and nested)
-  xml = insertCommentsAtPositionsRecursive(xml);
+  // Post-process to convert <#comment> tags to <!-- --> format
   xml = postProcessComments(xml);
   
   return xml;
@@ -327,196 +427,21 @@ export function marshal(obj: any): string {
  * @returns XML string with comments repositioned based on position indices
  */
 /**
- * Recursively processes the entire XML to insert comments at their positions.
- * Finds all elements with _commentsWithPositions metadata and repositions their comments.
- *
- * @param xml - The XML string
- * @returns XML string with all comments properly positioned
- */
-function insertCommentsAtPositionsRecursive(xml: string): string {
-  // Process from innermost to outermost by iterating until no more changes
-  let changed = true;
-  let iterations = 0;
-  const maxIterations = 20;
-  
-  while (changed && iterations < maxIterations) {
-    changed = false;
-    iterations++;
-    
-    // Find ONE _commentsWithPositions marker to process
-    const metaPattern = /<_commentsWithPositions>(.*?)<\/_commentsWithPositions>/;
-    const metaMatch = xml.match(metaPattern);
-    
-    if (!metaMatch) break; // No more markers
-    
-    const posData = metaMatch[1];
-    const metaStart = metaMatch.index!;
-    const metaEnd = metaStart + metaMatch[0].length;
-    
-    // Parse comment data
-    const comments: Array<{text: string; position: number}> = [];
-    if (posData) {
-      const parts = posData.split('|||');
-      for (const part of parts) {
-        const pipeIndex = part.indexOf('|');
-        if (pipeIndex > 0) {
-          const pos = parseInt(part.substring(0, pipeIndex), 10);
-          const text = part.substring(pipeIndex + 1);
-          comments.push({ position: pos, text });
-        }
-      }
-    }
-    
-    
-    // Find the element containing this marker
-    const beforeMeta = xml.substring(0, metaStart);
-    
-    
-    // Find the last opening tag in beforeMeta
-    // We want to find the element that contains the metadata marker
-    const openTagMatch = beforeMeta.match(/<(\w+)([^>]*)>(?![\s\S]*<\1[^>]*>)[\s\S]*$/);
-    
-    
-    if (!openTagMatch) {
-      // Can't find parent element, just remove marker
-      xml = xml.substring(0, metaStart) + xml.substring(metaEnd);
-      changed = true;
-      continue;
-    }
-    
-    const elementName = openTagMatch[1];
-    const elementStart = openTagMatch.index!;
-    const elementOpenTag = openTagMatch[0];
-    const contentStart = elementStart + elementOpenTag.length;
-    
-    // Find the closing tag for this element
-    const afterContent = xml.substring(contentStart);
-    const closePattern = new RegExp(`<\\/${elementName}>`);
-    const closeMatch = afterContent.match(closePattern);
-    
-    if (!closeMatch || closeMatch.index === undefined) {
-      // Can't find closing tag, just remove marker
-      xml = xml.substring(0, metaStart) + xml.substring(metaEnd);
-      changed = true;
-      continue;
-    }
-    
-    const contentEnd = contentStart + closeMatch.index;
-    const closeTag = closeMatch[0];
-    
-    
-    // Extract content between open and close tags
-    let content = xml.substring(contentStart, contentEnd);
-    
-    // Remove the metadata marker
-    content = content.replace(metaPattern, '');
-    
-    // Find child elements FIRST (before removing any comments)
-    // Exclude metadata and comment elements
-    const childElements: Array<{start: number; end: number; text: string}> = [];
-    const childPattern = /<(\w+)(?:\s[^>]*)?>[\s\S]*?<\/\1>|<(\w+)[^>]*\/>/g;
-    let childMatch;
-    
-    while ((childMatch = childPattern.exec(content)) !== null) {
-      const elementName = childMatch[1] || childMatch[2];
-      // Skip metadata and comment elements
-      if (elementName === '_commentsWithPositions' || elementName === '#comment') {
-        continue;
-      }
-      childElements.push({
-        start: childMatch.index,
-        end: childMatch.index + childMatch[0].length,
-        text: childMatch[0]
-      });
-    }
-    
-    // Remove ONLY top-level <#comment> tags (not those inside child elements)
-    // We do this by building a set of ranges that are inside child elements
-    const childRanges = childElements.map(c => ({ start: c.start, end: c.end }));
-    
-    // Find all comment tags and remove only those not inside children
-    const commentPattern = /<#comment>[\s\S]*?<\/#comment>/g;
-    let commentMatch;
-    const commentsToRemove: Array<{start: number; end: number}> = [];
-    
-    while ((commentMatch = commentPattern.exec(content)) !== null) {
-      const commentStart = commentMatch.index;
-      const commentEnd = commentStart + commentMatch[0].length;
-      
-      // Check if this comment is inside any child element
-      const isInsideChild = childRanges.some(range =>
-        commentStart >= range.start && commentEnd <= range.end
-      );
-      
-      if (!isInsideChild) {
-        commentsToRemove.push({ start: commentStart, end: commentEnd });
-      }
-    }
-    
-    // Remove comments in reverse order to preserve indices
-    for (let i = commentsToRemove.length - 1; i >= 0; i--) {
-      const { start, end } = commentsToRemove[i];
-      content = content.substring(0, start) + content.substring(end);
-    }
-    
-    // Re-find child elements after removing top-level comments
-    // Exclude metadata and comment elements
-    childElements.length = 0;
-    childPattern.lastIndex = 0;
-    while ((childMatch = childPattern.exec(content)) !== null) {
-      const elementName = childMatch[1] || childMatch[2];
-      // Skip metadata and comment elements
-      if (elementName === '_commentsWithPositions' || elementName === '#comment') {
-        continue;
-      }
-      childElements.push({
-        start: childMatch.index,
-        end: childMatch.index + childMatch[0].length,
-        text: childMatch[0]
-      });
-    }
-    
-    // Rebuild content with comments at correct positions
-    let newContent = '';
-    
-    for (let i = 0; i <= childElements.length; i++) {
-      // Add comments for position i (before element i)
-      const commentsAtPos = comments.filter(c => c.position === i);
-      for (const comment of commentsAtPos) {
-        newContent += '\n  <#comment>' + comment.text + '</#comment>';
-      }
-      
-      // Add child element if exists
-      if (i < childElements.length) {
-        const child = childElements[i];
-        newContent += '\n  ' + child.text;
-      }
-    }
-    
-    // Add final newline if we added anything
-    if (newContent) {
-      newContent += '\n';
-    }
-    
-    const newElement = elementOpenTag + newContent + closeTag;
-    
-    // Replace in XML
-    xml = xml.substring(0, elementStart) + newElement + xml.substring(contentEnd + closeTag.length);
-    changed = true;
-  }
-  
-  return xml;
-}
-
-/**
- * Post-processes XML to convert <#comment>...</#comment> tags to <!-- ... --> comments.
+ * Post-processes XML to convert <#comment>...</#comment> and <#comment0>...</#comment0> tags to <!-- ... --> comments.
  * This is required because XMLBuilder without commentPropName outputs comment nodes as elements.
  *
- * @param xml - The XML string with <#comment> tags
+ * @param xml - The XML string with <#comment> or <#commentN> tags
  * @returns The XML string with proper <!-- --> comment syntax
  */
 function postProcessComments(xml: string): string {
   // Replace <#comment>content</#comment> with <!--content-->
-  // Use non-greedy match with character class to avoid ReDoS
-  return xml.replace(/<#comment>([^<]*(?:<(?!\/#comment>)[^<]*)*)<\/#comment>/g, '<!--$1-->');
+  // Also replace <#comment0>content</#comment0>, <#comment1>..., etc.
+  // Pattern explanation:
+  // - <#comment\d*> matches opening tag (with optional number)
+  // - ([^<]*(?:<(?!\/#comment\d*>)[^<]*)*) matches content:
+  //   - [^<]* matches any non-< characters
+  //   - (?:<(?!\/#comment\d*>)[^<]*)* matches < characters that are NOT followed by the closing tag
+  //   - This negative lookahead prevents catastrophic backtracking (ReDoS) by ensuring greedy matching stops at the closing tag
+  // - <\/#comment\d*> matches closing tag
+  return xml.replace(/<#comment\d*>([^<]*(?:<(?!\/#comment\d*>)[^<]*)*)<\/#comment\d*>/g, '<!--$1-->');
 }

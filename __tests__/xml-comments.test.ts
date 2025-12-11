@@ -141,10 +141,6 @@ describe("XML Comments Preservation (Metadata Approach)", () => {
     // Marshal back
     const marshalled = marshal(root);
     
-    console.log("MARSHALLED XML:");
-    console.log(marshalled);
-    console.log("END MARSHALLED\n");
-    
     // Verify all comments are preserved
     expect(marshalled).toContain("<!-- Root comment -->");
     expect(marshalled).toContain("<!-- Section comment -->");
