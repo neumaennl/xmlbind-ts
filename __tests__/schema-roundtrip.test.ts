@@ -79,7 +79,7 @@ describe("Schema Roundtrip", () => {
     });
   }, 30000);
 
-  test("XMLSchema.xsd should survive unmarshal/marshal roundtrip with minimal data loss", () => {
+  test("XMLSchema.xsd should survive unmarshal/marshal roundtrip without data loss", () => {
     withTmpDir((tmpDir) => {
       // Load XMLSchema.xsd
       const xmlSchemaPath = path.join(
@@ -89,8 +89,9 @@ describe("Schema Roundtrip", () => {
       );
       let originalXsd = readFileSync(xmlSchemaPath, "utf-8");
 
-      // Remove DOCTYPE and entity declarations as they cause parsing issues
-      // This is acceptable for the roundtrip test as DTD content is not part of the schema structure
+      // Remove DOCTYPE internal subset (parameter entities) as fast-xml-parser cannot handle them
+      // Note: DOCTYPE with internal subset is legacy/optional in XML Schema files
+      // The schema content itself is preserved - only the DTD entity declarations are removed
       originalXsd = removeDoctypeDeclaration(originalXsd);
 
       // Generate TypeScript classes from XMLSchema.xsd
@@ -109,6 +110,28 @@ describe("Schema Roundtrip", () => {
       // Unmarshal again to compare
       const schemaObj2 = unmarshal(Schema, marshalledXsd) as any;
 
+      // Debug: Show first diff if any
+      const str1 = JSON.stringify(schemaObj);
+      const str2 = JSON.stringify(schemaObj2);
+      if (str1 !== str2) {
+        console.log("\n⚠️  Roundtrip has differences");
+        console.log("Length 1:", str1.length, "Length 2:", str2.length);
+        
+        // Find first difference
+        for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
+          if (str1[i] !== str2[i]) {
+            console.log("\nFirst difference at position", i);
+            console.log("Context:", str1.substring(Math.max(0, i - 30), i + 70));
+            break;
+          }
+        }
+      } else {
+        console.log("\n✅ Roundtrip successful - no data loss!");
+      }
+
+      // Strict comparison - ensures absolutely no data loss
+      expect(JSON.stringify(schemaObj2)).toBe(JSON.stringify(schemaObj));
+
       // Verify key structural elements are preserved
       expect(schemaObj2.element).toBeDefined();
       expect(schemaObj2.complexType).toBeDefined();
@@ -117,7 +140,7 @@ describe("Schema Roundtrip", () => {
       expect(schemaObj2.attributeGroup).toBeDefined();
       expect(schemaObj2.notation).toBeDefined();
 
-      // Verify arrays have the same length - this ensures no elements are lost
+      // Verify arrays have the same length - redundant with strict check above but explicit
       expect(Array.isArray(schemaObj.element)).toBe(true);
       expect(Array.isArray(schemaObj2.element)).toBe(true);
       expect(schemaObj2.element).toHaveLength(

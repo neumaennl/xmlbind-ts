@@ -11,6 +11,7 @@ const builder = new XMLBuilder({
   textNodeName: "#text",
   format: true,
   indentBy: "  ",
+  suppressBooleanAttributes: false, // Preserve boolean attribute values like mixed="true"
 });
 
 type NsContext = {
