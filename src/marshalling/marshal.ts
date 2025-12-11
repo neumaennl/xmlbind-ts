@@ -2,6 +2,7 @@ import { XMLBuilder } from "fast-xml-parser";
 import { getMeta, getAllFields } from "../metadata/MetadataRegistry";
 import { serializePrimitive } from "../util/valueCasting";
 import { resolveType } from "../util/typeResolution";
+import { isNamespaceDeclaration } from "../util/namespaceUtils";
 import { isPrimitiveCtor } from "./types";
 
 const builder = new XMLBuilder({
@@ -149,7 +150,7 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
     if (map && typeof map === "object") {
       for (const [k, v] of Object.entries(map)) {
         // Skip xmlns declarations as they are already handled by the namespace context
-        if (k === "xmlns" || k.startsWith("xmlns:")) continue;
+        if (isNamespaceDeclaration(k)) continue;
         nestedNode[`@_${k}`] = String(v as any);
       }
     }
@@ -254,7 +255,7 @@ export function marshal(obj: any): string {
     if (map && typeof map === "object") {
       for (const [k, v] of Object.entries(map)) {
         // Skip xmlns declarations as they are already handled by the namespace context
-        if (k === "xmlns" || k.startsWith("xmlns:")) continue;
+        if (isNamespaceDeclaration(k)) continue;
         node[`@_${k}`] = String(v as any);
       }
     }

@@ -8,6 +8,20 @@ import {
 import { unmarshal } from "../src/marshalling/unmarshal";
 import { marshal } from "../src/marshalling/marshal";
 
+/**
+ * Removes DOCTYPE declaration from XML content.
+ * DOCTYPE declarations can cause parsing issues with fast-xml-parser,
+ * especially when they contain entity definitions.
+ *
+ * @param xml - The XML content
+ * @returns The XML content without the DOCTYPE declaration
+ */
+function removeDoctypeDeclaration(xml: string): string {
+  // Pattern matches DOCTYPE declarations with internal subset
+  // Uses [\s\S] to match any character including newlines
+  return xml.replace(/<!DOCTYPE\s+[^[>]*\[[\s\S]*?\]>/gim, "");
+}
+
 describe("Schema Roundtrip", () => {
   test("example.xsd should survive unmarshal/marshal roundtrip without data loss", () => {
     withTmpDir((tmpDir) => {
@@ -77,7 +91,7 @@ describe("Schema Roundtrip", () => {
 
       // Remove DOCTYPE and entity declarations as they cause parsing issues
       // This is acceptable for the roundtrip test as DTD content is not part of the schema structure
-      originalXsd = originalXsd.replace(/<!DOCTYPE[^>]*\[[\s\S]*?\]>/m, "");
+      originalXsd = removeDoctypeDeclaration(originalXsd);
 
       // Generate TypeScript classes from XMLSchema.xsd
       console.log("Generating TypeScript classes from XMLSchema.xsd...");
@@ -104,42 +118,63 @@ describe("Schema Roundtrip", () => {
       expect(schemaObj2.notation).toBeDefined();
 
       // Verify arrays have the same length - this ensures no elements are lost
-      if (Array.isArray(schemaObj.element)) {
-        expect(schemaObj2.element).toHaveLength(schemaObj.element.length);
-      }
-      if (Array.isArray(schemaObj.complexType)) {
-        expect(schemaObj2.complexType).toHaveLength(
-          schemaObj.complexType.length
-        );
-      }
-      if (Array.isArray(schemaObj.simpleType)) {
-        expect(schemaObj2.simpleType).toHaveLength(schemaObj.simpleType.length);
-      }
-      if (Array.isArray(schemaObj.group)) {
-        expect(schemaObj2.group).toHaveLength(schemaObj.group.length);
-      }
-      if (Array.isArray(schemaObj.attributeGroup)) {
-        expect(schemaObj2.attributeGroup).toHaveLength(schemaObj.attributeGroup.length);
-      }
-      if (Array.isArray(schemaObj.notation)) {
-        expect(schemaObj2.notation).toHaveLength(schemaObj.notation.length);
-      }
+      expect(Array.isArray(schemaObj.element)).toBe(true);
+      expect(Array.isArray(schemaObj2.element)).toBe(true);
+      expect(schemaObj2.element).toHaveLength(
+        Array.isArray(schemaObj.element) ? schemaObj.element.length : 0
+      );
+
+      expect(Array.isArray(schemaObj.complexType)).toBe(true);
+      expect(Array.isArray(schemaObj2.complexType)).toBe(true);
+      expect(schemaObj2.complexType).toHaveLength(
+        Array.isArray(schemaObj.complexType) ? schemaObj.complexType.length : 0
+      );
+
+      expect(Array.isArray(schemaObj.simpleType)).toBe(true);
+      expect(Array.isArray(schemaObj2.simpleType)).toBe(true);
+      expect(schemaObj2.simpleType).toHaveLength(
+        Array.isArray(schemaObj.simpleType) ? schemaObj.simpleType.length : 0
+      );
+
+      expect(Array.isArray(schemaObj.group)).toBe(true);
+      expect(Array.isArray(schemaObj2.group)).toBe(true);
+      expect(schemaObj2.group).toHaveLength(
+        Array.isArray(schemaObj.group) ? schemaObj.group.length : 0
+      );
+
+      expect(Array.isArray(schemaObj.attributeGroup)).toBe(true);
+      expect(Array.isArray(schemaObj2.attributeGroup)).toBe(true);
+      expect(schemaObj2.attributeGroup).toHaveLength(
+        Array.isArray(schemaObj.attributeGroup)
+          ? schemaObj.attributeGroup.length
+          : 0
+      );
+
+      expect(Array.isArray(schemaObj.notation)).toBe(true);
+      expect(Array.isArray(schemaObj2.notation)).toBe(true);
+      expect(schemaObj2.notation).toHaveLength(
+        Array.isArray(schemaObj.notation) ? schemaObj.notation.length : 0
+      );
 
       // Verify specific important elements exist
-      const findElement = (arr: any[], name: string) => 
+      const findElement = (arr: any[], name: string) =>
         Array.isArray(arr) ? arr.find((e: any) => e.name === name) : undefined;
 
       const schema1 = findElement(schemaObj.element as any[], "schema");
       const schema2 = findElement(schemaObj2.element as any[], "schema");
       expect(schema1).toBeDefined();
       expect(schema2).toBeDefined();
-      if (schema1 && schema2) {
-        expect(schema2.name).toBe(schema1.name);
-      }
+      expect(schema1?.name).toBe(schema2?.name);
 
       // Check a complexType
-      const openAttrs1 = findElement(schemaObj.complexType as any[], "openAttrs");
-      const openAttrs2 = findElement(schemaObj2.complexType as any[], "openAttrs");
+      const openAttrs1 = findElement(
+        schemaObj.complexType as any[],
+        "openAttrs"
+      );
+      const openAttrs2 = findElement(
+        schemaObj2.complexType as any[],
+        "openAttrs"
+      );
       expect(openAttrs1).toBeDefined();
       expect(openAttrs2).toBeDefined();
     });

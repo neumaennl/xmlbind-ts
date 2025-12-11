@@ -6,6 +6,7 @@ import {
 } from "../metadata/MetadataRegistry";
 import { castValue } from "../util/valueCasting";
 import { resolveType } from "../util/typeResolution";
+import { isNamespaceDeclaration } from "../util/namespaceUtils";
 import {
   ParsedXmlNode,
   ParsedXmlValue,
@@ -141,7 +142,7 @@ function collectWildcardAttributes(
     if (boundAttrKeys.has(key)) continue;
     const attrName = key.substring(2);
     // Skip xmlns declarations as they are handled by the namespace context
-    if (attrName === "xmlns" || attrName.startsWith("xmlns:")) continue;
+    if (isNamespaceDeclaration(attrName)) continue;
     const v = (node as any)[key];
     if (v !== undefined) collected[attrName] = String(v);
   }
