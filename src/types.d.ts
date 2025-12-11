@@ -5,15 +5,13 @@
  * - text: Mapped to the text content of an element
  * - anyElement: Wildcard for unbound child elements (xs:any)
  * - anyAttribute: Wildcard for unbound attributes (xs:anyAttribute)
- * - comments: XML comments (<!-- ... -->)
  */
 export type FieldKind =
   | "element"
   | "attribute"
   | "text"
   | "anyElement"
-  | "anyAttribute"
-  | "comments";
+  | "anyAttribute";
 
 /**
  * Metadata describing how a single class field maps to XML.

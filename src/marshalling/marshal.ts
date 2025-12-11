@@ -9,7 +9,6 @@ const builder = new XMLBuilder({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   textNodeName: "#text",
-  commentPropName: "#comment", // Enable comment output
   format: true,
   indentBy: "  ",
   suppressBooleanAttributes: false, // Preserve boolean attribute values like mixed="true"
@@ -25,19 +24,6 @@ type NsContext = {
   rootNode: any;
   counter: number;
 };
-
-/**
- * Adds comments to a node if they exist.
- * Helper function to avoid code duplication in marshal logic.
- *
- * @param node - The node to add comments to
- * @param comments - The array of comment strings
- */
-function addCommentsToNode(node: any, comments: string[] | undefined): void {
-  if (comments && Array.isArray(comments) && comments.length > 0) {
-    node["#comment"] = comments;
-  }
-}
 
 /**
  * Ensures a namespace prefix exists for the given namespace URI.
@@ -176,10 +162,9 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
     const arr = val[anyElemF.key];
     if (arr) writeAnyElements(nestedNode, arr);
   }
-  // Add comments
-  const commentsF = nestedFields.find((ff: any) => ff.kind === "comments");
-  if (commentsF) {
-    addCommentsToNode(nestedNode, val[commentsF.key]);
+  // Extract comments from metadata
+  if (val._comments && Array.isArray(val._comments)) {
+    nestedNode["#comment"] = val._comments;
   }
   const textF = nestedFields.find((ff: any) => ff.kind === "text");
   if (textF && val[textF.key] !== undefined && val[textF.key] !== null)
@@ -288,10 +273,9 @@ export function marshal(obj: any): string {
     if (arr) writeAnyElements(node, arr);
   }
 
-  // Add comments
-  const commentsField = fields.find((f: any) => f.kind === "comments");
-  if (commentsField) {
-    addCommentsToNode(node, (obj as any)[commentsField.key]);
+  // Extract comments from metadata
+  if ((obj as any)._comments && Array.isArray((obj as any)._comments)) {
+    node["#comment"] = (obj as any)._comments;
   }
 
   const textField = fields.find((f: any) => f.kind === "text");
@@ -301,5 +285,20 @@ export function marshal(obj: any): string {
   }
 
   xmlObj[rootName] = node;
-  return builder.build(xmlObj);
+  const xml = builder.build(xmlObj);
+  
+  // Post-process to convert <#comment> tags to <!-- -->
+  return postProcessComments(xml);
+}
+
+/**
+ * Post-processes XML to convert <#comment>...</#comment> tags to <!-- ... --> comments.
+ * This is required because XMLBuilder without commentPropName outputs comment nodes as elements.
+ *
+ * @param xml - The XML string with <#comment> tags
+ * @returns The XML string with proper <!-- --> comment syntax
+ */
+function postProcessComments(xml: string): string {
+  // Replace <#comment>content</#comment> with <!--content-->
+  return xml.replace(/<#comment>([\s\S]*?)<\/#comment>/g, '<!--$1-->');
 }

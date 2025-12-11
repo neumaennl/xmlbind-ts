@@ -18,31 +18,10 @@ const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   textNodeName: "#text",
-  commentPropName: "#comment", // Enable comment parsing
+  commentPropName: "#comment", // Capture comments
 });
 
 type NsMap = { [prefix: string]: string };
-
-/**
- * Collects XML comments from a parsed node.
- * Handles both single comments (string) and multiple comments (array).
- * In non-preserveOrder mode (which we use), comments are always strings.
- *
- * @param node - The parsed XML node
- * @returns An array of comment strings, or undefined if no comments found
- */
-function collectComments(node: ParsedXmlNode): string[] | undefined {
-  if (node["#comment"] === undefined) return undefined;
-  
-  const comments = node["#comment"];
-  if (Array.isArray(comments)) {
-    // In non-preserveOrder mode, comments are strings
-    return comments as unknown as string[];
-  } else if (typeof comments === "string") {
-    return [comments];
-  }
-  return undefined;
-}
 
 /**
  * Collects namespace declarations from an XML node, inheriting from parent context.
@@ -315,13 +294,10 @@ function xmlValueToObject<T>(
     );
   }
 
-  // Collect comments
-  const commentsField = fields.find((f) => f.kind === "comments");
-  if (commentsField) {
-    const comments = collectComments(node);
-    if (comments) {
-      target[commentsField.key] = comments;
-    }
+  // Store comments in metadata field if present
+  if (node["#comment"] !== undefined) {
+    const comments = node["#comment"];
+    (target as any)._comments = Array.isArray(comments) ? comments : [comments];
   }
 
   const textField = fields.find((f) => f.kind === "text");
@@ -426,13 +402,10 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     (target as any)[anyElem.key] = collectWildcardElements(node, fields, nsMap);
   }
 
-  // Collect comments
-  const commentsField = fields.find((f) => f.kind === "comments");
-  if (commentsField) {
-    const comments = collectComments(node);
-    if (comments) {
-      target[commentsField.key] = comments;
-    }
+  // Store comments in metadata field if present
+  if (node["#comment"] !== undefined) {
+    const comments = node["#comment"];
+    (target as any)._comments = Array.isArray(comments) ? comments : [comments];
   }
 
   const textField = fields.find((f) => f.kind === "text");
