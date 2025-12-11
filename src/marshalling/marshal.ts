@@ -148,6 +148,8 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
     const map = val[anyAttrF.key];
     if (map && typeof map === "object") {
       for (const [k, v] of Object.entries(map)) {
+        // Skip xmlns declarations as they are already handled by the namespace context
+        if (k === "xmlns" || k.startsWith("xmlns:")) continue;
         nestedNode[`@_${k}`] = String(v as any);
       }
     }
@@ -251,6 +253,8 @@ export function marshal(obj: any): string {
     const map = (obj as any)[anyAttrField.key];
     if (map && typeof map === "object") {
       for (const [k, v] of Object.entries(map)) {
+        // Skip xmlns declarations as they are already handled by the namespace context
+        if (k === "xmlns" || k.startsWith("xmlns:")) continue;
         node[`@_${k}`] = String(v as any);
       }
     }

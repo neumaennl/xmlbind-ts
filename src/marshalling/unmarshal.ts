@@ -113,6 +113,7 @@ function matchAttributeKey(
 
 /**
  * Collects wildcard attributes that were not already bound to explicit fields.
+ * Excludes xmlns namespace declarations as they are handled separately by the namespace context.
  *
  * @param node - The parsed XML node
  * @param fields - All fields from the class metadata
@@ -138,8 +139,11 @@ function collectWildcardAttributes(
   for (const key of Object.keys(node)) {
     if (!key.startsWith("@_")) continue;
     if (boundAttrKeys.has(key)) continue;
+    const attrName = key.substring(2);
+    // Skip xmlns declarations as they are handled by the namespace context
+    if (attrName === "xmlns" || attrName.startsWith("xmlns:")) continue;
     const v = (node as any)[key];
-    if (v !== undefined) collected[key.substring(2)] = String(v);
+    if (v !== undefined) collected[attrName] = String(v);
   }
   return collected;
 }
