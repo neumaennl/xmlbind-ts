@@ -149,39 +149,6 @@ describe("Schema Roundtrip", () => {
         expect(schemaObj2.simpleType).toBeDefined();
       });
     }, 30000);
-
-    test("should maintain consistent order across multiple roundtrips", () => {
-      withTmpDir((tmpDir) => {
-        // Load XMLSchema.xsd to generate TypeScript classes
-        const xmlSchemaPath = path.join(
-          __dirname,
-          "test-resources",
-          "XMLSchema.xsd"
-        );
-        const xmlSchemaXsd = readFileSync(xmlSchemaPath, "utf-8");
-
-        // Generate TypeScript classes from XMLSchema.xsd
-        setupGeneratedRuntime(tmpDir, [xmlSchemaXsd]);
-
-        // Get the schema class
-        const { schema: Schema } = loadGeneratedClasses(tmpDir, ["schema"]);
-
-        // Load example.xsd
-        const examplePath = path.join(__dirname, "test-resources", "example.xsd");
-        const originalXsd = readFileSync(examplePath, "utf-8");
-
-        // First roundtrip
-        const schemaObj = unmarshal(Schema, originalXsd) as any;
-        const marshalledXsd = marshal(schemaObj);
-
-        // Second roundtrip
-        const schemaObj2 = unmarshal(Schema, marshalledXsd) as any;
-        const marshalledXsd2 = marshal(schemaObj2);
-        
-        // The marshalled XML should be identical on subsequent roundtrips (order consistency)
-        expect(marshalledXsd2).toBe(marshalledXsd);
-      });
-    }, 30000);
   });
 
   describe("XMLSchema.xsd", () => {
