@@ -399,18 +399,24 @@ function xmlValueToObject<T>(
   }
 
 
-  // Extract comments for nested elements using preserveOrder data and path
+  // Merge comments from both extractNestedComments and node["#comment"]
+  const mergedComments: any[] = [];
   if (preserveOrderData && path && path.length > 0) {
     const comments = extractNestedComments(preserveOrderData, path);
     if (comments && comments.length > 0) {
-      (target as any)._comments = comments;
+      mergedComments.push(...comments);
     }
   }
-
-  // Store comments in metadata field if present
   if (node["#comment"] !== undefined) {
     const comments = node["#comment"];
-    (target as any)._comments = Array.isArray(comments) ? comments : [comments];
+    if (Array.isArray(comments)) {
+      mergedComments.push(...comments);
+    } else {
+      mergedComments.push(comments);
+    }
+  }
+  if (mergedComments.length > 0) {
+    (target as any)._comments = mergedComments;
   }
 
   const textField = fields.find((f) => f.kind === "text");
@@ -524,10 +530,6 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
   if (comments && comments.length > 0) {
     (target as any)._comments = comments;
   }
-  
-  // Remove temporary storage fields
-  delete (target as any)._originalXml;
-  delete (target as any)._parsedWithComments;
 
   const textField = fields.find((f) => f.kind === "text");
   if (textField && node["#text"] !== undefined) {

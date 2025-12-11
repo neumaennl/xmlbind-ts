@@ -419,14 +419,6 @@ export function marshal(obj: any): string {
 }
 
 /**
- * Inserts comments at their correct positions within the XML string.
- * Uses position information to place comments before/after the appropriate child elements.
- *
- * @param xml - The XML string with <#comment> tags
- * @param rootName - The root element name  
- * @returns XML string with comments repositioned based on position indices
- */
-/**
  * Post-processes XML to convert <#comment>...</#comment> and <#comment0>...</#comment0> tags to <!-- ... --> comments.
  * This is required because XMLBuilder without commentPropName outputs comment nodes as elements.
  *
