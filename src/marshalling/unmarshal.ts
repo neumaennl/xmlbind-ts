@@ -300,12 +300,16 @@ function collectWildcardElements(
  * @param node - The parsed XML value (primitive or node)
  * @param cls - The target class constructor
  * @param nsMap - The namespace prefix mapping
+ * @param preserveOrderData - Optional preserveOrder parsed data for comment extraction
+ * @param path - Optional path to this element for nested comment extraction
  * @returns An instance of the target class populated with XML data
  */
 function xmlValueToObject<T>(
   node: ParsedXmlValue,
   cls: (new () => T) | undefined,
-  nsMap: NsMap
+  nsMap: NsMap,
+  preserveOrderData?: any,
+  path?: string[]
 ): T {
   // If no type specified (cls is undefined), return the raw parsed value
   if (!cls) {
@@ -368,7 +372,7 @@ function xmlValueToObject<T>(
         } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
           target[f.key] = null;
         } else {
-          target[f.key] = xmlValueToObject(val, resolvedType, hereNs);
+          target[f.key] = xmlValueToObject(val, resolvedType, hereNs, preserveOrderData, path ? [...path, f.name || f.key] : undefined);
         }
       }
     }
@@ -392,6 +396,15 @@ function xmlValueToObject<T>(
       fields,
       hereNs
     );
+  }
+
+
+  // Extract comments for nested elements using preserveOrder data and path
+  if (preserveOrderData && path && path.length > 0) {
+    const comments = extractNestedComments(preserveOrderData, path);
+    if (comments && comments.length > 0) {
+      (target as any)._comments = comments;
+    }
   }
 
   // Store comments in metadata field if present
@@ -424,6 +437,10 @@ function xmlValueToObject<T>(
 export function unmarshal<T>(cls: new () => T, xml: string): T {
   const parsed = parser.parse(xml) as ParsedXmlNode;
   const meta = getMeta(cls);
+
+  // Also parse with comment parser for extracting comments
+  const parsedWithComments = commentParser.parse(xml);
+
   if (!meta) throw new Error("No XmlRoot metadata for " + cls.name);
   const rootName = meta.rootName ?? cls.name;
   // root may be prefixed; find by local name
@@ -476,13 +493,13 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     const val = (node as any)[k];
     const resolvedType = resolveType(f.type);
     if (Array.isArray(val) || (f.isArray && Array.isArray(val))) {
-      target[f.key] = (Array.isArray(val) ? val : [val]).map((v) =>
-        xmlValueToObject(v, resolvedType, nsMap)
+      target[f.key] = (Array.isArray(val) ? val : [val]).map((v, idx) =>
+        xmlValueToObject(v, resolvedType, nsMap, parsedWithComments, [rootName, f.name || f.key])
       );
     } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
       target[f.key] = null;
     } else {
-      target[f.key] = xmlValueToObject(val, resolvedType, nsMap);
+      target[f.key] = xmlValueToObject(val, resolvedType, nsMap, parsedWithComments, [rootName, f.name || f.key]);
     }
   }
 
@@ -502,15 +519,15 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     (target as any)[anyElem.key] = collectWildcardElements(node, fields, nsMap);
   }
 
-  // Extract comments using the preserveOrder parser
+  // Extract comments using the preserveOrder parser - pass to nested elements
   const comments = extractCommentsFromPreserveOrder(parsedWithComments, rootName);
   if (comments && comments.length > 0) {
     (target as any)._comments = comments;
   }
   
-  // Store the original XML and parsed comments for nested element processing
-  (target as any)._originalXml = xml;
-  (target as any)._parsedWithComments = parsedWithComments;
+  // Remove temporary storage fields
+  delete (target as any)._originalXml;
+  delete (target as any)._parsedWithComments;
 
   const textField = fields.find((f) => f.kind === "text");
   if (textField && node["#text"] !== undefined) {

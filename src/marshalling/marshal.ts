@@ -167,8 +167,11 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
   if (commentsData && Array.isArray(commentsData)) {
     // Support both old format (strings) and new format (objects with position)
     if (commentsData.length > 0 && typeof commentsData[0] === 'object' && 'text' in commentsData[0]) {
-      // New format with positions - store for later interleaving
-      nestedNode._commentsWithPos = commentsData;
+      // New format with positions - store metadata for repositioning
+      const metaStr = commentsData.map((c: any) => `${c.position}|${c.text}`).join('|||');
+      nestedNode["_commentsWithPositions"] = metaStr;
+      // Also add comments as regular nodes (will be repositioned later)
+      nestedNode["#comment"] = commentsData.map((c: any) => c.text);
     } else {
       // Old format - just add at the end
       nestedNode["#comment"] = commentsData;
@@ -306,8 +309,8 @@ export function marshal(obj: any): string {
   xmlObj[rootName] = node;
   let xml = builder.build(xmlObj);
   
-  // Post-process to insert comments at correct positions and convert tags
-  xml = insertCommentsAtPositions(xml, rootName);
+  // Post-process to insert comments at correct positions for ALL elements (root and nested)
+  xml = insertCommentsAtPositionsRecursive(xml);
   xml = postProcessComments(xml);
   
   return xml;
@@ -321,15 +324,153 @@ export function marshal(obj: any): string {
  * @param rootName - The root element name  
  * @returns XML string with comments repositioned based on position indices
  */
+/**
+ * Recursively processes the entire XML to insert comments at their positions.
+ * Finds all elements with _commentsWithPositions metadata and repositions their comments.
+ *
+ * @param xml - The XML string
+ * @returns XML string with all comments properly positioned
+ */
+function insertCommentsAtPositionsRecursive(xml: string): string {
+  // Process all _commentsWithPositions markers by converting them and repositioning comments
+  
+  // First, extract all comment metadata and remove the markers
+  const metaPattern = /<_commentsWithPositions>(.*?)<\/_commentsWithPositions>/g;
+  const commentsByElement = new Map<number, Array<{text: string; position: number}>>();
+  let metaIndex = 0;
+  
+  xml = xml.replace(metaPattern, (match, posData) => {
+    // Parse this element's comment data
+    const comments: Array<{text: string; position: number}> = [];
+    if (posData) {
+      const parts = posData.split('|||');
+      for (const part of parts) {
+        const pipeIndex = part.indexOf('|');
+        if (pipeIndex > 0) {
+          const pos = parseInt(part.substring(0, pipeIndex), 10);
+          const text = part.substring(pipeIndex + 1);
+          comments.push({ position: pos, text });
+        }
+      }
+    }
+    commentsByElement.set(metaIndex++, comments);
+    // Mark where this metadata was for replacement
+    return `___COMMENT_MARKER_${metaIndex - 1}___`;
+  });
+  
+  // Now remove all <#comment> tags (they'll be reinserted at correct positions)
+  xml = xml.replace(/<#comment>[\s\S]*?<\/#comment>/g, '');
+  
+  // Process each element that had comments
+  commentsByElement.forEach((comments, idx) => {
+    const marker = `___COMMENT_MARKER_${idx}___`;
+    const markerPos = xml.indexOf(marker);
+    if (markerPos === -1) return;
+    
+    // Find the element containing this marker
+    const beforeMarker = xml.substring(0, markerPos);
+    const afterMarker = xml.substring(markerPos + marker.length);
+    
+    // Find the opening tag before the marker
+    const openTagMatch = beforeMarker.match(/<(\w+)([^>]*)>(?:(?!<\/\1>).)*$/);
+    if (!openTagMatch) {
+      // Just remove the marker
+      xml = xml.replace(marker, '');
+      return;
+    }
+    
+    const elementName = openTagMatch[1];
+    const elementStart = openTagMatch.index!;
+    const contentStart = elementStart + openTagMatch[0].length;
+    
+    // Find the closing tag
+    const afterOpen = xml.substring(contentStart);
+    const closeTagPattern = new RegExp(`<\\/${elementName}>`);
+    const closeMatch = afterOpen.match(closeTagPattern);
+    if (!closeMatch) {
+      xml = xml.replace(marker, '');
+      return;
+    }
+    
+    const contentEnd = contentStart + closeMatch.index!;
+    let content = xml.substring(contentStart, contentEnd);
+    
+    // Remove the marker from content
+    content = content.replace(marker, '');
+    
+    // Find child elements in this content
+    const childElements: Array<{start: number; end: number; text: string}> = [];
+    const childPattern = /<(\w+)(?:\s[^>]*)?>[\s\S]*?<\/\1>|<(\w+)[^>]*\/>/g;
+    let match;
+    
+    while ((match = childPattern.exec(content)) !== null) {
+      childElements.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        text: match[0]
+      });
+    }
+    
+    // Build new content with comments at correct positions
+    let newContent = '';
+    let lastPos = 0;
+    
+    for (let i = 0; i <= childElements.length; i++) {
+      // Insert comments for this position
+      const commentsHere = comments.filter(c => c.position === i);
+      for (const comment of commentsHere) {
+        newContent += `\n  <#comment>${comment.text}</#comment>`;
+      }
+      
+      // Add the element
+      if (i < childElements.length) {
+        const elem = childElements[i];
+        const beforeText = content.substring(lastPos, elem.start);
+        if (beforeText.trim().length === 0) {
+          newContent += '\n  ';
+        } else {
+          newContent += beforeText;
+        }
+        newContent += elem.text;
+        lastPos = elem.end;
+      }
+    }
+    
+    // Add trailing content
+    const trailing = content.substring(lastPos);
+    if (trailing.trim().length === 0) {
+      newContent += '\n';
+    } else {
+      newContent += trailing;
+    }
+    
+    // Replace in xml
+    const openTag = openTagMatch[0].substring(0, openTagMatch[0].lastIndexOf('>') + 1);
+    const replacement = openTag + newContent + `</${elementName}>`;
+    const toReplace = xml.substring(elementStart, contentEnd + `</${elementName}>`.length);
+    xml = xml.replace(toReplace, replacement);
+  });
+  
+  // Clean up any remaining markers
+  xml = xml.replace(/___COMMENT_MARKER_\d+___/g, '');
+  
+  return xml;
+}
+
+
 function insertCommentsAtPositions(xml: string, rootName: string): string {
-  // Check if we have position metadata
-  const metaPattern = /<_commentsWithPositions>(.*?)<\/_commentsWithPositions>/;
+  // Check if we have position metadata for this specific element
+  // We need to find the FIRST occurrence of the metadata within this element's scope
+  const metaPattern = new RegExp(`<${rootName}[^>]*>([\\s\\S]*?)<_commentsWithPositions>(.*?)<\\/_commentsWithPositions>([\\s\\S]*?)<\\/${rootName}>`);
   const metaMatch = xml.match(metaPattern);
   
   if (!metaMatch) return xml;
   
+  const beforeMeta = metaMatch[1];
+  const posData = metaMatch[2];
+  const afterMeta = metaMatch[3];
+  
   // Parse position data: format is "position|text|||position|text|||..."
-  const posData = metaMatch[1];
   const commentObjs: Array<{text: string; position: number}> = [];
   
   if (posData) {
@@ -344,26 +485,16 @@ function insertCommentsAtPositions(xml: string, rootName: string): string {
     }
   }
   
-  // Remove metadata element and all existing <#comment> tags
-  xml = xml.replace(metaPattern, '');
-  xml = xml.replace(/<#comment>[\s\S]*?<\/#comment>/g, '');
-  
-  // Find root element bounds
-  const rootOpenMatch = xml.match(new RegExp(`<${rootName}[^>]*>`));
-  const rootCloseMatch = xml.match(new RegExp(`<\\/${rootName}>`));
-  
-  if (!rootOpenMatch || !rootCloseMatch) return xml;
-  
-  const rootStartPos = rootOpenMatch.index! + rootOpenMatch[0].length;
-  const rootEndPos = rootCloseMatch.index!;
-  const rootContent = xml.substring(rootStartPos, rootEndPos);
+  // Combine beforeMeta and afterMeta, removing <#comment> tags
+  let content = beforeMeta + afterMeta;
+  content = content.replace(/<#comment>[\s\S]*?<\/#comment>/g, '');
   
   // Find all child elements with their positions
   const childElements: Array<{start: number; end: number; text: string}> = [];
   const childPattern = /<(\w+)(?:\s[^>]*)?>[\s\S]*?<\/\1>|<(\w+)[^>]*\/>/g;
   let match;
   
-  while ((match = childPattern.exec(rootContent)) !== null) {
+  while ((match = childPattern.exec(content)) !== null) {
     childElements.push({
       start: match.index,
       end: match.index + match[0].length,
@@ -386,7 +517,7 @@ function insertCommentsAtPositions(xml: string, rootName: string): string {
     if (i < childElements.length) {
       const elem = childElements[i];
       // Add whitespace before element
-      const beforeText = rootContent.substring(lastPos, elem.start);
+      const beforeText = content.substring(lastPos, elem.start);
       if (beforeText.trim().length === 0) {
         newContent += '\n  ';
       } else {
@@ -398,18 +529,19 @@ function insertCommentsAtPositions(xml: string, rootName: string): string {
   }
   
   // Add trailing whitespace
-  const trailing = rootContent.substring(lastPos);
+  const trailing = content.substring(lastPos);
   if (trailing.trim().length === 0) {
     newContent += '\n';
   } else {
     newContent += trailing;
   }
   
-  // Reconstruct XML
-  const before = xml.substring(0, rootStartPos);
-  const after = xml.substring(rootEndPos);
+  // Reconstruct this element with comments repositioned
+  const rootOpenMatch = xml.match(new RegExp(`<${rootName}[^>]*>`));
+  if (!rootOpenMatch) return xml;
   
-  return before + newContent + after;
+  const replacement = rootOpenMatch[0] + newContent + `</${rootName}>`;
+  return xml.replace(metaPattern, replacement);
 }
 
 /**

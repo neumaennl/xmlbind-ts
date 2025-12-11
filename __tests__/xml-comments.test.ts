@@ -105,9 +105,7 @@ describe("XML Comments Preservation (Metadata Approach)", () => {
     expect(marshalled).toContain("<!-- Single comment -->");
   });
 
-  test.skip("should preserve comments in nested elements", () => {
-    // TODO: Implement nested element comment handling
-    // Currently only root-level comments are preserved
+  test("should preserve comments in nested elements", () => {
     @XmlRoot("Section")
     class Section {
       @XmlElement("Title")
@@ -132,11 +130,13 @@ describe("XML Comments Preservation (Metadata Approach)", () => {
     
     // Root level comments
     expect((root as any)._comments).toBeDefined();
-    expect((root as any)._comments).toContain(" Root comment ");
+    expect((root as any)._comments).toHaveLength(1);
+    expect((root as any)._comments[0].text).toBe(" Root comment ");
 
-    // Section level comments - NOT YET IMPLEMENTED
+    // Section level comments - NOW IMPLEMENTED
     expect((root.section as any)._comments).toBeDefined();
-    expect((root.section as any)._comments).toContain(" Section comment ");
+    expect((root.section as any)._comments).toHaveLength(1);
+    expect((root.section as any)._comments[0].text).toBe(" Section comment ");
 
     // Marshal back
     const marshalled = marshal(root);
