@@ -123,6 +123,18 @@ function extractNestedComments(
 }
 
 /**
+ * Extracts the local name from a potentially namespaced element name.
+ * For example, "ns:Element" becomes "Element", and "Element" stays "Element".
+ *
+ * @param name - The element name (potentially with namespace prefix)
+ * @returns The local name without namespace prefix
+ */
+function getLocalName(name: string): string {
+  const colonIndex = name.indexOf(":");
+  return colonIndex >= 0 ? name.substring(colonIndex + 1) : name;
+}
+
+/**
  * Extracts the order of child elements from preserveOrder parsed structure.
  * Returns an array of element names in the order they appear in the XML.
  *
@@ -131,7 +143,7 @@ function extractNestedComments(
  * @returns An array of element names in order, or undefined if no elements found
  */
 function extractElementOrderFromPreserveOrder(
-  preserveOrderArray: any,
+  preserveOrderArray: unknown,
   elementName: string
 ): string[] | undefined {
   if (!Array.isArray(preserveOrderArray)) return undefined;
@@ -139,7 +151,7 @@ function extractElementOrderFromPreserveOrder(
   for (const item of preserveOrderArray) {
     if (!item || typeof item !== "object") continue;
 
-    const elementData = item[elementName];
+    const elementData = (item as Record<string, unknown>)[elementName];
     if (!elementData || !Array.isArray(elementData)) continue;
 
     const elementOrder: string[] = [];
@@ -148,15 +160,12 @@ function extractElementOrderFromPreserveOrder(
       if (!child || typeof child !== "object") continue;
 
       // Skip comments and text nodes
-      if (child["#comment"] || child["#text"]) continue;
+      if ((child as Record<string, unknown>)["#comment"] || (child as Record<string, unknown>)["#text"]) continue;
 
       // Extract element names (first key that's not a comment, text, or attribute)
       for (const key of Object.keys(child)) {
         if (key.startsWith("@_") || key === "#comment" || key === "#text") continue;
-        // Extract local name (handle namespaced elements like "ns:Element")
-        const colonIndex = key.indexOf(":");
-        const localName = colonIndex >= 0 ? key.substring(colonIndex + 1) : key;
-        elementOrder.push(localName);
+        elementOrder.push(getLocalName(key));
         break; // Only take the first element key
       }
     }
@@ -171,17 +180,17 @@ function extractElementOrderFromPreserveOrder(
  * Extracts element order from a nested element in preserveOrder structure.
  */
 function extractNestedElementOrder(
-  preserveOrderData: any,
+  preserveOrderData: unknown,
   path: string[]
 ): string[] | undefined {
   if (!Array.isArray(preserveOrderData) || path.length === 0) return undefined;
-  let current = preserveOrderData;
+  let current: unknown = preserveOrderData;
   for (const elementName of path) {
     if (!Array.isArray(current)) return undefined;
     let found = false;
     for (const item of current) {
-      if (item && typeof item === "object" && item[elementName]) {
-        current = item[elementName];
+      if (item && typeof item === "object" && (item as Record<string, unknown>)[elementName]) {
+        current = (item as Record<string, unknown>)[elementName];
         found = true;
         break;
       }
@@ -195,15 +204,12 @@ function extractNestedElementOrder(
     if (!child || typeof child !== "object") continue;
 
     // Skip comments and text nodes
-    if (child["#comment"] || child["#text"]) continue;
+    if ((child as Record<string, unknown>)["#comment"] || (child as Record<string, unknown>)["#text"]) continue;
 
     // Extract element names (skip attributes too)
     for (const key of Object.keys(child)) {
       if (key.startsWith("@_") || key === "#comment" || key === "#text") continue;
-      // Extract local name (handle namespaced elements)
-      const colonIndex = key.indexOf(":");
-      const localName = colonIndex >= 0 ? key.substring(colonIndex + 1) : key;
-      elementOrder.push(localName);
+      elementOrder.push(getLocalName(key));
       break;
     }
   }

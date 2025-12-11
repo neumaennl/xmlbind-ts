@@ -4,6 +4,7 @@ import { serializePrimitive } from "../util/valueCasting";
 import { resolveType } from "../util/typeResolution";
 import { isNamespaceDeclaration } from "../util/namespaceUtils";
 import { isPrimitiveCtor } from "./types";
+import type { FieldMeta } from "../types";
 
 const builder = new XMLBuilder({
   ignoreAttributes: false,
@@ -255,7 +256,7 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
  * @param elementOrder - Array of element names in the desired order (from _elementOrder)
  * @returns Sorted array of element field metadata
  */
-function sortFieldsByElementOrder(elementFields: any[], elementOrder: string[] | undefined): any[] {
+function sortFieldsByElementOrder(elementFields: FieldMeta[], elementOrder: string[] | undefined): FieldMeta[] {
   if (!elementOrder || elementOrder.length === 0) {
     return elementFields;
   }
@@ -269,8 +270,8 @@ function sortFieldsByElementOrder(elementFields: any[], elementOrder: string[] |
   });
 
   // Separate fields into ordered and unordered
-  const orderedFields: any[] = [];
-  const unorderedFields: any[] = [];
+  const orderedFields: FieldMeta[] = [];
+  const unorderedFields: FieldMeta[] = [];
 
   for (const field of elementFields) {
     const fieldName = field.name || field.key;
