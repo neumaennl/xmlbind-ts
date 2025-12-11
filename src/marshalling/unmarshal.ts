@@ -14,13 +14,114 @@ import {
   isPrimitiveCtor,
 } from "./types";
 
+// Main parser for data
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   textNodeName: "#text",
 });
 
+// Comment parser with preserveOrder to capture comments with positions
+const commentParser = new XMLParser({
+  commentPropName: "#comment",
+  preserveOrder: true,
+  trimValues: false,
+  processEntities: false,
+  parseTagValue: false,
+  parseAttributeValue: false,
+});
+
 type NsMap = { [prefix: string]: string };
+
+/**
+ * Extracts comments with position information from preserveOrder parsed structure.
+ * Returns an array of {comment: string, position: number} objects where position
+ * indicates the index where the comment should appear relative to child elements.
+ *
+ * @param preserveOrderArray - The parsed XML in preserveOrder format
+ * @param elementName - The name of the root element to extract comments from
+ * @returns An array of comment objects with positions, or undefined if no comments found
+ */
+function extractCommentsFromPreserveOrder(
+  preserveOrderArray: any,
+  elementName: string
+): Array<{text: string; position: number}> | undefined {
+  if (!Array.isArray(preserveOrderArray)) return undefined;
+
+  for (const item of preserveOrderArray) {
+    if (!item || typeof item !== "object") continue;
+
+    const elementData = item[elementName];
+    if (!elementData || !Array.isArray(elementData)) continue;
+
+    const comments: Array<{text: string; position: number}> = [];
+    let elementIndex = 0;
+
+    for (const child of elementData) {
+      if (!child || typeof child !== "object") continue;
+
+      // Check if this is a comment node
+      if (child["#comment"]) {
+        const commentData = child["#comment"];
+        if (Array.isArray(commentData) && commentData[0]) {
+          const commentText = commentData[0]["#text"];
+          if (typeof commentText === "string") {
+            comments.push({ text: commentText, position: elementIndex });
+          }
+        }
+      } else if (!child["#text"]) {
+        // Non-whitespace element, increment position counter
+        elementIndex++;
+      }
+    }
+
+    return comments.length > 0 ? comments : undefined;
+  }
+
+  return undefined;
+}
+
+/**
+ * Extracts comments from a nested element in preserveOrder structure.
+ */
+function extractNestedComments(
+  preserveOrderData: any,
+  path: string[]
+): Array<{text: string; position: number}> | undefined {
+  if (!Array.isArray(preserveOrderData) || path.length === 0) return undefined;
+  let current = preserveOrderData;
+  for (const elementName of path) {
+    if (!Array.isArray(current)) return undefined;
+    let found = false;
+    for (const item of current) {
+      if (item && typeof item === "object" && item[elementName]) {
+        current = item[elementName];
+        found = true;
+        break;
+      }
+    }
+    if (!found) return undefined;
+  }
+  if (!Array.isArray(current)) return undefined;
+  const comments: Array<{text: string; position: number}> = [];
+  let elementIndex = 0;
+  for (const child of current) {
+    if (!child || typeof child !== "object") continue;
+    if (child["#comment"]) {
+      const commentData = child["#comment"];
+      if (Array.isArray(commentData) && commentData[0]) {
+        const commentText = commentData[0]["#text"];
+        if (typeof commentText === "string") {
+          comments.push({ text: commentText, position: elementIndex });
+        }
+      }
+    } else if (!child["#text"]) {
+      elementIndex++;
+    }
+  }
+  return comments.length > 0 ? comments : undefined;
+}
+
 
 /**
  * Collects namespace declarations from an XML node, inheriting from parent context.
@@ -199,12 +300,16 @@ function collectWildcardElements(
  * @param node - The parsed XML value (primitive or node)
  * @param cls - The target class constructor
  * @param nsMap - The namespace prefix mapping
+ * @param preserveOrderData - Optional preserveOrder parsed data for comment extraction
+ * @param path - Optional path to this element for nested comment extraction
  * @returns An instance of the target class populated with XML data
  */
 function xmlValueToObject<T>(
   node: ParsedXmlValue,
   cls: (new () => T) | undefined,
-  nsMap: NsMap
+  nsMap: NsMap,
+  preserveOrderData?: any,
+  path?: string[]
 ): T {
   // If no type specified (cls is undefined), return the raw parsed value
   if (!cls) {
@@ -267,7 +372,7 @@ function xmlValueToObject<T>(
         } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
           target[f.key] = null;
         } else {
-          target[f.key] = xmlValueToObject(val, resolvedType, hereNs);
+          target[f.key] = xmlValueToObject(val, resolvedType, hereNs, preserveOrderData, path ? [...path, f.name || f.key] : undefined);
         }
       }
     }
@@ -291,6 +396,27 @@ function xmlValueToObject<T>(
       fields,
       hereNs
     );
+  }
+
+
+  // Merge comments from both extractNestedComments and node["#comment"]
+  const mergedComments: any[] = [];
+  if (preserveOrderData && path && path.length > 0) {
+    const comments = extractNestedComments(preserveOrderData, path);
+    if (comments && comments.length > 0) {
+      mergedComments.push(...comments);
+    }
+  }
+  if (node["#comment"] !== undefined) {
+    const comments = node["#comment"];
+    if (Array.isArray(comments)) {
+      mergedComments.push(...comments);
+    } else {
+      mergedComments.push(comments);
+    }
+  }
+  if (mergedComments.length > 0) {
+    (target as any)._comments = mergedComments;
   }
 
   const textField = fields.find((f) => f.kind === "text");
@@ -317,6 +443,10 @@ function xmlValueToObject<T>(
 export function unmarshal<T>(cls: new () => T, xml: string): T {
   const parsed = parser.parse(xml) as ParsedXmlNode;
   const meta = getMeta(cls);
+
+  // Also parse with comment parser for extracting comments
+  const parsedWithComments = commentParser.parse(xml);
+
   if (!meta) throw new Error("No XmlRoot metadata for " + cls.name);
   const rootName = meta.rootName ?? cls.name;
   // root may be prefixed; find by local name
@@ -370,12 +500,12 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     const resolvedType = resolveType(f.type);
     if (Array.isArray(val) || (f.isArray && Array.isArray(val))) {
       target[f.key] = (Array.isArray(val) ? val : [val]).map((v) =>
-        xmlValueToObject(v, resolvedType, nsMap)
+        xmlValueToObject(v, resolvedType, nsMap, parsedWithComments, [rootName, f.name || f.key])
       );
     } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
       target[f.key] = null;
     } else {
-      target[f.key] = xmlValueToObject(val, resolvedType, nsMap);
+      target[f.key] = xmlValueToObject(val, resolvedType, nsMap, parsedWithComments, [rootName, f.name || f.key]);
     }
   }
 
@@ -393,6 +523,12 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
   const anyElem = fields.find((f) => f.kind === "anyElement");
   if (anyElem) {
     (target as any)[anyElem.key] = collectWildcardElements(node, fields, nsMap);
+  }
+
+  // Extract comments using the preserveOrder parser - pass to nested elements
+  const comments = extractCommentsFromPreserveOrder(parsedWithComments, rootName);
+  if (comments && comments.length > 0) {
+    (target as any)._comments = comments;
   }
 
   const textField = fields.find((f) => f.kind === "text");
