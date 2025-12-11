@@ -112,6 +112,34 @@ function writeAnyElements(node: any, anyArr: unknown[]) {
 }
 
 /**
+ * Checks if comments data has position information (new format).
+ * Returns true if comments are objects with 'text' and 'position' properties.
+ *
+ * @param commentsData - The comments data array to check
+ * @returns True if comments have position information, false otherwise
+ */
+function hasPositionedComments(commentsData: any): boolean {
+  return commentsData && Array.isArray(commentsData) && commentsData.length > 0 &&
+    typeof commentsData[0] === 'object' && 'text' in commentsData[0] && 'position' in commentsData[0];
+}
+
+/**
+ * Groups comments by their position index for efficient lookup.
+ *
+ * @param commentsData - Array of comment objects with position information
+ * @returns Map from position index to array of comment texts
+ */
+function groupCommentsByPosition(commentsData: Array<{text: string; position: number}>): Map<number, string[]> {
+  const map = new Map<number, string[]>();
+  for (const comment of commentsData) {
+    const existing = map.get(comment.position) || [];
+    existing.push(comment.text);
+    map.set(comment.position, existing);
+  }
+  return map;
+}
+
+/**
  * Converts a JavaScript value to its XML representation.
  * Handles primitives, complex objects with metadata, and nested structures.
  *
@@ -134,15 +162,61 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
       nestedNode[`@_${qName(nf.name, nf.namespace ?? undefined, ctx, true)}`] =
         serializePrimitive(v, resolveType(nf.type));
   }
-  for (const nf of nestedFields.filter((ff: any) => ff.kind === "element")) {
-    const v = val[nf.key];
-    if (v === undefined) continue;
-    const key = qName(nf.name, nf.namespace ?? undefined, ctx, false);
-    const resolvedNfType = resolveType(nf.type);
-    if (v === null) nestedNode[key] = { "@_xsi:nil": "true" };
-    else if (nf.isArray && Array.isArray(v))
-      nestedNode[key] = v.map((el: any) => elementToXmlValue(el, resolvedNfType, ctx));
-    else nestedNode[key] = elementToXmlValue(v, resolvedNfType, ctx);
+  
+  // Get comments data for positioning
+  const commentsData = val._comments;
+  const hasPositioned = hasPositionedComments(commentsData);
+
+  const elementFields = nestedFields.filter((ff: any) => ff.kind === "element");
+  
+  // If we have positioned comments, interleave them with elements
+  if (hasPositioned) {
+    const commentsByPosition = groupCommentsByPosition(commentsData);
+    let commentCounter = 0;
+    
+    for (let i = 0; i <= elementFields.length; i++) {
+      // Add comments at position i (before element i)
+      const commentsAtPos = commentsByPosition.get(i) || [];
+      for (const commentText of commentsAtPos) {
+        // Use unique keys to ensure proper interleaving
+        nestedNode[`#comment${commentCounter}`] = commentText;
+        commentCounter++;
+      }
+      
+      // Add element i if it exists
+      if (i < elementFields.length) {
+        const nf = elementFields[i];
+        const v = val[nf.key];
+        if (v !== undefined) {
+          const key = qName(nf.name, nf.namespace ?? undefined, ctx, false);
+          const resolvedNfType = resolveType(nf.type);
+          if (v === null) {
+            nestedNode[key] = { "@_xsi:nil": "true" };
+          } else if (nf.isArray && Array.isArray(v)) {
+            nestedNode[key] = v.map((el: any) => elementToXmlValue(el, resolvedNfType, ctx));
+          } else {
+            nestedNode[key] = elementToXmlValue(v, resolvedNfType, ctx);
+          }
+        }
+      }
+    }
+  } else {
+    // No positioned comments, add elements normally
+    for (const nf of elementFields) {
+      const v = val[nf.key];
+      if (v === undefined) continue;
+      const key = qName(nf.name, nf.namespace ?? undefined, ctx, false);
+      const resolvedNfType = resolveType(nf.type);
+      if (v === null) nestedNode[key] = { "@_xsi:nil": "true" };
+      else if (nf.isArray && Array.isArray(v))
+        nestedNode[key] = v.map((el: any) => elementToXmlValue(el, resolvedNfType, ctx));
+      else nestedNode[key] = elementToXmlValue(v, resolvedNfType, ctx);
+    }
+    
+    // Add comments without positions at the end (legacy format)
+    if (commentsData && Array.isArray(commentsData) && commentsData.length > 0) {
+      nestedNode["#comment"] = commentsData;
+    }
   }
   // wildcard attributes on nested objects
   const anyAttrF = nestedFields.find((ff: any) => ff.kind === "anyAttribute");
@@ -218,34 +292,94 @@ export function marshal(obj: any): string {
     node[`@_${key}`] = serializePrimitive(val, resolveType(f.type));
   }
 
-  for (const f of fields.filter((f: any) => f.kind === "element")) {
-    const val = obj[f.key];
-    if (val === undefined) continue;
-    const key = qName(f.name, f.namespace ?? undefined, ctx, false);
-    const resolvedFType = resolveType(f.type);
-    if (val === null) {
-      node[key] = { "@_xsi:nil": "true" };
-      continue;
-    }
-    if (f.isArray && Array.isArray(val))
-      node[key] = val.map((el: any) => elementToXmlValue(el, resolvedFType, ctx));
-    else {
-      node[key] = elementToXmlValue(val, resolvedFType, ctx);
-      // Merge child class-known prefixes into context for future siblings if not already present
-      if (resolvedFType) {
-        const childMeta = getMeta(resolvedFType);
-        if (childMeta?.prefixes) {
-          for (const [uri, pfx] of Object.entries(childMeta.prefixes)) {
-            if (!ctx.uriToPrefix.has(uri)) {
-              ctx.uriToPrefix.set(uri, pfx);
-              if (!ctx.declared.has(pfx)) {
-                node[`@_xmlns:${pfx}`] = uri;
-                ctx.declared.add(pfx);
+  // Get comments data for positioning
+  const commentsData = (obj as any)._comments;
+  const hasPositioned = hasPositionedComments(commentsData);
+
+  const elementFields = fields.filter((f: any) => f.kind === "element");
+  
+  // If we have positioned comments, interleave them with elements
+  if (hasPositioned) {
+    const commentsByPosition = groupCommentsByPosition(commentsData);
+    let commentCounter = 0;
+    
+    for (let i = 0; i <= elementFields.length; i++) {
+      // Add comments at position i (before element i)
+      const commentsAtPos = commentsByPosition.get(i) || [];
+      for (const commentText of commentsAtPos) {
+        // Use unique keys to ensure proper interleaving
+        node[`#comment${commentCounter}`] = commentText;
+        commentCounter++;
+      }
+      
+      // Add element i if it exists
+      if (i < elementFields.length) {
+        const f = elementFields[i];
+        const val = obj[f.key];
+        if (val !== undefined) {
+          const key = qName(f.name, f.namespace ?? undefined, ctx, false);
+          const resolvedFType = resolveType(f.type);
+          if (val === null) {
+            node[key] = { "@_xsi:nil": "true" };
+          } else if (f.isArray && Array.isArray(val)) {
+            node[key] = val.map((el: any) => elementToXmlValue(el, resolvedFType, ctx));
+          } else {
+            node[key] = elementToXmlValue(val, resolvedFType, ctx);
+            // Merge child class-known prefixes into context for future siblings if not already present
+            if (resolvedFType) {
+              const childMeta = getMeta(resolvedFType);
+              if (childMeta?.prefixes) {
+                for (const [uri, pfx] of Object.entries(childMeta.prefixes)) {
+                  if (!ctx.uriToPrefix.has(uri)) {
+                    ctx.uriToPrefix.set(uri, pfx);
+                    if (!ctx.declared.has(pfx)) {
+                      node[`@_xmlns:${pfx}`] = uri;
+                      ctx.declared.add(pfx);
+                    }
+                  }
+                }
               }
             }
           }
         }
       }
+    }
+  } else {
+    // No positioned comments, add elements normally
+    for (const f of elementFields) {
+      const val = obj[f.key];
+      if (val === undefined) continue;
+      const key = qName(f.name, f.namespace ?? undefined, ctx, false);
+      const resolvedFType = resolveType(f.type);
+      if (val === null) {
+        node[key] = { "@_xsi:nil": "true" };
+        continue;
+      }
+      if (f.isArray && Array.isArray(val))
+        node[key] = val.map((el: any) => elementToXmlValue(el, resolvedFType, ctx));
+      else {
+        node[key] = elementToXmlValue(val, resolvedFType, ctx);
+        // Merge child class-known prefixes into context for future siblings if not already present
+        if (resolvedFType) {
+          const childMeta = getMeta(resolvedFType);
+          if (childMeta?.prefixes) {
+            for (const [uri, pfx] of Object.entries(childMeta.prefixes)) {
+              if (!ctx.uriToPrefix.has(uri)) {
+                ctx.uriToPrefix.set(uri, pfx);
+                if (!ctx.declared.has(pfx)) {
+                  node[`@_xmlns:${pfx}`] = uri;
+                  ctx.declared.add(pfx);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Add comments without positions at the end (legacy format)
+    if (commentsData && Array.isArray(commentsData) && commentsData.length > 0) {
+      node["#comment"] = commentsData;
     }
   }
 
@@ -276,5 +410,30 @@ export function marshal(obj: any): string {
   }
 
   xmlObj[rootName] = node;
-  return builder.build(xmlObj);
+  let xml = builder.build(xmlObj);
+  
+  // Post-process to convert <#comment> tags to <!-- --> format
+  xml = postProcessComments(xml);
+  
+  return xml;
+}
+
+/**
+ * Post-processes XML to convert <#comment>...</#comment> and <#comment0>...</#comment0> tags to <!-- ... --> comments.
+ * This is required because XMLBuilder without commentPropName outputs comment nodes as elements.
+ *
+ * @param xml - The XML string with <#comment> or <#commentN> tags
+ * @returns The XML string with proper <!-- --> comment syntax
+ */
+function postProcessComments(xml: string): string {
+  // Replace <#comment>content</#comment> with <!--content-->
+  // Also replace <#comment0>content</#comment0>, <#comment1>..., etc.
+  // Pattern explanation:
+  // - <#comment\d*> matches opening tag (with optional number)
+  // - ([^<]*(?:<(?!\/#comment\d*>)[^<]*)*) matches content:
+  //   - [^<]* matches any non-< characters
+  //   - (?:<(?!\/#comment\d*>)[^<]*)* matches < characters that are NOT followed by the closing tag
+  //   - This negative lookahead prevents catastrophic backtracking (ReDoS) by ensuring greedy matching stops at the closing tag
+  // - <\/#comment\d*> matches closing tag
+  return xml.replace(/<#comment\d*>([^<]*(?:<(?!\/#comment\d*>)[^<]*)*)<\/#comment\d*>/g, '<!--$1-->');
 }
