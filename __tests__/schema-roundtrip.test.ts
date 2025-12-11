@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
 import path from "path";
+import { DOMParser } from "@xmldom/xmldom";
 import { withTmpDir } from "./test-utils/temp-dir";
 import {
   setupGeneratedRuntime,
@@ -20,6 +21,80 @@ function removeDoctypeDeclaration(xml: string): string {
   // Pattern matches DOCTYPE declarations with internal subset
   // Uses [\s\S] to match any character including newlines
   return xml.replace(/<!DOCTYPE\s+[^[>]*\[[\s\S]*?\]>/gim, "");
+}
+
+/**
+ * Compares two XML documents to ensure they contain the same information.
+ * Uses DOM comparison to be order-independent and namespace-aware.
+ *
+ * @param xml1 - First XML document
+ * @param xml2 - Second XML document
+ * @returns Object with comparison result and details
+ */
+function compareXmlDocuments(xml1: string, xml2: string): {
+  equal: boolean;
+  differences: string[];
+} {
+  const parser = new DOMParser();
+  const doc1 = parser.parseFromString(xml1, "application/xml");
+  const doc2 = parser.parseFromString(xml2, "application/xml");
+  
+  const differences: string[] = [];
+  
+  // Check for parse errors
+  const checkParseErrors = (doc: any, label: string) => {
+    const errors = doc.getElementsByTagName("parsererror");
+    if (errors.length > 0) {
+      differences.push(`${label} has parse errors: ${errors[0].textContent}`);
+    }
+  };
+  
+  checkParseErrors(doc1, "First document");
+  checkParseErrors(doc2, "Second document");
+  
+  if (differences.length > 0) {
+    return { equal: false, differences };
+  }
+  
+  // Compare element counts by namespace URI + local name (namespace-aware)
+  const getAllElements = (doc: any): Map<string, number> => {
+    const elementCounts = new Map<string, number>();
+    const walk = (node: any) => {
+      if (node.nodeType === 1) { // Element node
+        // Use namespace URI + local name for namespace-aware comparison
+        const key = `{${node.namespaceURI || ""}}${node.localName || node.tagName}`;
+        elementCounts.set(key, (elementCounts.get(key) || 0) + 1);
+      }
+      for (let i = 0; i < node.childNodes.length; i++) {
+        walk(node.childNodes[i]);
+      }
+    };
+    walk(doc.documentElement);
+    return elementCounts;
+  };
+  
+  const elements1 = getAllElements(doc1);
+  const elements2 = getAllElements(doc2);
+  
+  // Check for missing/extra element types
+  elements1.forEach((count1, key) => {
+    const count2 = elements2.get(key) || 0;
+    if (count2 === 0) {
+      differences.push(`Element "${key}" exists in first (${count1}x) but not in second`);
+    } else if (count1 !== count2) {
+      differences.push(
+        `Element "${key}" count differs: ${count1} in first, ${count2} in second`
+      );
+    }
+  });
+  
+  elements2.forEach((count2, key) => {
+    if (!elements1.has(key)) {
+      differences.push(`Element "${key}" exists in second (${count2}x) but not in first`);
+    }
+  });
+  
+  return { equal: differences.length === 0, differences };
 }
 
 describe("Schema Roundtrip", () => {
@@ -65,8 +140,22 @@ describe("Schema Roundtrip", () => {
       console.log("\nUnmarshalled again:");
       console.log(JSON.stringify(schemaObj2, null, 2));
 
-      // Compare the two unmarshalled objects
+      // Compare the two unmarshalled objects (ensures data preservation at object level)
       expect(JSON.stringify(schemaObj2)).toBe(JSON.stringify(schemaObj));
+      
+      // Do a third roundtrip to verify order consistency
+      const marshalledXsd2 = marshal(schemaObj2);
+      
+      // The marshalled XML should be identical on subsequent roundtrips (order consistency)
+      expect(marshalledXsd2).toBe(marshalledXsd);
+      
+      // Use XML comparison to verify all information is preserved
+      const comparison = compareXmlDocuments(originalXsd, marshalledXsd);
+      if (!comparison.equal) {
+        console.log("\n⚠️  XML comparison differences:");
+        comparison.differences.forEach(diff => console.log(`  - ${diff}`));
+      }
+      expect(comparison.equal).toBe(true);
 
       // Verify no data loss by checking key elements
       expect(schemaObj.element).toBeDefined();
@@ -129,8 +218,22 @@ describe("Schema Roundtrip", () => {
         console.log("\n✅ Roundtrip successful - no data loss!");
       }
 
-      // Strict comparison - ensures absolutely no data loss
+      // Strict comparison - ensures absolutely no data loss at object level
       expect(JSON.stringify(schemaObj2)).toBe(JSON.stringify(schemaObj));
+      
+      // Do a third roundtrip to verify order consistency
+      const marshalledXsd2 = marshal(schemaObj2);
+      
+      // The marshalled XML should be identical on subsequent roundtrips (order consistency)
+      expect(marshalledXsd2).toBe(marshalledXsd);
+      
+      // Use XML comparison to verify all information from original is preserved
+      const comparison = compareXmlDocuments(originalXsd, marshalledXsd);
+      if (!comparison.equal) {
+        console.log("\n⚠️  XML comparison differences between original and marshalled:");
+        comparison.differences.forEach(diff => console.log(`  - ${diff}`));
+      }
+      expect(comparison.equal).toBe(true);
 
       // Verify key structural elements are preserved
       expect(schemaObj2.element).toBeDefined();
