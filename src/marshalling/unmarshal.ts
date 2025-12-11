@@ -14,14 +14,68 @@ import {
   isPrimitiveCtor,
 } from "./types";
 
+// Main parser for data
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   textNodeName: "#text",
-  commentPropName: "#comment", // Capture comments
+});
+
+// Comment parser with preserveOrder to capture comments with positions
+const commentParser = new XMLParser({
+  commentPropName: "#comment",
+  preserveOrder: true,
+  trimValues: false,
+  processEntities: false,
+  parseTagValue: false,
+  parseAttributeValue: false,
 });
 
 type NsMap = { [prefix: string]: string };
+
+/**
+ * Extracts comments from preserveOrder parsed structure.
+ * The preserveOrder format is an array where comments have a "#comment" key.
+ *
+ * @param preserveOrderArray - The parsed XML in preserveOrder format
+ * @param elementName - The name of the root element to extract comments from
+ * @returns An array of comment strings, or undefined if no comments found
+ */
+function extractCommentsFromPreserveOrder(
+  preserveOrderArray: any,
+  elementName: string
+): string[] | undefined {
+  if (!Array.isArray(preserveOrderArray)) return undefined;
+
+  // Find the element in the preserveOrder array
+  for (const item of preserveOrderArray) {
+    if (!item || typeof item !== "object") continue;
+
+    const elementData = item[elementName];
+    if (!elementData || !Array.isArray(elementData)) continue;
+
+    const comments: string[] = [];
+    for (const child of elementData) {
+      if (!child || typeof child !== "object") continue;
+
+      // Check if this is a comment node
+      if (child["#comment"]) {
+        const commentData = child["#comment"];
+        // Comment data is an array with a single object containing #text
+        if (Array.isArray(commentData) && commentData[0]) {
+          const commentText = commentData[0]["#text"];
+          if (typeof commentText === "string") {
+            comments.push(commentText);
+          }
+        }
+      }
+    }
+
+    return comments.length > 0 ? comments : undefined;
+  }
+
+  return undefined;
+}
 
 /**
  * Collects namespace declarations from an XML node, inheriting from parent context.
@@ -402,10 +456,11 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     (target as any)[anyElem.key] = collectWildcardElements(node, fields, nsMap);
   }
 
-  // Store comments in metadata field if present
-  if (node["#comment"] !== undefined) {
-    const comments = node["#comment"];
-    (target as any)._comments = Array.isArray(comments) ? comments : [comments];
+  // Extract comments using the preserveOrder parser
+  const parsedWithComments = commentParser.parse(xml);
+  const comments = extractCommentsFromPreserveOrder(parsedWithComments, rootName);
+  if (comments && comments.length > 0) {
+    (target as any)._comments = comments;
   }
 
   const textField = fields.find((f) => f.kind === "text");
