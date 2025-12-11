@@ -4,8 +4,12 @@ import { ensureMeta } from "../metadata/MetadataRegistry";
  * Decorator to mark a property as a container for XML comments.
  *
  * This property will capture all XML comments (<!-- ... -->) found within
- * an element during unmarshalling. The comments are stored in order and
- * re-inserted during marshalling to preserve them in roundtrips.
+ * an element during unmarshalling. Comments are stored as an array of strings
+ * (without the <!-- and --> delimiters) and will be re-inserted during marshalling.
+ *
+ * Note: Due to the parsing approach, exact comment positions are not preserved.
+ * All comments within an element are collected and placed at the beginning
+ * of the element during marshalling.
  *
  * The property should be typed as string[] and will contain the comment text
  * without the <!-- and --> delimiters.
@@ -31,6 +35,13 @@ import { ensureMeta } from "../metadata/MetadataRegistry";
  * // </Document>
  * //
  * // Results in: { title: 'My Title', comments: [' This is a comment ', ' Another comment '] }
+ * //
+ * // Marshalling back will place comments at the beginning:
+ * // <Document>
+ * //   <!-- This is a comment -->
+ * //   <!-- Another comment -->
+ * //   <Title>My Title</Title>
+ * // </Document>
  * ```
  */
 export function XmlComments() {

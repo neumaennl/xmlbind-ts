@@ -9,21 +9,10 @@ const builder = new XMLBuilder({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   textNodeName: "#text",
+  commentPropName: "#comment", // Enable comment output
   format: true,
   indentBy: "  ",
   suppressBooleanAttributes: false, // Preserve boolean attribute values like mixed="true"
-});
-
-// Builder with preserveOrder enabled for XML with comments
-const commentBuilder = new XMLBuilder({
-  ignoreAttributes: false,
-  attributeNamePrefix: "@_",
-  textNodeName: "#text",
-  format: true,
-  indentBy: "  ",
-  suppressBooleanAttributes: false,
-  preserveOrder: true,
-  commentPropName: "##comment",
 });
 
 type NsContext = {
@@ -36,6 +25,19 @@ type NsContext = {
   rootNode: any;
   counter: number;
 };
+
+/**
+ * Adds comments to a node if they exist.
+ * Helper function to avoid code duplication in marshal logic.
+ *
+ * @param node - The node to add comments to
+ * @param comments - The array of comment strings
+ */
+function addCommentsToNode(node: any, comments: string[] | undefined): void {
+  if (comments && Array.isArray(comments) && comments.length > 0) {
+    node["#comment"] = comments;
+  }
+}
 
 /**
  * Ensures a namespace prefix exists for the given namespace URI.
@@ -174,124 +176,15 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
     const arr = val[anyElemF.key];
     if (arr) writeAnyElements(nestedNode, arr);
   }
+  // Add comments
+  const commentsF = nestedFields.find((ff: any) => ff.kind === "comments");
+  if (commentsF) {
+    addCommentsToNode(nestedNode, val[commentsF.key]);
+  }
   const textF = nestedFields.find((ff: any) => ff.kind === "text");
   if (textF && val[textF.key] !== undefined && val[textF.key] !== null)
     nestedNode["#text"] = String(val[textF.key]);
   return nestedNode;
-}
-
-/**
- * Converts a regular node object to preserveOrder array format with comments interspersed.
- * This is needed when marshalling objects that have XML comments.
- *
- * @param node - The node object in regular format
- * @param comments - Array of comment texts to include
- * @returns The node in preserveOrder array format
- */
-function nodeToPreserveOrderWithComments(
-  node: any,
-  comments: string[]
-): any[] {
-  const children: any[] = [];
-  
-  // Extract attributes
-  const attributes: any = {};
-  for (const key of Object.keys(node)) {
-    if (key.startsWith("@_")) {
-      attributes[key] = node[key];
-    }
-  }
-  
-  // Distribute comments throughout the child elements
-  // We'll intersperse comments between elements
-  let commentIndex = 0;
-  
-  for (const key of Object.keys(node)) {
-    if (key.startsWith("@_") || key === "#text") continue;
-    
-    // Add a comment before this element if available
-    if (commentIndex < comments.length) {
-      children.push({
-        "##comment": [
-          { "#text": comments[commentIndex] }
-        ]
-      });
-      commentIndex++;
-    }
-    
-    const value = node[key];
-    // Convert the value to preserveOrder format
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        children.push({
-          [key]: convertValueToPreserveOrder(item)
-        });
-      }
-    } else {
-      children.push({
-        [key]: convertValueToPreserveOrder(value)
-      });
-    }
-  }
-  
-  // Add any remaining comments at the end
-  while (commentIndex < comments.length) {
-    children.push({
-      "##comment": [
-        { "#text": comments[commentIndex] }
-      ]
-    });
-    commentIndex++;
-  }
-  
-  // Handle text node
-  if (node["#text"]) {
-    children.push({
-      "#text": node["#text"]
-    });
-  }
-  
-  return children;
-}
-
-/**
- * Converts a value to preserveOrder array format.
- *
- * @param value - The value to convert
- * @returns The value in preserveOrder array format
- */
-function convertValueToPreserveOrder(value: any): any[] {
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    return [{ "#text": String(value) }];
-  }
-  
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    const result: any[] = [];
-    
-    for (const key of Object.keys(value)) {
-      if (key.startsWith("@_")) continue; // Skip attributes for now
-      if (key === "#text") {
-        result.push({ "#text": value["#text"] });
-      } else {
-        const childValue = value[key];
-        if (Array.isArray(childValue)) {
-          for (const item of childValue) {
-            result.push({
-              [key]: convertValueToPreserveOrder(item)
-            });
-          }
-        } else {
-          result.push({
-            [key]: convertValueToPreserveOrder(childValue)
-          });
-        }
-      }
-    }
-    
-    return result.length > 0 ? result : [{ "#text": "" }];
-  }
-  
-  return [{ "#text": String(value) }];
 }
 
 /**
@@ -395,29 +288,16 @@ export function marshal(obj: any): string {
     if (arr) writeAnyElements(node, arr);
   }
 
+  // Add comments
+  const commentsField = fields.find((f: any) => f.kind === "comments");
+  if (commentsField) {
+    addCommentsToNode(node, (obj as any)[commentsField.key]);
+  }
+
   const textField = fields.find((f: any) => f.kind === "text");
   if (textField) {
     const tv = obj[textField.key];
     if (tv !== undefined && tv !== null) node["#text"] = tv.toString();
-  }
-
-  // Check if there's a comments field
-  const commentsField = fields.find((f: any) => f.kind === "comments");
-  if (commentsField) {
-    const comments = (obj as any)[commentsField.key];
-    if (comments && Array.isArray(comments) && comments.length > 0) {
-      // Use preserveOrder format with comments
-      const rootWithComments = nodeToPreserveOrderWithComments(node, comments);
-      
-      // Build the preserveOrder structure
-      const preserveOrderObj = [
-        {
-          [rootName]: rootWithComments
-        }
-      ];
-      
-      return commentBuilder.build(preserveOrderObj);
-    }
   }
 
   xmlObj[rootName] = node;

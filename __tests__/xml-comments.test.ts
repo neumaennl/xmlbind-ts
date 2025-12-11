@@ -1,5 +1,5 @@
 import { unmarshal, marshal } from "../src/marshalling";
-import { XmlRoot, XmlElement, XmlComments } from "../src/decorators";
+import { XmlRoot, XmlElement, XmlComments, XmlAttribute } from "../src/decorators";
 
 describe("XML Comments Preservation", () => {
   test("should preserve XML comments in unmarshal/marshal roundtrip", () => {
@@ -101,34 +101,127 @@ describe("XML Comments Preservation", () => {
     expect(marshalled).not.toContain("<!--");
   });
 
-  test("should preserve comments in complex nested structures", () => {
+  test("should preserve comments in nested elements", () => {
+    @XmlRoot("Section")
+    class Section {
+      @XmlAttribute("name")
+      name?: string;
+
+      @XmlElement("Title")
+      title?: string;
+
+      @XmlComments()
+      comments?: string[];
+    }
+
     @XmlRoot("Root")
     class Root {
-      @XmlElement("Item")
-      items?: string[];
+      @XmlElement("Section", { type: Section, array: true })
+      sections?: Section[];
 
       @XmlComments()
       comments?: string[];
     }
 
     const xml = `<Root>
-  <!-- First comment -->
-  <Item>Item 1</Item>
-  <!-- Second comment -->
-  <Item>Item 2</Item>
-  <!-- Third comment -->
-  <Item>Item 3</Item>
-  <!-- Final comment -->
+  <!-- Root level comment -->
+  <Section name="first">
+    <!-- Section comment 1 -->
+    <Title>First Section</Title>
+    <!-- Section comment 2 -->
+  </Section>
+  <Section name="second">
+    <!-- Another section comment -->
+    <Title>Second Section</Title>
+  </Section>
+  <!-- Final root comment -->
 </Root>`;
 
     const root = unmarshal(Root, xml);
-    expect(root.items).toEqual(["Item 1", "Item 2", "Item 3"]);
-    expect(root.comments).toHaveLength(4);
+    
+    // Root level comments
+    expect(root.comments).toBeDefined();
+    expect(root.comments).toHaveLength(2);
+    expect(root.comments).toContain(" Root level comment ");
+    expect(root.comments).toContain(" Final root comment ");
 
+    // Section level comments
+    expect(root.sections).toHaveLength(2);
+    expect(root.sections![0].comments).toBeDefined();
+    expect(root.sections![0].comments).toHaveLength(2);
+    expect(root.sections![0].comments).toContain(" Section comment 1 ");
+    expect(root.sections![0].comments).toContain(" Section comment 2 ");
+    
+    expect(root.sections![1].comments).toBeDefined();
+    expect(root.sections![1].comments).toHaveLength(1);
+    expect(root.sections![1].comments).toContain(" Another section comment ");
+
+    // Marshal back
     const marshalled = marshal(root);
-    expect(marshalled).toContain("<!-- First comment -->");
-    expect(marshalled).toContain("<!-- Second comment -->");
-    expect(marshalled).toContain("<!-- Third comment -->");
-    expect(marshalled).toContain("<!-- Final comment -->");
+    
+    // Verify all comments are preserved
+    expect(marshalled).toContain("<!-- Root level comment -->");
+    expect(marshalled).toContain("<!-- Final root comment -->");
+    expect(marshalled).toContain("<!-- Section comment 1 -->");
+    expect(marshalled).toContain("<!-- Section comment 2 -->");
+    expect(marshalled).toContain("<!-- Another section comment -->");
+
+    // Roundtrip verification
+    const root2 = unmarshal(Root, marshalled);
+    expect(JSON.stringify(root2)).toBe(JSON.stringify(root));
+  });
+
+  test("should handle single comment (not array)", () => {
+    @XmlRoot("Doc")
+    class Doc {
+      @XmlElement("Title")
+      title?: string;
+
+      @XmlComments()
+      comments?: string[];
+    }
+
+    const xml = `<Doc>
+  <!-- Single comment -->
+  <Title>Test</Title>
+</Doc>`;
+
+    const doc = unmarshal(Doc, xml);
+    expect(doc.comments).toBeDefined();
+    expect(doc.comments).toHaveLength(1);
+    expect(doc.comments![0]).toBe(" Single comment ");
+
+    const marshalled = marshal(doc);
+    expect(marshalled).toContain("<!-- Single comment -->");
+  });
+
+  test("should preserve comment content exactly including whitespace", () => {
+    @XmlRoot("Doc")
+    class Doc {
+      @XmlElement("Data")
+      data?: string;
+
+      @XmlComments()
+      comments?: string[];
+    }
+
+    const xml = `<Doc>
+  <!--   This has extra   spaces   -->
+  <Data>value</Data>
+  <!--
+    Multi-line
+    comment
+  -->
+</Doc>`;
+
+    const doc = unmarshal(Doc, xml);
+    expect(doc.comments).toBeDefined();
+    expect(doc.comments).toHaveLength(2);
+    expect(doc.comments![0]).toBe("   This has extra   spaces   ");
+    expect(doc.comments![1]).toContain("Multi-line");
+    expect(doc.comments![1]).toContain("comment");
+
+    const marshalled = marshal(doc);
+    expect(marshalled).toContain("<!--   This has extra   spaces   -->");
   });
 });

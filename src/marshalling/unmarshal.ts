@@ -18,18 +18,31 @@ const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   textNodeName: "#text",
-});
-
-// Parser with preserveOrder enabled to capture comments
-const commentParser = new XMLParser({
-  ignoreAttributes: false,
-  attributeNamePrefix: "@_",
-  textNodeName: "#text",
-  preserveOrder: true,
-  commentPropName: "##comment",
+  commentPropName: "#comment", // Enable comment parsing
 });
 
 type NsMap = { [prefix: string]: string };
+
+/**
+ * Collects XML comments from a parsed node.
+ * Handles both single comments (string) and multiple comments (array).
+ * In non-preserveOrder mode (which we use), comments are always strings.
+ *
+ * @param node - The parsed XML node
+ * @returns An array of comment strings, or undefined if no comments found
+ */
+function collectComments(node: ParsedXmlNode): string[] | undefined {
+  if (node["#comment"] === undefined) return undefined;
+  
+  const comments = node["#comment"];
+  if (Array.isArray(comments)) {
+    // In non-preserveOrder mode, comments are strings
+    return comments as unknown as string[];
+  } else if (typeof comments === "string") {
+    return [comments];
+  }
+  return undefined;
+}
 
 /**
  * Collects namespace declarations from an XML node, inheriting from parent context.
@@ -52,54 +65,6 @@ function collectNs(node: ParsedXmlNode, parent: NsMap | undefined): NsMap {
     }
   }
   return map;
-}
-
-/**
- * Extracts XML comments from a preserveOrder parsed element.
- * The preserveOrder format is an array of objects where comments have a "##comment" key.
- *
- * @param preserveOrderArray - The parsed XML in preserveOrder format
- * @param elementName - The name of the element to extract comments from
- * @returns An array of comment texts (without <!-- and -->), or undefined if no comments found
- */
-function extractComments(
-  preserveOrderArray: any,
-  elementName: string
-): string[] | undefined {
-  if (!Array.isArray(preserveOrderArray)) return undefined;
-  
-  // Find the element in the preserveOrder array
-  for (const item of preserveOrderArray) {
-    if (!item || typeof item !== "object") continue;
-    
-    // Check if this item has the target element
-    const elementData = item[elementName];
-    if (!elementData) continue;
-    
-    // elementData is an array of child nodes in preserveOrder format
-    if (!Array.isArray(elementData)) continue;
-    
-    const comments: string[] = [];
-    for (const child of elementData) {
-      if (!child || typeof child !== "object") continue;
-      
-      // Check if this is a comment node
-      if (child["##comment"]) {
-        const commentData = child["##comment"];
-        // Comment data is an array with a single object containing #text
-        if (Array.isArray(commentData) && commentData[0]) {
-          const commentText = commentData[0]["#text"];
-          if (typeof commentText === "string") {
-            comments.push(commentText);
-          }
-        }
-      }
-    }
-    
-    return comments.length > 0 ? comments : undefined;
-  }
-  
-  return undefined;
 }
 
 /**
@@ -350,6 +315,15 @@ function xmlValueToObject<T>(
     );
   }
 
+  // Collect comments
+  const commentsField = fields.find((f) => f.kind === "comments");
+  if (commentsField) {
+    const comments = collectComments(node);
+    if (comments) {
+      target[commentsField.key] = comments;
+    }
+  }
+
   const textField = fields.find((f) => f.kind === "text");
   if (textField && node["#text"] !== undefined) {
     target[textField.key] = castValue(node["#text"], resolveType(textField.type));
@@ -452,14 +426,12 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     (target as any)[anyElem.key] = collectWildcardElements(node, fields, nsMap);
   }
 
-  // Collect XML comments if a field is decorated with @XmlComments
+  // Collect comments
   const commentsField = fields.find((f) => f.kind === "comments");
   if (commentsField) {
-    // Parse the XML again with preserveOrder to get comments
-    const parsedWithComments = commentParser.parse(xml);
-    const comments = extractComments(parsedWithComments, rootName);
+    const comments = collectComments(node);
     if (comments) {
-      (target as any)[commentsField.key] = comments;
+      target[commentsField.key] = comments;
     }
   }
 
