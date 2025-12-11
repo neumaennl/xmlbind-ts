@@ -260,10 +260,12 @@ function sortFieldsByElementOrder(elementFields: any[], elementOrder: string[] |
     return elementFields;
   }
 
-  // Create a map of element name to order index
+  // Create a map of element name to order index (first occurrence)
   const orderMap = new Map<string, number>();
   elementOrder.forEach((name, index) => {
-    orderMap.set(name, index);
+    if (!orderMap.has(name)) {
+      orderMap.set(name, index);
+    }
   });
 
   // Separate fields into ordered and unordered

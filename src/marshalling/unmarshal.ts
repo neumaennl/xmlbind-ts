@@ -150,15 +150,14 @@ function extractElementOrderFromPreserveOrder(
       // Skip comments and text nodes
       if (child["#comment"] || child["#text"]) continue;
 
-      // Extract element names (first key that's not a comment or text)
+      // Extract element names (first key that's not a comment, text, or attribute)
       for (const key of Object.keys(child)) {
-        if (key !== "#comment" && key !== "#text") {
-          // Extract local name (handle namespaced elements like "ns:Element")
-          const colonIndex = key.indexOf(":");
-          const localName = colonIndex >= 0 ? key.substring(colonIndex + 1) : key;
-          elementOrder.push(localName);
-          break; // Only take the first element key
-        }
+        if (key.startsWith("@_") || key === "#comment" || key === "#text") continue;
+        // Extract local name (handle namespaced elements like "ns:Element")
+        const colonIndex = key.indexOf(":");
+        const localName = colonIndex >= 0 ? key.substring(colonIndex + 1) : key;
+        elementOrder.push(localName);
+        break; // Only take the first element key
       }
     }
 
@@ -198,15 +197,14 @@ function extractNestedElementOrder(
     // Skip comments and text nodes
     if (child["#comment"] || child["#text"]) continue;
 
-    // Extract element names
+    // Extract element names (skip attributes too)
     for (const key of Object.keys(child)) {
-      if (key !== "#comment" && key !== "#text") {
-        // Extract local name (handle namespaced elements)
-        const colonIndex = key.indexOf(":");
-        const localName = colonIndex >= 0 ? key.substring(colonIndex + 1) : key;
-        elementOrder.push(localName);
-        break;
-      }
+      if (key.startsWith("@_") || key === "#comment" || key === "#text") continue;
+      // Extract local name (handle namespaced elements)
+      const colonIndex = key.indexOf(":");
+      const localName = colonIndex >= 0 ? key.substring(colonIndex + 1) : key;
+      elementOrder.push(localName);
+      break;
     }
   }
   
@@ -459,7 +457,7 @@ function xmlValueToObject<T>(
         const val = (node as any)[k];
         const resolvedType = resolveType(f.type);
         if (Array.isArray(val)) {
-          target[f.key] = val.map((v) => xmlValueToObject(v, resolvedType, hereNs));
+          target[f.key] = val.map((v) => xmlValueToObject(v, resolvedType, hereNs, preserveOrderData, path ? [...path, f.name || f.key] : undefined));
         } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
           target[f.key] = null;
         } else {
