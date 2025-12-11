@@ -26,9 +26,10 @@ describe("XML Comments Preservation (Metadata Approach)", () => {
     // Verify the comments were captured in metadata
     expect((doc as any)._comments).toBeDefined();
     expect((doc as any)._comments).toHaveLength(3);
-    expect((doc as any)._comments).toContain(" This is a comment about the title ");
-    expect((doc as any)._comments).toContain(" This is a comment about the content ");
-    expect((doc as any)._comments).toContain(" Final comment ");
+    // Comments now have position information
+    expect((doc as any)._comments[0].text).toBe(" This is a comment about the title ");
+    expect((doc as any)._comments[1].text).toBe(" This is a comment about the content ");
+    expect((doc as any)._comments[2].text).toBe(" Final comment ");
 
     // Verify the data is correct
     expect(doc.title).toBe("My Document");
@@ -37,10 +38,20 @@ describe("XML Comments Preservation (Metadata Approach)", () => {
     // Marshal back to XML
     const marshalledXml = marshal(doc);
 
-    // Verify comments are in the output
+    // Verify comments are in the output AT THE CORRECT POSITIONS
     expect(marshalledXml).toContain("<!-- This is a comment about the title -->");
     expect(marshalledXml).toContain("<!-- This is a comment about the content -->");
     expect(marshalledXml).toContain("<!-- Final comment -->");
+    
+    // Verify positioning: comment about title should come before Title element
+    const titlePos = marshalledXml.indexOf("<Title>");
+    const titleCommentPos = marshalledXml.indexOf("<!-- This is a comment about the title -->");
+    expect(titleCommentPos).toBeLessThan(titlePos);
+    
+    // Comment about content should come before Content element  
+    const contentPos = marshalledXml.indexOf("<Content>");
+    const contentCommentPos = marshalledXml.indexOf("<!-- This is a comment about the content -->");
+    expect(contentCommentPos).toBeLessThan(contentPos);
 
     // Verify data is still correct
     expect(marshalledXml).toContain("<Title>My Document</Title>");
@@ -88,7 +99,7 @@ describe("XML Comments Preservation (Metadata Approach)", () => {
     const doc = unmarshal(Doc, xml);
     expect((doc as any)._comments).toBeDefined();
     expect((doc as any)._comments).toHaveLength(1);
-    expect((doc as any)._comments![0]).toBe(" Single comment ");
+    expect((doc as any)._comments[0].text).toBe(" Single comment ");
 
     const marshalled = marshal(doc);
     expect(marshalled).toContain("<!-- Single comment -->");

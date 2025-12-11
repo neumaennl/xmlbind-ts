@@ -281,22 +281,135 @@ export function marshal(obj: any): string {
     if (arr) writeAnyElements(node, arr);
   }
 
-  // Extract comments from metadata
-  if ((obj as any)._comments && Array.isArray((obj as any)._comments)) {
-    node["#comment"] = (obj as any)._comments;
-  }
-
   const textField = fields.find((f: any) => f.kind === "text");
   if (textField) {
     const tv = obj[textField.key];
     if (tv !== undefined && tv !== null) node["#text"] = tv.toString();
   }
 
+  // Handle comments with position information
+  const commentsData = (obj as any)._comments;
+  if (commentsData && Array.isArray(commentsData) && commentsData.length > 0) {
+    // Check if comments have position information
+    if (typeof commentsData[0] === 'object' && 'text' in commentsData[0] && 'position' in commentsData[0]) {
+      // Store position metadata and comments separately
+      const metaStr = commentsData.map((c: any) => `${c.position}|${c.text}`).join('|||');
+      node["_commentsWithPositions"] = metaStr;
+      // Also add comments as regular nodes (will be repositioned later)
+      node["#comment"] = commentsData.map((c: any) => c.text);
+    } else {
+      // Legacy format: just strings, add at end
+      node["#comment"] = commentsData;
+    }
+  }
+
   xmlObj[rootName] = node;
-  const xml = builder.build(xmlObj);
+  let xml = builder.build(xmlObj);
   
-  // Post-process to convert <#comment> tags to <!-- -->
-  return postProcessComments(xml);
+  // Post-process to insert comments at correct positions and convert tags
+  xml = insertCommentsAtPositions(xml, rootName);
+  xml = postProcessComments(xml);
+  
+  return xml;
+}
+
+/**
+ * Inserts comments at their correct positions within the XML string.
+ * Uses position information to place comments before/after the appropriate child elements.
+ *
+ * @param xml - The XML string with <#comment> tags
+ * @param rootName - The root element name  
+ * @returns XML string with comments repositioned based on position indices
+ */
+function insertCommentsAtPositions(xml: string, rootName: string): string {
+  // Check if we have position metadata
+  const metaPattern = /<_commentsWithPositions>(.*?)<\/_commentsWithPositions>/;
+  const metaMatch = xml.match(metaPattern);
+  
+  if (!metaMatch) return xml;
+  
+  // Parse position data: format is "position|text|||position|text|||..."
+  const posData = metaMatch[1];
+  const commentObjs: Array<{text: string; position: number}> = [];
+  
+  if (posData) {
+    const parts = posData.split('|||');
+    for (const part of parts) {
+      const pipeIndex = part.indexOf('|');
+      if (pipeIndex > 0) {
+        const pos = parseInt(part.substring(0, pipeIndex), 10);
+        const text = part.substring(pipeIndex + 1);
+        commentObjs.push({ position: pos, text });
+      }
+    }
+  }
+  
+  // Remove metadata element and all existing <#comment> tags
+  xml = xml.replace(metaPattern, '');
+  xml = xml.replace(/<#comment>[\s\S]*?<\/#comment>/g, '');
+  
+  // Find root element bounds
+  const rootOpenMatch = xml.match(new RegExp(`<${rootName}[^>]*>`));
+  const rootCloseMatch = xml.match(new RegExp(`<\\/${rootName}>`));
+  
+  if (!rootOpenMatch || !rootCloseMatch) return xml;
+  
+  const rootStartPos = rootOpenMatch.index! + rootOpenMatch[0].length;
+  const rootEndPos = rootCloseMatch.index!;
+  const rootContent = xml.substring(rootStartPos, rootEndPos);
+  
+  // Find all child elements with their positions
+  const childElements: Array<{start: number; end: number; text: string}> = [];
+  const childPattern = /<(\w+)(?:\s[^>]*)?>[\s\S]*?<\/\1>|<(\w+)[^>]*\/>/g;
+  let match;
+  
+  while ((match = childPattern.exec(rootContent)) !== null) {
+    childElements.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      text: match[0]
+    });
+  }
+  
+  // Build new content with comments inserted at correct positions
+  let newContent = '';
+  let lastPos = 0;
+  
+  for (let i = 0; i <= childElements.length; i++) {
+    // Insert comments that should appear before element at index i
+    const commentsHere = commentObjs.filter(c => c.position === i);
+    for (const comment of commentsHere) {
+      newContent += `\n  <#comment>${comment.text}</#comment>`;
+    }
+    
+    // Add the element if it exists
+    if (i < childElements.length) {
+      const elem = childElements[i];
+      // Add whitespace before element
+      const beforeText = rootContent.substring(lastPos, elem.start);
+      if (beforeText.trim().length === 0) {
+        newContent += '\n  ';
+      } else {
+        newContent += beforeText;
+      }
+      newContent += elem.text;
+      lastPos = elem.end;
+    }
+  }
+  
+  // Add trailing whitespace
+  const trailing = rootContent.substring(lastPos);
+  if (trailing.trim().length === 0) {
+    newContent += '\n';
+  } else {
+    newContent += trailing;
+  }
+  
+  // Reconstruct XML
+  const before = xml.substring(0, rootStartPos);
+  const after = xml.substring(rootEndPos);
+  
+  return before + newContent + after;
 }
 
 /**

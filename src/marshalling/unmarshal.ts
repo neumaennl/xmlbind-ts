@@ -82,6 +82,48 @@ function extractCommentsFromPreserveOrder(
 }
 
 /**
+ * Extracts comments from a nested element in preserveOrder structure.
+ */
+function extractNestedComments(
+  preserveOrderData: any,
+  path: string[]
+): Array<{text: string; position: number}> | undefined {
+  if (!Array.isArray(preserveOrderData) || path.length === 0) return undefined;
+  let current = preserveOrderData;
+  for (const elementName of path) {
+    if (!Array.isArray(current)) return undefined;
+    let found = false;
+    for (const item of current) {
+      if (item && typeof item === "object" && item[elementName]) {
+        current = item[elementName];
+        found = true;
+        break;
+      }
+    }
+    if (!found) return undefined;
+  }
+  if (!Array.isArray(current)) return undefined;
+  const comments: Array<{text: string; position: number}> = [];
+  let elementIndex = 0;
+  for (const child of current) {
+    if (!child || typeof child !== "object") continue;
+    if (child["#comment"]) {
+      const commentData = child["#comment"];
+      if (Array.isArray(commentData) && commentData[0]) {
+        const commentText = commentData[0]["#text"];
+        if (typeof commentText === "string") {
+          comments.push({ text: commentText, position: elementIndex });
+        }
+      }
+    } else if (!child["#text"]) {
+      elementIndex++;
+    }
+  }
+  return comments.length > 0 ? comments : undefined;
+}
+
+
+/**
  * Collects namespace declarations from an XML node, inheriting from parent context.
  * Scans for xmlns and xmlns:prefix attributes to build a prefix-to-URI mapping.
  *
@@ -461,11 +503,14 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
   }
 
   // Extract comments using the preserveOrder parser
-  const parsedWithComments = commentParser.parse(xml);
   const comments = extractCommentsFromPreserveOrder(parsedWithComments, rootName);
   if (comments && comments.length > 0) {
     (target as any)._comments = comments;
   }
+  
+  // Store the original XML and parsed comments for nested element processing
+  (target as any)._originalXml = xml;
+  (target as any)._parsedWithComments = parsedWithComments;
 
   const textField = fields.find((f) => f.kind === "text");
   if (textField && node["#text"] !== undefined) {
