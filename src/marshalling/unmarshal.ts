@@ -6,6 +6,7 @@ import {
 } from "../metadata/MetadataRegistry";
 import { castValue } from "../util/valueCasting";
 import { resolveType } from "../util/typeResolution";
+import { isNamespaceDeclaration } from "../util/namespaceUtils";
 import {
   ParsedXmlNode,
   ParsedXmlValue,
@@ -113,6 +114,7 @@ function matchAttributeKey(
 
 /**
  * Collects wildcard attributes that were not already bound to explicit fields.
+ * Excludes xmlns namespace declarations as they are handled separately by the namespace context.
  *
  * @param node - The parsed XML node
  * @param fields - All fields from the class metadata
@@ -138,8 +140,11 @@ function collectWildcardAttributes(
   for (const key of Object.keys(node)) {
     if (!key.startsWith("@_")) continue;
     if (boundAttrKeys.has(key)) continue;
+    const attrName = key.substring(2);
+    // Skip xmlns declarations as they are handled by the namespace context
+    if (isNamespaceDeclaration(attrName)) continue;
     const v = (node as any)[key];
-    if (v !== undefined) collected[key.substring(2)] = String(v);
+    if (v !== undefined) collected[attrName] = String(v);
   }
   return collected;
 }
@@ -150,7 +155,7 @@ function collectWildcardAttributes(
  * @param node - The parsed XML node
  * @param fields - All fields from the class metadata
  * @param nsMap - The namespace prefix mapping
- * @returns An array of unbound element values
+ * @returns An array of unbound element values, each as {elementName: value}
  */
 function collectWildcardElements(
   node: ParsedXmlNode,
@@ -171,7 +176,18 @@ function collectWildcardElements(
   for (const key of Object.keys(node)) {
     if (key.startsWith("@_") || key === "#text") continue;
     if (boundElemKeys.has(key)) continue;
-    collected.push((node as any)[key]);
+    
+    const value = (node as any)[key];
+    // If the value is an array, it means multiple elements with the same name
+    // Each should be added as a separate object {elementName: value}
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        collected.push({ [key]: item });
+      }
+    } else {
+      // Single element
+      collected.push({ [key]: value });
+    }
   }
   return collected;
 }

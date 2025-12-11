@@ -2,6 +2,7 @@ import { XMLBuilder } from "fast-xml-parser";
 import { getMeta, getAllFields } from "../metadata/MetadataRegistry";
 import { serializePrimitive } from "../util/valueCasting";
 import { resolveType } from "../util/typeResolution";
+import { isNamespaceDeclaration } from "../util/namespaceUtils";
 import { isPrimitiveCtor } from "./types";
 
 const builder = new XMLBuilder({
@@ -10,6 +11,7 @@ const builder = new XMLBuilder({
   textNodeName: "#text",
   format: true,
   indentBy: "  ",
+  suppressBooleanAttributes: false, // Preserve boolean attribute values like mixed="true"
 });
 
 type NsContext = {
@@ -148,6 +150,8 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
     const map = val[anyAttrF.key];
     if (map && typeof map === "object") {
       for (const [k, v] of Object.entries(map)) {
+        // Skip xmlns declarations as they are already handled by the namespace context
+        if (isNamespaceDeclaration(k)) continue;
         nestedNode[`@_${k}`] = String(v as any);
       }
     }
@@ -251,6 +255,8 @@ export function marshal(obj: any): string {
     const map = (obj as any)[anyAttrField.key];
     if (map && typeof map === "object") {
       for (const [k, v] of Object.entries(map)) {
+        // Skip xmlns declarations as they are already handled by the namespace context
+        if (isNamespaceDeclaration(k)) continue;
         node[`@_${k}`] = String(v as any);
       }
     }
