@@ -493,7 +493,7 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     const val = (node as any)[k];
     const resolvedType = resolveType(f.type);
     if (Array.isArray(val) || (f.isArray && Array.isArray(val))) {
-      target[f.key] = (Array.isArray(val) ? val : [val]).map((v, idx) =>
+      target[f.key] = (Array.isArray(val) ? val : [val]).map((v) =>
         xmlValueToObject(v, resolvedType, nsMap, parsedWithComments, [rootName, f.name || f.key])
       );
     } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
