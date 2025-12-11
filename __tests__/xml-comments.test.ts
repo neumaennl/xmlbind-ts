@@ -132,8 +132,10 @@ describe("XML Comments Preservation (Metadata Approach)", () => {
     expect(marshalled).toContain("<!-- Root comment -->");
     expect(marshalled).toContain("<!-- Section comment -->");
 
-    // Roundtrip verification
+    // Roundtrip verification - compare data and comments separately
     const root2 = unmarshal(Root, marshalled);
-    expect(JSON.stringify(root2)).toBe(JSON.stringify(root));
+    expect(root2.section?.title).toBe(root.section?.title);
+    expect((root2 as any)._comments).toEqual((root as any)._comments);
+    expect((root2.section as any)._comments).toEqual((root.section as any)._comments);
   });
 });

@@ -300,5 +300,6 @@ export function marshal(obj: any): string {
  */
 function postProcessComments(xml: string): string {
   // Replace <#comment>content</#comment> with <!--content-->
-  return xml.replace(/<#comment>([\s\S]*?)<\/#comment>/g, '<!--$1-->');
+  // Use non-greedy match with character class to avoid ReDoS
+  return xml.replace(/<#comment>([^<]*(?:<(?!\/#comment>)[^<]*)*)<\/#comment>/g, '<!--$1-->');
 }
