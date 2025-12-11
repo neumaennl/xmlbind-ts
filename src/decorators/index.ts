@@ -5,3 +5,4 @@ export { XmlText } from "./XmlText";
 export { XmlEnum } from "./XmlEnum";
 export { XmlAnyElement } from "./XmlAnyElement";
 export { XmlAnyAttribute } from "./XmlAnyAttribute";
+export { XmlComments } from "./XmlComments";
