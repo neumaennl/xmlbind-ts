@@ -122,6 +122,97 @@ function extractNestedComments(
   return comments.length > 0 ? comments : undefined;
 }
 
+/**
+ * Extracts the order of child elements from preserveOrder parsed structure.
+ * Returns an array of element names in the order they appear in the XML.
+ *
+ * @param preserveOrderArray - The parsed XML in preserveOrder format
+ * @param elementName - The name of the root element to extract element order from
+ * @returns An array of element names in order, or undefined if no elements found
+ */
+function extractElementOrderFromPreserveOrder(
+  preserveOrderArray: any,
+  elementName: string
+): string[] | undefined {
+  if (!Array.isArray(preserveOrderArray)) return undefined;
+
+  for (const item of preserveOrderArray) {
+    if (!item || typeof item !== "object") continue;
+
+    const elementData = item[elementName];
+    if (!elementData || !Array.isArray(elementData)) continue;
+
+    const elementOrder: string[] = [];
+
+    for (const child of elementData) {
+      if (!child || typeof child !== "object") continue;
+
+      // Skip comments and text nodes
+      if (child["#comment"] || child["#text"]) continue;
+
+      // Extract element names (first key that's not a comment or text)
+      for (const key of Object.keys(child)) {
+        if (key !== "#comment" && key !== "#text") {
+          // Extract local name (handle namespaced elements like "ns:Element")
+          const colonIndex = key.indexOf(":");
+          const localName = colonIndex >= 0 ? key.substring(colonIndex + 1) : key;
+          elementOrder.push(localName);
+          break; // Only take the first element key
+        }
+      }
+    }
+
+    return elementOrder.length > 0 ? elementOrder : undefined;
+  }
+
+  return undefined;
+}
+
+/**
+ * Extracts element order from a nested element in preserveOrder structure.
+ */
+function extractNestedElementOrder(
+  preserveOrderData: any,
+  path: string[]
+): string[] | undefined {
+  if (!Array.isArray(preserveOrderData) || path.length === 0) return undefined;
+  let current = preserveOrderData;
+  for (const elementName of path) {
+    if (!Array.isArray(current)) return undefined;
+    let found = false;
+    for (const item of current) {
+      if (item && typeof item === "object" && item[elementName]) {
+        current = item[elementName];
+        found = true;
+        break;
+      }
+    }
+    if (!found) return undefined;
+  }
+  if (!Array.isArray(current)) return undefined;
+  
+  const elementOrder: string[] = [];
+  for (const child of current) {
+    if (!child || typeof child !== "object") continue;
+
+    // Skip comments and text nodes
+    if (child["#comment"] || child["#text"]) continue;
+
+    // Extract element names
+    for (const key of Object.keys(child)) {
+      if (key !== "#comment" && key !== "#text") {
+        // Extract local name (handle namespaced elements)
+        const colonIndex = key.indexOf(":");
+        const localName = colonIndex >= 0 ? key.substring(colonIndex + 1) : key;
+        elementOrder.push(localName);
+        break;
+      }
+    }
+  }
+  
+  return elementOrder.length > 0 ? elementOrder : undefined;
+}
+
 
 /**
  * Collects namespace declarations from an XML node, inheriting from parent context.
@@ -419,6 +510,14 @@ function xmlValueToObject<T>(
     (target as any)._comments = mergedComments;
   }
 
+  // Extract and store element order from preserveOrder data
+  if (preserveOrderData && path && path.length > 0) {
+    const elementOrder = extractNestedElementOrder(preserveOrderData, path);
+    if (elementOrder && elementOrder.length > 0) {
+      (target as any)._elementOrder = elementOrder;
+    }
+  }
+
   const textField = fields.find((f) => f.kind === "text");
   if (textField && node["#text"] !== undefined) {
     target[textField.key] = castValue(node["#text"], resolveType(textField.type));
@@ -529,6 +628,12 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
   const comments = extractCommentsFromPreserveOrder(parsedWithComments, rootName);
   if (comments && comments.length > 0) {
     (target as any)._comments = comments;
+  }
+
+  // Extract element order using the preserveOrder parser
+  const elementOrder = extractElementOrderFromPreserveOrder(parsedWithComments, rootName);
+  if (elementOrder && elementOrder.length > 0) {
+    (target as any)._elementOrder = elementOrder;
   }
 
   const textField = fields.find((f) => f.kind === "text");

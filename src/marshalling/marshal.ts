@@ -167,7 +167,11 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
   const commentsData = val._comments;
   const hasPositioned = hasPositionedComments(commentsData);
 
-  const elementFields = nestedFields.filter((ff: any) => ff.kind === "element");
+  let elementFields = nestedFields.filter((ff: any) => ff.kind === "element");
+  
+  // Sort element fields based on stored element order if available
+  const elementOrder = val._elementOrder;
+  elementFields = sortFieldsByElementOrder(elementFields, elementOrder);
   
   // If we have positioned comments, interleave them with elements
   if (hasPositioned) {
@@ -243,6 +247,52 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
 }
 
 /**
+ * Sorts element fields based on the stored element order from unmarshalling.
+ * Fields present in elementOrder are sorted in that order, followed by
+ * fields not present in elementOrder (new fields).
+ *
+ * @param elementFields - Array of element field metadata
+ * @param elementOrder - Array of element names in the desired order (from _elementOrder)
+ * @returns Sorted array of element field metadata
+ */
+function sortFieldsByElementOrder(elementFields: any[], elementOrder: string[] | undefined): any[] {
+  if (!elementOrder || elementOrder.length === 0) {
+    return elementFields;
+  }
+
+  // Create a map of element name to order index
+  const orderMap = new Map<string, number>();
+  elementOrder.forEach((name, index) => {
+    orderMap.set(name, index);
+  });
+
+  // Separate fields into ordered and unordered
+  const orderedFields: any[] = [];
+  const unorderedFields: any[] = [];
+
+  for (const field of elementFields) {
+    const fieldName = field.name || field.key;
+    if (orderMap.has(fieldName)) {
+      orderedFields.push(field);
+    } else {
+      unorderedFields.push(field);
+    }
+  }
+
+  // Sort ordered fields by their position in elementOrder
+  orderedFields.sort((a, b) => {
+    const aName = a.name || a.key;
+    const bName = b.name || b.key;
+    const aOrder = orderMap.get(aName) ?? Infinity;
+    const bOrder = orderMap.get(bName) ?? Infinity;
+    return aOrder - bOrder;
+  });
+
+  // Return ordered fields followed by unordered fields
+  return [...orderedFields, ...unorderedFields];
+}
+
+/**
  * Marshals a JavaScript object to an XML string.
  *
  * The object must have @XmlRoot metadata defined. All decorated properties
@@ -296,7 +346,11 @@ export function marshal(obj: any): string {
   const commentsData = (obj as any)._comments;
   const hasPositioned = hasPositionedComments(commentsData);
 
-  const elementFields = fields.filter((f: any) => f.kind === "element");
+  let elementFields = fields.filter((f: any) => f.kind === "element");
+  
+  // Sort element fields based on stored element order if available
+  const elementOrder = (obj as any)._elementOrder;
+  elementFields = sortFieldsByElementOrder(elementFields, elementOrder);
   
   // If we have positioned comments, interleave them with elements
   if (hasPositioned) {
