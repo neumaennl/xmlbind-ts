@@ -179,6 +179,38 @@ describe("Schema Roundtrip", () => {
         // Marshal it back to XML
         const marshalledXsd = marshal(schemaObj);
 
+        // The most important test: verify the XML files are identical after roundtrip
+        // Normalize whitespace for comparison (collapse multiple spaces/newlines)
+        const normalizeXml = (xml: string) => {
+          return xml
+            .replace(/>\s+</g, '><')  // Remove whitespace between tags
+            .replace(/\s+/g, ' ')      // Collapse multiple whitespace to single space
+            .trim();
+        };
+        
+        const normalizedOriginal = normalizeXml(originalXsd);
+        const normalizedMarshalled = normalizeXml(marshalledXsd);
+        
+        if (normalizedOriginal !== normalizedMarshalled) {
+          console.log("\n⚠️  XML files differ after roundtrip!");
+          console.log("Original length:", normalizedOriginal.length);
+          console.log("Marshalled length:", normalizedMarshalled.length);
+          
+          // Find first difference
+          for (let i = 0; i < Math.min(normalizedOriginal.length, normalizedMarshalled.length); i++) {
+            if (normalizedOriginal[i] !== normalizedMarshalled[i]) {
+              const start = Math.max(0, i - 50);
+              const end = Math.min(normalizedOriginal.length, i + 50);
+              console.log("\nFirst difference at position", i);
+              console.log("Original:", normalizedOriginal.substring(start, end));
+              console.log("Marshalled:", normalizedMarshalled.substring(start, end));
+              break;
+            }
+          }
+        }
+        
+        expect(normalizedMarshalled).toBe(normalizedOriginal);
+
         // Unmarshal again to compare
         const schemaObj2 = unmarshal(Schema, marshalledXsd) as any;
 

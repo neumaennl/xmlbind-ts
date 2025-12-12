@@ -123,6 +123,50 @@ function extractNestedComments(
 }
 
 /**
+ * Extracts document-level comments (comments before the root element).
+ * These are comments that appear at the top of the XML file, before the root element starts.
+ *
+ * @param preserveOrderArray - The parsed XML in preserveOrder format
+ * @param rootElementName - The name of the root element
+ * @returns An array of comment texts in order, or undefined if no comments found
+ */
+function extractDocumentLevelComments(
+  preserveOrderArray: unknown,
+  rootElementName: string
+): string[] | undefined {
+  if (!Array.isArray(preserveOrderArray)) return undefined;
+
+  const documentComments: string[] = [];
+  
+  for (const item of preserveOrderArray) {
+    if (!item || typeof item !== "object") continue;
+    
+    // Check if this is a comment node
+    const commentData = (item as Record<string, unknown>)["#comment"];
+    if (commentData) {
+      // Comment data is an array with { "#text": "comment text" } structure
+      if (Array.isArray(commentData) && commentData.length > 0) {
+        const textNode = commentData[0];
+        if (textNode && typeof textNode === "object" && "#text" in textNode) {
+          documentComments.push(String((textNode as Record<string, unknown>)["#text"]));
+        }
+      }
+      continue;
+    }
+    
+    // Check if we've reached the root element (with or without namespace prefix)
+    for (const key of Object.keys(item as Record<string, unknown>)) {
+      if (key === rootElementName || getLocalName(key) === rootElementName) {
+        // We've reached the root element, stop collecting comments
+        return documentComments.length > 0 ? documentComments : undefined;
+      }
+    }
+  }
+  
+  return documentComments.length > 0 ? documentComments : undefined;
+}
+
+/**
  * Extracts the local name from a potentially namespaced element name.
  * For example, "ns:Element" becomes "Element", and "Element" stays "Element".
  *
@@ -637,6 +681,9 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
   // Also parse with comment parser for extracting comments
   const parsedWithComments = commentParser.parse(xml);
 
+  // Check if the original XML had an XML declaration
+  const hasXmlDeclaration = xml.trimStart().startsWith('<?xml');
+
   if (!meta) throw new Error("No XmlRoot metadata for " + cls.name);
   const rootName = meta.rootName ?? cls.name;
   // root may be prefixed; find by local name
@@ -732,6 +779,17 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
   const elementOrder = extractElementOrderFromPreserveOrder(parsedWithComments, rootName);
   if (elementOrder && elementOrder.length > 0) {
     (target as any)._elementOrder = elementOrder;
+  }
+
+  // Extract document-level comments (comments before the root element)
+  const documentComments = extractDocumentLevelComments(parsedWithComments, rootName);
+  if (documentComments && documentComments.length > 0) {
+    (target as any)._documentComments = documentComments;
+  }
+
+  // Store whether the original XML had an XML declaration
+  if (hasXmlDeclaration) {
+    (target as any)._hasXmlDeclaration = true;
   }
 
   const textField = fields.find((f) => f.kind === "text");

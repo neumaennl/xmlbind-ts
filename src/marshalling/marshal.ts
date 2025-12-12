@@ -472,6 +472,29 @@ export function marshal(obj: any): string {
   // Post-process to convert <#comment> tags to <!-- --> format
   xml = postProcessComments(xml);
   
+  // Add XML declaration at the beginning if the original XML had one
+  if ((obj as any)._hasXmlDeclaration) {
+    xml = `<?xml version="1.0" encoding="UTF-8"?>\n` + xml;
+  }
+  
+  // Add document-level comments (comments before the root element)
+  const documentComments = (obj as any)._documentComments;
+  if (documentComments && Array.isArray(documentComments) && documentComments.length > 0) {
+    // Find the end of the XML declaration line (if present)
+    const xmlDeclEnd = xml.indexOf('?>');
+    if (xmlDeclEnd >= 0) {
+      // Insert comments after the XML declaration
+      const beforeDecl = xml.substring(0, xmlDeclEnd + 2);
+      const afterDecl = xml.substring(xmlDeclEnd + 2);
+      const commentLines = documentComments.map(c => `<!--${c}-->`).join('\n');
+      xml = beforeDecl + '\n' + commentLines + afterDecl;
+    } else {
+      // No XML declaration, insert at the beginning
+      const commentLines = documentComments.map(c => `<!--${c}-->`).join('\n');
+      xml = commentLines + '\n' + xml;
+    }
+  }
+  
   return xml;
 }
 

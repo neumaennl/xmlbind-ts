@@ -55,9 +55,14 @@ describe("Marshalling", () => {
       expect(p.alias).toEqual(["J", "Johnny"]);
 
       const xml = marshal(p);
+      // Verify that the XML has the XML declaration since the input had one
+      expect(xml).toContain('<?xml version="1.0"');
+      
       // Verify that attributes appear on the same line as the opening tag
-      const firstLine = xml.split('\n')[0];
-      expectStringsOnSameLine(firstLine, [
+      const lines = xml.split('\n');
+      const personLine = lines.find(l => l.includes('<Person'));
+      expect(personLine).toBeDefined();
+      expectStringsOnSameLine(personLine!, [
         '<Person xmlns="http://example.com/ns"',
         'id="42"',
       ]);
