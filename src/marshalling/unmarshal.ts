@@ -238,6 +238,60 @@ function extractNestedElementOrder(
   return elementOrder.length > 0 ? elementOrder : undefined;
 }
 
+/**
+ * Finds all occurrences of an element at a specific path in preserveOrder data.
+ * Returns an array of preserveOrder data for each occurrence.
+ * This is used for array elements where each item needs its own preserveOrder context.
+ */
+function findElementOccurrences(
+  preserveOrderData: unknown,
+  path: string[]
+): unknown[] {
+  if (!Array.isArray(preserveOrderData) || path.length === 0) return [];
+  
+  // Navigate to the parent path (all but the last element)
+  let current: unknown = preserveOrderData;
+  for (let i = 0; i < path.length - 1; i++) {
+    const elementName = path[i];
+    if (!Array.isArray(current)) return [];
+    let found = false;
+    
+    for (const item of current) {
+      if (!item || typeof item !== "object") continue;
+      
+      for (const key of Object.keys(item as Record<string, unknown>)) {
+        if (key === elementName || getLocalName(key) === elementName) {
+          current = (item as Record<string, unknown>)[key];
+          found = true;
+          break;
+        }
+      }
+      
+      if (found) break;
+    }
+    
+    if (!found) return [];
+  }
+  
+  // Now find all occurrences of the last element in the path
+  if (!Array.isArray(current)) return [];
+  const lastElement = path[path.length - 1];
+  const occurrences: unknown[] = [];
+  
+  for (const item of current) {
+    if (!item || typeof item !== "object") continue;
+    
+    for (const key of Object.keys(item as Record<string, unknown>)) {
+      if (key === lastElement || getLocalName(key) === lastElement) {
+        occurrences.push((item as Record<string, unknown>)[key]);
+        break; // Only take the first matching key per item
+      }
+    }
+  }
+  
+  return occurrences;
+}
+
 
 /**
  * Collects namespace declarations from an XML node, inheriting from parent context.
@@ -484,7 +538,19 @@ function xmlValueToObject<T>(
         const val = (node as any)[k];
         const resolvedType = resolveType(f.type);
         if (Array.isArray(val)) {
-          target[f.key] = val.map((v) => xmlValueToObject(v, resolvedType, hereNs, preserveOrderData, path ? [...path, f.name || f.key] : undefined));
+          // For arrays, find individual preserveOrder data for each item
+          if (preserveOrderData && path) {
+            const itemPath = [...path, f.name || f.key];
+            const occurrences = findElementOccurrences(preserveOrderData, itemPath);
+            // Map each array item with its corresponding preserveOrder data
+            target[f.key] = val.map((v, index) => {
+              // Wrap the item-specific preserveOrder data to create a pseudo-root context
+              const itemPreserveOrder = occurrences[index] ? [{ _item: occurrences[index] }] : undefined;
+              return xmlValueToObject(v, resolvedType, hereNs, itemPreserveOrder, ['_item']);
+            });
+          } else {
+            target[f.key] = val.map((v) => xmlValueToObject(v, resolvedType, hereNs, undefined, undefined));
+          }
         } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
           target[f.key] = null;
         } else {
@@ -623,9 +689,16 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
     const val = (node as any)[k];
     const resolvedType = resolveType(f.type);
     if (Array.isArray(val) || (f.isArray && Array.isArray(val))) {
-      target[f.key] = (Array.isArray(val) ? val : [val]).map((v) =>
-        xmlValueToObject(v, resolvedType, nsMap, parsedWithComments, [rootName, f.name || f.key])
-      );
+      const arrayVal = Array.isArray(val) ? val : [val];
+      // For arrays at root level, find individual preserveOrder data for each item
+      const itemPath = [rootName, f.name || f.key];
+      const occurrences = findElementOccurrences(parsedWithComments, itemPath);
+      target[f.key] = arrayVal.map((v, index) => {
+        // Wrap the item-specific preserveOrder data to create a pseudo-root context
+        // This allows nested elements to use paths relative to this item
+        const itemPreserveOrder = occurrences[index] ? [{ _item: occurrences[index] }] : undefined;
+        return xmlValueToObject(v, resolvedType, nsMap, itemPreserveOrder, ['_item']);
+      });
     } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
       target[f.key] = null;
     } else {
