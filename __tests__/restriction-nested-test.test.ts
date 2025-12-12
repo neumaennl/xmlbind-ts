@@ -47,9 +47,6 @@ describe("Restriction with Nested ComplexContent", () => {
 </xs:complexType>`;
 
     const obj = unmarshal(ComplexType, xml);
-    console.log("complexType._elementOrder:", (obj as any)._elementOrder);
-    console.log("complexContent._elementOrder:", (obj.complexContent as any)?._elementOrder);
-    console.log("restriction._elementOrder:", (obj.complexContent?.restriction as any)?._elementOrder);
     
     // Verify nested element orders are being captured
     expect((obj as any)._elementOrder).toEqual(['complexContent']);
@@ -57,15 +54,11 @@ describe("Restriction with Nested ComplexContent", () => {
     expect((obj.complexContent?.restriction as any)?._elementOrder).toEqual(['sequence', 'attribute', 'attribute', 'anyAttribute']);
     
     const output = marshal(obj);
-    console.log("\nMarshalled:");
-    console.log(output);
     
     // Verify order is preserved
     const seqPos = output.indexOf("<sequence>");
     const attr1Pos = output.indexOf('name="attr1"');
     const anyAttrPos = output.indexOf("<anyAttribute");
-    
-    console.log("\nPositions - seq:", seqPos, "attr1:", attr1Pos, "anyAttr:", anyAttrPos);
     
     expect(seqPos).toBeGreaterThan(0);
     expect(attr1Pos).toBeGreaterThan(0);

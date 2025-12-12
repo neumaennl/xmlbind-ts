@@ -33,8 +33,6 @@ describe("Choice Element Order", () => {
 </xs:complexContent>`;
 
     const obj1 = unmarshal(ComplexContent, xmlWithRestriction);
-    console.log("complexContent._elementOrder:", (obj1 as any)._elementOrder);
-    console.log("restriction._elementOrder:", (obj1.restriction as any)?._elementOrder);
     
     expect((obj1 as any)._elementOrder).toEqual(['restriction']);
     expect((obj1.restriction as any)?._elementOrder).toEqual(['sequence']);
@@ -47,8 +45,6 @@ describe("Choice Element Order", () => {
 </xs:complexContent>`;
 
     const obj2 = unmarshal(ComplexContent, xmlWithExtension);
-    console.log("complexContent._elementOrder (extension case):", (obj2 as any)._elementOrder);
-    console.log("extension._elementOrder:", (obj2.extension as any)?._elementOrder);
     
     expect((obj2 as any)._elementOrder).toEqual(['extension']);
     expect((obj2.extension as any)?._elementOrder).toEqual(['group']);
