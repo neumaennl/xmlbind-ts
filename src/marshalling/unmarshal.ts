@@ -194,18 +194,30 @@ function extractNestedElementOrder(
 ): string[] | undefined {
   if (!Array.isArray(preserveOrderData) || path.length === 0) return undefined;
   let current: unknown = preserveOrderData;
+  
   for (const elementName of path) {
     if (!Array.isArray(current)) return undefined;
     let found = false;
+    
+    // Look for the element - may be with or without namespace prefix
     for (const item of current) {
-      if (item && typeof item === "object" && (item as Record<string, unknown>)[elementName]) {
-        current = (item as Record<string, unknown>)[elementName];
-        found = true;
-        break;
+      if (!item || typeof item !== "object") continue;
+      
+      // Try to find element data - match either exact name or local name
+      for (const key of Object.keys(item as Record<string, unknown>)) {
+        if (key === elementName || getLocalName(key) === elementName) {
+          current = (item as Record<string, unknown>)[key];
+          found = true;
+          break;
+        }
       }
+      
+      if (found) break;
     }
+    
     if (!found) return undefined;
   }
+  
   if (!Array.isArray(current)) return undefined;
   
   const elementOrder: string[] = [];
