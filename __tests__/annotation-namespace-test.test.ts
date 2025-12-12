@@ -21,22 +21,15 @@ describe("Annotation with Namespace Order", () => {
 </xs:annotation>`;
 
     const obj = unmarshal(Annotation, xml);
-    console.log("_elementOrder:", (obj as any)._elementOrder);
-    console.log("appinfo:", obj.appinfo);
-    console.log("documentation:", obj.documentation);
     
     expect((obj as any)._elementOrder).toBeDefined();
     expect((obj as any)._elementOrder).toEqual(['appinfo', 'documentation']);
     
     const output = marshal(obj);
-    console.log("\nMarshalled:");
-    console.log(output);
     
     // Check that appinfo comes before documentation
     const appinfoPos = output.indexOf("appinfo");
     const docPos = output.indexOf("documentation");
-    
-    console.log("appinfoPos:", appinfoPos, "docPos:", docPos);
     
     expect(appinfoPos).toBeGreaterThan(0);
     expect(docPos).toBeGreaterThan(0);

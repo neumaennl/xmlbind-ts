@@ -21,11 +21,8 @@ describe("Annotation Element Order", () => {
 </annotation>`;
 
     const obj = unmarshal(Annotation, xml);
-    console.log("_elementOrder:", (obj as any)._elementOrder);
     
     const output = marshal(obj);
-    console.log("\nMarshalled:");
-    console.log(output);
     
     // Check that appinfo comes before documentation
     const appinfoPos = output.indexOf("<appinfo>");
@@ -54,11 +51,8 @@ describe("Annotation Element Order", () => {
 </annotation>`;
 
     const obj = unmarshal(Annotation, xml);
-    console.log("_elementOrder:", (obj as any)._elementOrder);
     
     const output = marshal(obj);
-    console.log("\nMarshalled:");
-    console.log(output);
     
     // Check that documentation comes before appinfo
     const appinfoPos = output.indexOf("<appinfo>");

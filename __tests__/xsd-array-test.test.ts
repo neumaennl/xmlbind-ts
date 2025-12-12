@@ -23,11 +23,8 @@ describe("XSD Array Element Order", () => {
 </extension>`;
 
     const obj = unmarshal(Extension, xml);
-    console.log("extension._elementOrder:", (obj as any)._elementOrder);
     
     const output = marshal(obj);
-    console.log("\nMarshalled output:");
-    console.log(output);
     
     // Check order: group before attribute
     const groupPos = output.indexOf("<group>");

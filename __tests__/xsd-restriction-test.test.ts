@@ -24,10 +24,8 @@ describe("XSD Restriction Element Order", () => {
 </complexType>`;
 
     const obj = unmarshal(ComplexType, xml);
-    console.log("_elementOrder:", (obj as any)._elementOrder);
     
     const output = marshal(obj);
-    console.log("Marshalled:", output);
     
     // Check order
     const annPos = output.indexOf("<annotation>");

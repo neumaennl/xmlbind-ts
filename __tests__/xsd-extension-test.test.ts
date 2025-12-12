@@ -49,13 +49,8 @@ describe("XSD Extension Element Order", () => {
 </complexType>`;
 
     const obj = unmarshal(ComplexType, xml);
-    console.log("complexType._elementOrder:", (obj as any)._elementOrder);
-    console.log("complexContent._elementOrder:", (obj.complexContent as any)?._elementOrder);
-    console.log("extension._elementOrder:", (obj.complexContent?.extension as any)?._elementOrder);
     
     const output = marshal(obj);
-    console.log("\nMarshalled output:");
-    console.log(output);
     
     // Check order at complexType level: annotation before complexContent
     const annPos = output.indexOf("<annotation>");

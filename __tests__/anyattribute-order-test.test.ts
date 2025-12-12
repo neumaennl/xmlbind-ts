@@ -26,19 +26,14 @@ describe("AnyAttribute Order", () => {
 </restriction>`;
 
     const obj = unmarshal(Restriction, xml);
-    console.log("_elementOrder:", (obj as any)._elementOrder);
     expect((obj as any)._elementOrder).toBeDefined();
     
     const output = marshal(obj);
-    console.log("\nMarshalled:");
-    console.log(output);
     
     // Check order: sequence < attribute < anyAttribute
     const seqPos = output.indexOf("<sequence>");
     const attrPos = output.indexOf(' name="a1"'); // Use attribute content instead
     const anyAttrPos = output.indexOf("<anyAttribute>");
-    
-    console.log("Positions - seq:", seqPos, "attr:", attrPos, "anyAttr:", anyAttrPos);
     
     expect(seqPos).toBeGreaterThan(0);
     expect(attrPos).toBeGreaterThan(0);

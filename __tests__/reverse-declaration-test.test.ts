@@ -27,11 +27,8 @@ describe("Reverse Declaration Order", () => {
 </restriction>`;
 
     const obj = unmarshal(Restriction, xml);
-    console.log("_elementOrder:", (obj as any)._elementOrder);
     
     const output = marshal(obj);
-    console.log("\nMarshalled:");
-    console.log(output);
     
     // Should still preserve XML order: sequence first, anyAttribute last
     const seqPos = output.indexOf("<sequence>");

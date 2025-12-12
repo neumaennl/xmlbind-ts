@@ -22,7 +22,17 @@ export function extractCommentsFromPreserveOrder(
   for (const item of preserveOrderArray) {
     if (!item || typeof item !== "object") continue;
 
-    const elementData = item[elementName];
+    // Try exact match first, then local name match (for namespaced elements)
+    let elementData = item[elementName];
+    if (!elementData) {
+      // Check if any key in item has a local name matching elementName
+      for (const key of Object.keys(item)) {
+        if (getLocalName(key) === elementName) {
+          elementData = item[key];
+          break;
+        }
+      }
+    }
     if (!elementData || !Array.isArray(elementData)) continue;
 
     const comments: Array<{text: string; position: number}> = [];
@@ -69,10 +79,22 @@ export function extractNestedComments(
     if (!Array.isArray(current)) return undefined;
     let found = false;
     for (const item of current) {
-      if (item && typeof item === "object" && item[elementName]) {
-        current = item[elementName];
-        found = true;
-        break;
+      if (item && typeof item === "object") {
+        // Try exact match first
+        if (item[elementName]) {
+          current = item[elementName];
+          found = true;
+          break;
+        }
+        // Try local name match for namespaced elements
+        for (const key of Object.keys(item)) {
+          if (getLocalName(key) === elementName) {
+            current = item[key];
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
       }
     }
     if (!found) return undefined;
