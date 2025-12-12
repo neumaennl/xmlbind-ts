@@ -151,7 +151,16 @@ function extractElementOrderFromPreserveOrder(
   for (const item of preserveOrderArray) {
     if (!item || typeof item !== "object") continue;
 
-    const elementData = (item as Record<string, unknown>)[elementName];
+    // Try to find the element data - may be with or without namespace prefix
+    let elementData: unknown = undefined;
+    for (const key of Object.keys(item as Record<string, unknown>)) {
+      // Match either exact name or local name (after colon)
+      if (key === elementName || getLocalName(key) === elementName) {
+        elementData = (item as Record<string, unknown>)[key];
+        break;
+      }
+    }
+    
     if (!elementData || !Array.isArray(elementData)) continue;
 
     const elementOrder: string[] = [];
