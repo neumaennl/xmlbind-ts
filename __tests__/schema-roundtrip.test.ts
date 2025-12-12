@@ -209,8 +209,8 @@ describe("Schema Roundtrip", () => {
         //    - XML specification allows attributes in any order
 
         // 4. Self-closing tags:
-        //    - Original may use <element/> for empty elements
-        //    - Marshalled uses <element></element> for consistency
+        //    - Original may use <element></element> for empty elements
+        //    - Marshalled uses <element/> for consistency
         //    - Both are semantically equivalent
 
         // 5. Quote style:

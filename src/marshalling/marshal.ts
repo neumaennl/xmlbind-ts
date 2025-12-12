@@ -4,10 +4,7 @@ import { serializePrimitive } from "../util/valueCasting";
 import { resolveType } from "../util/typeResolution";
 import { isNamespaceDeclaration } from "../util/namespaceUtils";
 import { isPrimitiveCtor } from "./types";
-import {
-  hasPositionedComments,
-  groupCommentsByPosition,
-} from "./commentUtils";
+import { hasPositionedComments, groupCommentsByPosition } from "./commentUtils";
 import { sortFieldsByElementOrder } from "./elementOrderUtils";
 import {
   qName,
@@ -23,6 +20,7 @@ const builder = new XMLBuilder({
   format: true,
   indentBy: "  ",
   suppressBooleanAttributes: false, // Preserve boolean attribute values like mixed="true"
+  suppressEmptyNode: true, // Use self-closing tags for empty elements
 });
 
 /**
@@ -168,10 +166,10 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
     return serializePrimitive(val, type);
   const nestedMeta = getMeta(type);
   if (!nestedMeta) return val;
-  
+
   const nestedNode: any = {};
   const nestedFields = getAllFields(type);
-  
+
   // Process attributes
   processNestedAttributes(nestedNode, val, nestedFields, ctx);
 
@@ -183,13 +181,7 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
 
   // Add elements with or without positioned comments
   if (hasPositioned) {
-    addElementsWithComments(
-      nestedNode,
-      val,
-      elementFields,
-      commentsData,
-      ctx
-    );
+    addElementsWithComments(nestedNode, val, elementFields, commentsData, ctx);
   } else {
     addElementsWithoutComments(
       nestedNode,
@@ -377,11 +369,7 @@ function addRootElementsWithoutComments(
  * @param obj - The source object
  * @param fields - All fields
  */
-function processRootWildcardsAndText(
-  node: any,
-  obj: any,
-  fields: any[]
-): void {
+function processRootWildcardsAndText(node: any, obj: any, fields: any[]): void {
   const anyAttrField = fields.find((f: any) => f.kind === "anyAttribute");
   if (anyAttrField) {
     const map = obj[anyAttrField.key];
@@ -420,15 +408,23 @@ function postProcessXml(xml: string, obj: any): string {
   }
 
   const documentComments = obj._documentComments;
-  if (documentComments && Array.isArray(documentComments) && documentComments.length > 0) {
+  if (
+    documentComments &&
+    Array.isArray(documentComments) &&
+    documentComments.length > 0
+  ) {
     const xmlDeclEnd = xml.indexOf("?>");
     if (xmlDeclEnd >= 0) {
       const beforeDecl = xml.substring(0, xmlDeclEnd + 2);
       const afterDecl = xml.substring(xmlDeclEnd + 2);
-      const commentLines = documentComments.map((c: string) => `<!--${c}-->`).join("\n");
+      const commentLines = documentComments
+        .map((c: string) => `<!--${c}-->`)
+        .join("\n");
       xml = beforeDecl + "\n" + commentLines + afterDecl;
     } else {
-      const commentLines = documentComments.map((c: string) => `<!--${c}-->`).join("\n");
+      const commentLines = documentComments
+        .map((c: string) => `<!--${c}-->`)
+        .join("\n");
       xml = commentLines + "\n" + xml;
     }
   }
