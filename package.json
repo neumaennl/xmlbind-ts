@@ -27,7 +27,7 @@
   "dependencies": {
     "@xmldom/xmldom": "^0.9.5",
     "commander": "^14.0.3",
-    "fast-xml-parser": "^5.3.4"
+    "fast-xml-parser": "^5.3.5"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
