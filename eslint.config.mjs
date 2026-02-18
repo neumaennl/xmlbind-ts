@@ -10,6 +10,7 @@ export default defineConfig([
   typescriptEslint.configs["flat/recommended"],
   jestPlugin.configs["flat/recommended"],
   {
+    files: ['**/*.ts', '**/*.mts', '**/*.cts'],
     languageOptions: {
       parser: tsParser,
       sourceType: "module",
@@ -19,11 +20,6 @@ export default defineConfig([
         ...globals.node,
         ...globals.jest,
       },
-    },
-
-    plugins: {
-      "@typescript-eslint": typescriptEslint,
-      jest: jestPlugin,
     },
 
     rules: {
