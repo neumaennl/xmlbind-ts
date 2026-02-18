@@ -1,20 +1,18 @@
-const { defineConfig, globalIgnores } = require("eslint/config");
-
-const tsParser = require("@typescript-eslint/parser");
-const typescriptEslint = require("@typescript-eslint/eslint-plugin");
-const jestPlugin = require("eslint-plugin-jest");
-const globals = require("globals");
-const js = require("@eslint/js");
-
-const { FlatCompat } = require("@eslint/eslintrc");
+import { defineConfig, globalIgnores } from "eslint/config";
+import tsParser from "@typescript-eslint/parser";
+import typescriptEslint from "@typescript-eslint/eslint-plugin";
+import jestPlugin from "eslint-plugin-jest";
+import globals from "globals";
+import js from "@eslint/js";
+import { FlatCompat } from "@eslint/eslintrc";
 
 const compat = new FlatCompat({
-  baseDirectory: __dirname,
+  baseDirectory: import.meta.dirname,
   recommendedConfig: js.configs.recommended,
   allConfig: js.configs.all,
 });
 
-module.exports = defineConfig([
+export default defineConfig([
   {
     languageOptions: {
       parser: tsParser,
@@ -70,6 +68,6 @@ module.exports = defineConfig([
     "**/.vscode/",
     "**/.test-results/",
     "**/test-results/",
-    "eslint.config.cjs",
+    "eslint.config.mjs",
   ]),
 ]);
