@@ -60,6 +60,19 @@ export default defineConfig([
       ],
     },
   },
+  // Disallow .js and .cjs files (project uses ESM with .mjs and TypeScript)
+  {
+    files: ['**/*.js', '**/*.cjs'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Program',
+          message: 'JavaScript (.js) and CommonJS (.cjs) files are not allowed. Use TypeScript (.ts) or ES modules (.mjs) instead.',
+        },
+      ],
+    },
+  },
   globalIgnores([
     "**/node_modules/",
     "**/dist/",
