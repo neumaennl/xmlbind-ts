@@ -68,6 +68,5 @@ export default defineConfig([
     "**/.vscode/",
     "**/.test-results/",
     "**/test-results/",
-    "eslint.config.mjs",
   ]),
 ]);
