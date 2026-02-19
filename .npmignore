@@ -10,8 +10,8 @@ coverage/
 npm-debug.log*
 *.tgz
 .eslintrc*
-jest.config.cjs
+jest.config.mjs
 tsx.config.*
 tsconfig.json
 tsconfig.eslint.json
-eslint.config.cjs
+eslint.config.mjs

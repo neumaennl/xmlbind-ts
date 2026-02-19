@@ -36,7 +36,7 @@ jobs:
         run: npm run build
 
       - name: Run tests (coverage + JSON; JUnit via config)
-        # coverage/ and test-results/jest-results.json are created here; JUnit is configured in jest.config.cjs
+        # coverage/ and test-results/jest-results.json are created here; JUnit is configured in jest.config.mjs
         run: |
           mkdir -p test-results
           npm test -- --coverage --runInBand --json --outputFile=test-results/jest-results.json --coverageReporters=json-summary
