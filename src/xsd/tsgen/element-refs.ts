@@ -157,7 +157,7 @@ export function emitElementRef(
       referencedElement.getAttribute("targetNamespace") ||
       (referencedElement.parentNode as any)?.getAttribute?.("targetNamespace");
 
-    let tsType = "unknown";
+    let tsType: string;
     if (refType) {
       // Referenced element explicitly names a type
       const local = localName(refType)!;

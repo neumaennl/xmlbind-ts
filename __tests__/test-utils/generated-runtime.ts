@@ -93,7 +93,8 @@ export function loadGeneratedClasses<T extends string>(
     } catch (e: any) {
       const hint = e?.message || String(e);
       throw new Error(
-        `Failed to load generated class ${n} from ${file}: ${hint}`
+        `Failed to load generated class ${n} from ${file}: ${hint}`,
+        { cause: e }
       );
     }
   }
