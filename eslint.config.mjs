@@ -7,7 +7,7 @@ import js from "@eslint/js";
 
 export default defineConfig([
   js.configs.recommended,
-  typescriptEslint.configs["flat/recommended"],
+  ...typescriptEslint.configs["flat/recommended"],
   jestPlugin.configs["flat/recommended"],
   {
     files: ['**/*.ts', '**/*.mts', '**/*.cts'],
