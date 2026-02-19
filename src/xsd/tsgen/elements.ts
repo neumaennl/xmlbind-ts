@@ -430,13 +430,9 @@ export function emitElement(
     state.schemaContext.elementFormDefault
   );
 
-  let tsType = "unknown";
-
-  if (typeAttr) {
-    tsType = resolveElementType(typeAttr, unit, state);
-  } else {
-    tsType = handleInlineType(e, en, unit, state, ensureClass);
-  }
+  const tsType = typeAttr
+    ? resolveElementType(typeAttr, unit, state)
+    : handleInlineType(e, en, unit, state, ensureClass);
 
   // Extract documentation from the element
   const doc = getDocumentation(e, state.xsdPrefix);
