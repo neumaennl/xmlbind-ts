@@ -75,7 +75,9 @@ export function ensureClass(
       state,
       mixed
     );
-    if (handled) return unit;
+    if (handled) {
+      return unit;
+    }
   }
 
   // Default: complexType with sequence/choice/attributes
@@ -341,4 +343,19 @@ function emitMixedText(lines: string[]): void {
   lines.push(`  @XmlText()`);
   lines.push(`  value?: string;`);
   lines.push("");
+}
+
+/**
+ * Injects a `_namespacePrefixes` property into a generated class body.
+ * Finds the `export class <name>` line and inserts the property immediately after it.
+ * Called from toplevel.ts to add the property only to root element classes.
+ *
+ * @param lines - The generated code lines for the class
+ * @param className - The name of the class to inject into
+ */
+export function injectNamespacePrefixesField(lines: string[], className: string): void {
+  const idx = lines.findIndex((l) => l.startsWith(`export class ${className}`));
+  if (idx >= 0) {
+    lines.splice(idx + 1, 0, `  _namespacePrefixes?: Record<string, string>;`, ``);
+  }
 }
