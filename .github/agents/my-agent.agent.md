@@ -25,3 +25,5 @@ For everything I tell you to do, remember these base rules:
   - move bigger XML snippets to `__tests__/test-resources` and reuse them if possible
 - always make sure the code compiles, all tests run, and there are no linter errors
 - use Copilot code review to ensure code quality
+- always validate any assumptions made in the prompt. If you are sure that something that was written in the prompt is wrong, correct it and explain the correction. If you are not sure, ask for clarification.
+- always explain the reasoning behind your suggestions and ask for approval before making any changes.
