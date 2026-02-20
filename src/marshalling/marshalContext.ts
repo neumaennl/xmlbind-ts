@@ -12,11 +12,14 @@ export type NsContext = {
   rootNode: any;
   counter: number;
   /**
-   * When true, the namespace prefixes were supplied explicitly via `_namespacePrefixes`
-   * on the marshalled object. In this case, child-type prefix merging is suppressed so
-   * that the output XML carries exactly the declarations the caller specified.
+   * True when the marshalled object has `_namespacePrefixes` set (populated by
+   * `unmarshal` or written directly by the caller).  When true, the output XML
+   * must carry exactly the namespace declarations from that map, so
+   * `mergeChildPrefixes` must not inject additional `xmlns:` declarations that
+   * would otherwise be captured by a subsequent `unmarshal` call and cause the
+   * two `_namespacePrefixes` values to differ.
    */
-  userDefinedPrefixes: boolean;
+  hasExplicitPrefixes: boolean;
 };
 
 /**

@@ -149,8 +149,8 @@ function createWrapperClass(
   unit.lines.push(
     `export class ${className} extends ${sanitizeTypeName(baseType)} {`
   );
-  unit.lines.push(`  _namespacePrefixes?: Record<string, string>;`);
   unit.lines.push(`}`);
+  injectNamespacePrefixesField(unit.lines, className);
 }
 
 /**
@@ -189,11 +189,10 @@ function createEnumWrapperClass(
     })`
   );
   unit.lines.push(`export class ${className} {`);
-  unit.lines.push(`  _namespacePrefixes?: Record<string, string>;`);
-  unit.lines.push(``);
   unit.lines.push(`  @XmlText()`);
   unit.lines.push(`  value?: ${enumName};`);
   unit.lines.push("}");
+  injectNamespacePrefixesField(unit.lines, className);
 }
 
 /**
@@ -232,11 +231,10 @@ function createTextWrapperClass(
     })`
   );
   unit.lines.push(`export class ${className} {`);
-  unit.lines.push(`  _namespacePrefixes?: Record<string, string>;`);
-  unit.lines.push(``);
   unit.lines.push(`  @XmlText()`);
   unit.lines.push(`  value?: ${tsType};`);
   unit.lines.push("}");
+  injectNamespacePrefixesField(unit.lines, className);
 }
 
 /**
@@ -304,11 +302,10 @@ function processElementWithInlineSimpleType(
     })`
   );
   unit.lines.push(`export class ${className} {`);
-  unit.lines.push(`  _namespacePrefixes?: Record<string, string>;`);
-  unit.lines.push(``);
   unit.lines.push(`  @XmlText()`);
   unit.lines.push(`  value?: ${tsType};`);
   unit.lines.push("}");
+  injectNamespacePrefixesField(unit.lines, className);
 }
 
 /**

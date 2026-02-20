@@ -223,7 +223,7 @@ function initializeNsContext(meta: any, node: any, obj?: any): NsContext {
     declared: new Set<string>(),
     rootNode: node,
     counter: 0,
-    userDefinedPrefixes: nsPrefixes !== undefined,
+    hasExplicitPrefixes: nsPrefixes !== undefined,
   };
 
   if (nsPrefixes) {
@@ -281,7 +281,7 @@ function mergeChildPrefixes(
   node: any,
   resolvedFType: any
 ): void {
-  if (ctx.userDefinedPrefixes) return;
+  if (ctx.hasExplicitPrefixes) return;
   if (resolvedFType) {
     const childMeta = getMeta(resolvedFType);
     if (childMeta?.prefixes) {

@@ -348,8 +348,6 @@ function emitMixedText(lines: string[]): void {
 /**
  * Injects a `_namespacePrefixes` property into a generated class body.
  * Finds the `export class <name>` line and inserts the property immediately after it.
- * Only injects into classes that do not extend another class, since derived classes
- * would inherit the property from their base.
  * Called from toplevel.ts to add the property only to root element classes.
  *
  * @param lines - The generated code lines for the class
@@ -357,7 +355,7 @@ function emitMixedText(lines: string[]): void {
  */
 export function injectNamespacePrefixesField(lines: string[], className: string): void {
   const idx = lines.findIndex((l) => l.startsWith(`export class ${className}`));
-  if (idx >= 0 && !lines[idx].includes(" extends ")) {
+  if (idx >= 0) {
     lines.splice(idx + 1, 0, `  _namespacePrefixes?: Record<string, string>;`, ``);
   }
 }
