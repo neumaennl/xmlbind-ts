@@ -11,6 +11,12 @@ export type NsContext = {
   // Root node to which xmlns declarations are attached
   rootNode: any;
   counter: number;
+  /**
+   * When true, the namespace prefixes were supplied explicitly via `_namespacePrefixes`
+   * on the marshalled object. In this case, child-type prefix merging is suppressed so
+   * that the output XML carries exactly the declarations the caller specified.
+   */
+  userDefinedPrefixes: boolean;
 };
 
 /**

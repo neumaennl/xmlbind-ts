@@ -205,20 +205,37 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
 
 /**
  * Initializes the namespace context for marshalling.
+ * Uses `obj._namespacePrefixes` (prefix → URI) if set on the object; otherwise falls back
+ * to `meta.prefixes` (URI → prefix) from the decorator.
  * @param meta - The root metadata
  * @param node - The root XML node
+ * @param obj - The source object (may have `_namespacePrefixes`)
  * @returns The initialized namespace context
  */
-function initializeNsContext(meta: any, node: any): NsContext {
+function initializeNsContext(meta: any, node: any, obj?: any): NsContext {
+  const nsPrefixes = obj?._namespacePrefixes as
+    | Record<string, string>
+    | undefined;
+
   const ctx: NsContext = {
     defaultNs: meta.namespace ?? undefined,
     uriToPrefix: new Map<string, string>(),
     declared: new Set<string>(),
     rootNode: node,
     counter: 0,
+    userDefinedPrefixes: nsPrefixes !== undefined,
   };
 
-  if (meta.prefixes) {
+  if (nsPrefixes) {
+    // Use runtime namespace prefixes (prefix → URI), skipping the default namespace entry
+    for (const [pfx, uri] of Object.entries(nsPrefixes)) {
+      if (!pfx) continue; // skip default namespace (handled by meta.namespace / "@_xmlns")
+      ctx.uriToPrefix.set(uri, pfx);
+      node[`@_xmlns:${pfx}`] = uri;
+      ctx.declared.add(pfx);
+    }
+  } else if (meta.prefixes) {
+    // Fall back to decorator-defined prefixes (URI → prefix)
     for (const [uri, pfx] of Object.entries(meta.prefixes)) {
       ctx.uriToPrefix.set(uri, String(pfx));
       node[`@_xmlns:${pfx}`] = uri;
@@ -252,6 +269,9 @@ function processRootAttributes(
 
 /**
  * Merges child class prefixes into namespace context.
+ * Skipped when the root object supplied its own `_namespacePrefixes`, because in
+ * that case the caller controls exactly which namespace declarations appear in the
+ * output and adding extras would make roundtrips inconsistent.
  * @param ctx - Namespace context
  * @param node - Root XML node
  * @param resolvedFType - Resolved field type
@@ -261,6 +281,7 @@ function mergeChildPrefixes(
   node: any,
   resolvedFType: any
 ): void {
+  if (ctx.userDefinedPrefixes) return;
   if (resolvedFType) {
     const childMeta = getMeta(resolvedFType);
     if (childMeta?.prefixes) {
@@ -455,7 +476,7 @@ export function marshal(obj: any): string {
 
   if (meta.namespace) node["@_xmlns"] = meta.namespace;
 
-  const ctx = initializeNsContext(meta, node);
+  const ctx = initializeNsContext(meta, node, obj);
   const fields = getAllFields(ctor);
 
   // Process attributes
