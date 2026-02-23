@@ -288,6 +288,75 @@ const xml = "<Person><name>Jane Doe</name><age>25</age></Person>";
 const person = unmarshal(Person, xml);
 ```
 
+## Namespace Prefix Mappings
+
+When unmarshalling an XML document, the prefix-to-namespace-URI mappings declared on the
+root element are automatically stored on the unmarshalled object as `_namespacePrefixes`.
+This lets you inspect which namespace each prefix refers to (e.g. to locate the schema that
+validates a given sub-tree).
+
+```typescript
+@XmlRoot("Catalog", {
+  namespace: "http://example.com/catalog",
+  prefixes: { "http://example.com/ext": "ext" },
+})
+class Catalog {
+  _namespacePrefixes?: Record<string, string>;
+
+  @XmlElement("item", { type: String, namespace: "http://example.com/ext" })
+  item?: string;
+}
+
+const xml = `<Catalog xmlns="http://example.com/catalog" xmlns:ext="http://example.com/ext">
+  <ext:item>Widget</ext:item>
+</Catalog>`;
+
+const catalog = unmarshal(Catalog, xml);
+console.log(catalog._namespacePrefixes);
+// { ext: "http://example.com/ext" }
+```
+
+The default namespace (the URI behind `xmlns="..."`) is not included in `_namespacePrefixes`
+because it is already accessible via the `@XmlRoot` decorator's `namespace` option; only
+explicitly prefixed declarations appear in the map.
+
+### Modifying namespace prefixes before marshalling
+
+You can modify `_namespacePrefixes` before calling `marshal`. The modified map is used as
+the authoritative source for all `xmlns:prefix` declarations in the output XML.
+
+```typescript
+// Rename the "ext" prefix to "e" before serialising
+catalog._namespacePrefixes = { e: "http://example.com/ext" };
+const output = marshal(catalog);
+// <Catalog xmlns="http://example.com/catalog" xmlns:e="http://example.com/ext">
+//   <e:item>Widget</e:item>
+// </Catalog>
+```
+
+When `_namespacePrefixes` is set (even if empty), it is the authoritative source for
+all `xmlns:prefix` declarations that were present when the document was last unmarshalled.
+If you add content that uses a namespace URI not already in the map, the marshaller will
+still auto-declare a generated prefix (e.g. `xmlns:ns1="..."`) for it.  When
+`_namespacePrefixes` is `undefined` (e.g. on a freshly constructed object), the `prefixes`
+option from the `@XmlRoot` decorator is used as the fallback.
+
+### Namespace prefixes in generated code
+
+Classes generated from top-level XSD elements automatically include a
+`_namespacePrefixes` property declaration:
+
+```typescript
+@XmlRoot("Catalog", { namespace: "http://example.com/catalog" })
+export class Catalog {
+  _namespacePrefixes?: Record<string, string>;
+
+  // … generated element and attribute fields
+}
+```
+
+This makes the property discoverable and type-safe without requiring a cast.
+
 ## Complex Example
 
 Here's a more complex example with nested objects:

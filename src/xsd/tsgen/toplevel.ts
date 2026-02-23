@@ -8,7 +8,7 @@ import {
 import { typeMapping, sanitizeTypeName, isBuiltinType } from "./types";
 import { extractEnumValues, generateEnumCode } from "./enum";
 import { toClassName } from "./codegen";
-import { ensureClassNoRoot } from "./classgen";
+import { ensureClassNoRoot, injectNamespacePrefixesField } from "./classgen";
 import type { GeneratorState, GenUnit } from "./codegen";
 
 /**
@@ -72,7 +72,8 @@ export function processTopLevelElements(
         createWrapperClass(className, en, underlyingName, state, el);
       } else {
         // Single class with root + content
-        ensureClass(className, inlineCT as any, state, en);
+        const unit = ensureClass(className, inlineCT as any, state, en);
+        injectNamespacePrefixesField(unit.lines, className);
       }
     } else if (inlineST) {
       processElementWithInlineSimpleType(className, en, inlineST, state, el);
@@ -146,8 +147,10 @@ function createWrapperClass(
     })`
   );
   unit.lines.push(
-    `export class ${className} extends ${sanitizeTypeName(baseType)} {}`
+    `export class ${className} extends ${sanitizeTypeName(baseType)} {`
   );
+  unit.lines.push(`}`);
+  injectNamespacePrefixesField(unit.lines, className);
 }
 
 /**
@@ -189,6 +192,7 @@ function createEnumWrapperClass(
   unit.lines.push(`  @XmlText()`);
   unit.lines.push(`  value?: ${enumName};`);
   unit.lines.push("}");
+  injectNamespacePrefixesField(unit.lines, className);
 }
 
 /**
@@ -230,6 +234,7 @@ function createTextWrapperClass(
   unit.lines.push(`  @XmlText()`);
   unit.lines.push(`  value?: ${tsType};`);
   unit.lines.push("}");
+  injectNamespacePrefixesField(unit.lines, className);
 }
 
 /**
@@ -300,6 +305,7 @@ function processElementWithInlineSimpleType(
   unit.lines.push(`  @XmlText()`);
   unit.lines.push(`  value?: ${tsType};`);
   unit.lines.push("}");
+  injectNamespacePrefixesField(unit.lines, className);
 }
 
 /**
