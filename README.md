@@ -334,9 +334,12 @@ const output = marshal(catalog);
 // </Catalog>
 ```
 
-When `_namespacePrefixes` is set (even if empty), it fully controls the `xmlns:prefix`
-declarations in the output XML.  When it is `undefined` (e.g. on a freshly constructed
-object), the `prefixes` option from the `@XmlRoot` decorator is used as the fallback.
+When `_namespacePrefixes` is set (even if empty), it is the authoritative source for
+all `xmlns:prefix` declarations that were present when the document was last unmarshalled.
+If you add content that uses a namespace URI not already in the map, the marshaller will
+still auto-declare a generated prefix (e.g. `xmlns:ns1="..."`) for it.  When
+`_namespacePrefixes` is `undefined` (e.g. on a freshly constructed object), the `prefixes`
+option from the `@XmlRoot` decorator is used as the fallback.
 
 ### Namespace prefixes in generated code
 
