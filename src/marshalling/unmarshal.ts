@@ -378,17 +378,20 @@ function bindRootElements(
 }
 
 /**
- * Attaches root-level metadata (comments, element order, document comments, XML declaration).
+ * Attaches root-level metadata (comments, element order, document comments, XML declaration,
+ * and namespace prefix mappings).
  * @param target - The target object
  * @param parsedWithComments - The preserveOrder parsed data
  * @param rootName - The root element name
  * @param hasXmlDeclaration - Whether XML had declaration
+ * @param nsMap - The namespace prefix map collected from the root element
  */
 function attachRootMetadata(
   target: Record<string, unknown>,
   parsedWithComments: any,
   rootName: string,
-  hasXmlDeclaration: boolean
+  hasXmlDeclaration: boolean,
+  nsMap: NsMap
 ): void {
   const comments = extractCommentsFromPreserveOrder(
     parsedWithComments,
@@ -417,6 +420,15 @@ function attachRootMetadata(
   if (hasXmlDeclaration) {
     (target as any)._hasXmlDeclaration = true;
   }
+
+  // Store named (prefixed) namespace declarations only.
+  // The default namespace (empty prefix) is already captured by meta.namespace on the class
+  // and is not meaningful for prefix-based lookups.
+  const namedPrefixes: Record<string, string> = {};
+  for (const [pfx, uri] of Object.entries(nsMap)) {
+    if (pfx) namedPrefixes[pfx] = uri;
+  }
+  (target as any)._namespacePrefixes = namedPrefixes;
 }
 
 /**
@@ -475,7 +487,7 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
   }
 
   // Attach metadata
-  attachRootMetadata(target, parsedWithComments, rootName, hasXmlDeclaration);
+  attachRootMetadata(target, parsedWithComments, rootName, hasXmlDeclaration, nsMap);
 
   // Bind text node
   const textField = fields.find((f) => f.kind === "text");
