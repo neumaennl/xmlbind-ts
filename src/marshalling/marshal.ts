@@ -1,4 +1,4 @@
-import { XMLBuilder } from "fast-xml-parser";
+import XMLBuilder from "fast-xml-builder";
 import { getMeta, getAllFields } from "../metadata/MetadataRegistry";
 import { serializePrimitive } from "../util/valueCasting";
 import { resolveType } from "../util/typeResolution";
