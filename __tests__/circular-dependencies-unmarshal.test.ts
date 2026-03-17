@@ -189,6 +189,38 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     expect(nullResult).toBeUndefined();
   });
 
+  test("emits type annotation for self-referencing types in @XmlElement decorator", () => {
+    // Regression test for: Generated explicitGroup class missing type() on recursive
+    // choice/sequence @XmlElement decorators.
+    //
+    // Previously the generator skipped `type: () => ClassName` when the field type
+    // matched the class being generated (self-reference). Because arrow functions are
+    // lazily evaluated, the annotation is safe for self-referencing types and is
+    // required for correct unmarshal behaviour.
+
+    const XSD = `<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/test"
+           xmlns:tns="http://example.com/test"
+           elementFormDefault="qualified">
+  <xs:complexType name="Node">
+    <xs:sequence>
+      <xs:element name="child" type="tns:Node" minOccurs="0"/>
+      <xs:element name="children" type="tns:Node" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="value" type="xs:string"/>
+  </xs:complexType>
+</xs:schema>`;
+
+    generateAndFixImports(XSD);
+
+    const nodeFile = readFileSync(join(tmpDir, "Node.ts"), "utf-8");
+
+    // Both the singular and array self-referencing properties must emit type: () => Node
+    expect(nodeFile).toMatch(/@XmlElement\('child',\s*\{[^}]*type:\s*\(\)\s*=>\s*Node/);
+    expect(nodeFile).toMatch(/@XmlElement\('children',\s*\{[^}]*type:\s*\(\)\s*=>\s*Node/);
+  });
+
   test("demonstrates that without lazy references, types could be undefined", async () => {
     // This test demonstrates the scenario that would cause the bug:
     // When using direct type references in decorators with circular dependencies,
@@ -209,6 +241,10 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
 
     // The element property should use lazy type reference
     expect(explicitGroupFile).toMatch(/type:\s*\(\)\s*=>\s*localElement/);
+
+    // The choice and sequence self-referencing properties must also emit type: () => explicitGroup
+    expect(explicitGroupFile).toMatch(/@XmlElement\('choice',\s*\{[^}]*type:\s*\(\)\s*=>\s*explicitGroup/);
+    expect(explicitGroupFile).toMatch(/@XmlElement\('sequence',\s*\{[^}]*type:\s*\(\)\s*=>\s*explicitGroup/);
 
     // Import and verify the types are properly resolved at runtime
     const { explicitGroup } = await import(join(tmpDir, "explicitGroup"));
@@ -273,6 +309,59 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     expect(restriction.enumeration.length).toBe(5);
     expect(restriction.enumeration[0].constructor.name).toBe("noFixedFacet");
     expect(restriction.enumeration[0].value).toBe("error");
+  });
+
+  test("unmarshals nested choice inside sequence as typed explicitGroup instance", async () => {
+    // Regression test for: explicitGroup missing type() on recursive choice/sequence decorators.
+    // This specifically tests the scenario from the bug report: generate classes from
+    // XMLSchema.xsd, then use those classes to deserialize an XSD file that contains
+    // a nested xs:choice inside xs:sequence. Previously ct.sequence.choice came back
+    // as a plain object instead of an explicitGroup instance.
+
+    // Generate classes from XMLSchema.xsd (the meta-schema)
+    const xmlSchemaXsd = readFileSync(
+      join(__dirname, "test-resources/XMLSchema.xsd"),
+      "utf-8"
+    );
+    generateAndFixImports(xmlSchemaXsd);
+
+    // Import the generated schema class
+    const { schema } = await import(join(tmpDir, "schema"));
+
+    // An XML schema document that has a complexType with a nested xs:choice inside xs:sequence.
+    // When deserialized, ct.sequence should be an explicitGroup and ct.sequence.choice
+    // should also be an explicitGroup (not a plain object).
+    const xsdWithNestedChoice = `<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="MyType">
+    <xs:sequence>
+      <xs:choice>
+        <xs:element name="deep" type="xs:string"/>
+      </xs:choice>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>`;
+
+    const result = unmarshal(schema, xsdWithNestedChoice) as any;
+    expect(result).toBeDefined();
+
+    // The complexType element must be deserialized
+    const ct = Array.isArray(result.complexType)
+      ? result.complexType[0]
+      : result.complexType;
+    expect(ct).toBeDefined();
+    expect(ct.name).toBe("MyType");
+
+    // ct.sequence must be a proper explicitGroup instance (not a plain object)
+    const sequence = ct.sequence;
+    expect(sequence).toBeDefined();
+    expect(sequence.constructor.name).toBe("explicitGroup");
+
+    // ct.sequence.choice must also be a proper explicitGroup instance (this was the bug)
+    const choice = sequence.choice;
+    const firstChoice = Array.isArray(choice) ? choice[0] : choice;
+    expect(firstChoice).toBeDefined();
+    expect(firstChoice.constructor.name).toBe("explicitGroup");
   });
 
   test("unmarshals root element with anonymous complexType sequence correctly", async () => {

@@ -197,17 +197,14 @@ export function emitElementDecorator(
   const propName = toPropertyName(en, state.reservedWords);
   const decoratorOpts: string[] = [];
 
-  // Don't include type in decorator if it's a self-reference (to avoid "used before declaration" error)
-  const isSelfReference = tsType === unit.className;
-
   if (
     tsType &&
     tsType !== "any" &&
     tsType !== "unknown" &&
-    /^[A-Za-z0-9_]+$/.test(tsType) &&
-    !isSelfReference
+    /^[A-Za-z0-9_]+$/.test(tsType)
   ) {
-    // Use lazy type reference (arrow function) for non-primitive types to avoid circular dependency issues
+    // Use lazy type reference (arrow function) for non-primitive types to avoid circular dependency issues.
+    // Arrow functions are lazily evaluated, so they are safe even for self-referencing types.
     if (isPrimitiveTypeName(tsType)) {
       // Convert TypeScript primitive to JavaScript constructor for decorator
       decoratorOpts.push(`type: ${toDecoratorType(tsType)}`);
