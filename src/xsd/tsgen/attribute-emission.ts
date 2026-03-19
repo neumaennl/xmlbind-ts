@@ -1,8 +1,37 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
 import { localName } from "./utils";
-import { sanitizeTypeName } from "./types";
+import { sanitizeTypeName, toDecoratorType, requiresRuntimeTypeCoercion } from "./types";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen";
+
+/**
+ * Builds the `@XmlAttribute(...)` decorator line for code generation.
+ *
+ * Includes the `type` option when the TypeScript type requires runtime coercion
+ * (i.e. for `number`, `boolean`, and `Date`), so that the unmarshaller can cast
+ * the XML string value to the correct primitive type.
+ *
+ * @param attrName - The XML attribute name
+ * @param ans - Optional XML namespace URI for the attribute
+ * @param tsType - The resolved TypeScript type name
+ * @returns The decorator line string (e.g. `  @XmlAttribute('id', { type: Number })`)
+ */
+export function buildXmlAttributeDecorator(
+  attrName: string,
+  ans: string | null | undefined,
+  tsType: string
+): string {
+  const decoratorType = requiresRuntimeTypeCoercion(tsType) ? toDecoratorType(tsType) : undefined;
+
+  const opts: string[] = [];
+  if (ans) opts.push(`namespace: '${ans}'`);
+  if (decoratorType) opts.push(`type: ${decoratorType}`);
+
+  if (opts.length === 0) {
+    return `  @XmlAttribute('${attrName}')`;
+  }
+  return `  @XmlAttribute('${attrName}', { ${opts.join(", ")} })`;
+}
 
 /**
  * Emits a single attribute property with its decorator and type annotation.
@@ -50,11 +79,7 @@ export function emitSingleAttribute(
   const makeRequired = useValue === "required";
   const propName = toPropertyName(attrName, state.reservedWords);
 
-  lines.push(
-    ans
-      ? `  @XmlAttribute('${attrName}', { namespace: '${ans}' })`
-      : `  @XmlAttribute('${attrName}')`
-  );
+  lines.push(buildXmlAttributeDecorator(attrName, ans, tsType));
   lines.push(`  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`);
   lines.push("");
 }

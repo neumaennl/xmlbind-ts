@@ -1,4 +1,20 @@
+import "reflect-metadata";
 import { ensureMeta } from "../metadata/MetadataRegistry";
+
+/**
+ * Resolves the type for an attribute field: the explicit `options.type` takes
+ * precedence; otherwise the TypeScript design type emitted by the compiler
+ * (when `emitDecoratorMetadata: true`) is used via `reflect-metadata`.
+ */
+function resolveAttributeType(
+  options: { type?: any } | undefined,
+  target: object,
+  propertyKey: string | symbol
+): any {
+  return (
+    options?.type ?? Reflect.getMetadata("design:type", target, propertyKey)
+  );
+}
 
 /**
  * Decorator to mark a property as an XML attribute.
@@ -6,9 +22,17 @@ import { ensureMeta } from "../metadata/MetadataRegistry";
  * This decorator registers metadata for marshalling/unmarshalling a class property
  * to/from an XML attribute. Attributes are always scalar values (not arrays).
  *
+ * When `emitDecoratorMetadata` is enabled in `tsconfig.json` (legacy decorators),
+ * the TypeScript design type is read automatically via `reflect-metadata`, so numeric
+ * and boolean attributes are coerced to the correct primitive at deserialisation time
+ * without any extra configuration.
+ *
  * @param name - The XML attribute name (defaults to property name)
  * @param options - Optional configuration
  * @param options.namespace - The XML namespace URI for the attribute
+ * @param options.type - Explicit type constructor override (e.g. `Number`, `Boolean`).
+ *   Takes precedence over the automatically detected design type.  Useful for Stage 3
+ *   decorators where `reflect-metadata` design types are not emitted.
  * @returns A property decorator function
  *
  * @example
@@ -17,12 +41,17 @@ import { ensureMeta } from "../metadata/MetadataRegistry";
  *   @XmlAttribute('id')
  *   id?: string;
  *
+ *   // With emitDecoratorMetadata the Number type is detected automatically:
  *   @XmlAttribute('age')
  *   age?: number;
+ *
+ *   // Or supply the type explicitly (e.g. for Stage 3 decorators):
+ *   @XmlAttribute('score', { type: Number })
+ *   score?: number;
  * }
  * ```
  */
-export function XmlAttribute(name?: string, options?: { namespace?: string }) {
+export function XmlAttribute(name?: string, options?: { namespace?: string; type?: any }) {
   return function (contextOrTarget: any, propertyKeyOrContext?: string | symbol | any) {
     // Stage 3 decorators: contextOrTarget is undefined/value, propertyKeyOrContext is context object
     if (propertyKeyOrContext && typeof propertyKeyOrContext === "object" && "kind" in propertyKeyOrContext) {
@@ -34,6 +63,7 @@ export function XmlAttribute(name?: string, options?: { namespace?: string }) {
           key: context.name.toString(),
           name: name ?? context.name.toString(),
           kind: "attribute",
+          type: options?.type,
           namespace: options?.namespace ?? null,
         });
       });
@@ -52,6 +82,7 @@ export function XmlAttribute(name?: string, options?: { namespace?: string }) {
         key: propertyKeyOrContext.toString(),
         name: name ?? propertyKeyOrContext.toString(),
         kind: "attribute",
+        type: resolveAttributeType(options, target, propertyKeyOrContext),
         namespace: options?.namespace ?? null,
       });
       return;
@@ -68,6 +99,7 @@ export function XmlAttribute(name?: string, options?: { namespace?: string }) {
         key: prop.toString(),
         name: name ?? prop.toString(),
         kind: "attribute",
+        type: resolveAttributeType(options, target, prop),
         namespace: options?.namespace ?? null,
       });
     };

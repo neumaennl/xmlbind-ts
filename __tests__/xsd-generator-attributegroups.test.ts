@@ -39,7 +39,7 @@ describe("XSD Generator - Attribute Groups", () => {
       // Should have all attributes from the group
       expect(content).toContain("@XmlAttribute('id')");
       expect(content).toContain("@XmlAttribute('version')");
-      expect(content).toContain("@XmlAttribute('createdDate')");
+      expect(content).toContain("@XmlAttribute('createdDate', { type: Date })");
       expect(content).toContain("@XmlAttribute('status')");
 
       // Should have properties

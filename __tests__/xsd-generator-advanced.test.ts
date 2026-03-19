@@ -49,7 +49,7 @@ describe("XSD Generator advanced features", () => {
       generateFromXsd(XSD, tmp);
       const book = readFileSync(path.join(tmp, "Book.ts"), "utf8");
       expect(book).toContain("export class Book");
-      expect(book).toMatch(/@XmlAttribute\('id'\)/);
+      expect(book).toMatch(/@XmlAttribute\('id',\s*\{\s*type:\s*Number\s*\}\)/);
       expect(book).toMatch(
         /@XmlElement\('title',\s*\{\s*type:\s*String,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
       );
@@ -273,7 +273,7 @@ describe("XSD Generator advanced features", () => {
         expect(content).not.toContain("extends BaseType");
 
         expect(content).toContain("@XmlElement('name'");
-        expect(content).toContain("@XmlAttribute('id')");
+        expect(content).toContain("@XmlAttribute('id', { type: Number })");
       });
     });
 

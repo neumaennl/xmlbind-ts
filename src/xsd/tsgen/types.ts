@@ -18,6 +18,17 @@ export function isPrimitiveTypeName(tsType: string): boolean {
 }
 
 /**
+ * Returns true for TypeScript type names that need a runtime type constructor
+ * in `@XmlAttribute({ type: ... })` so the unmarshaller can coerce the XML string value.
+ * `string` is always the XML wire type so it needs no coercion.
+ *
+ * @param tsType - The resolved TypeScript type name
+ */
+export function requiresRuntimeTypeCoercion(tsType: string): boolean {
+  return tsType === "number" || tsType === "boolean" || tsType === "Date";
+}
+
+/**
  * Converts a TypeScript primitive type to its JavaScript constructor for use in decorators.
  * Decorators need the actual constructor function (String, Number, Boolean), not the TypeScript type.
  *

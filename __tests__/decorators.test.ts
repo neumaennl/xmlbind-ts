@@ -105,6 +105,59 @@ describe("Decorators", () => {
       const field = meta?.fields.find((f: any) => f.key === "testProp");
       expect((field as any)?.namespace).toBe("http://test.com");
     });
+
+    it("should unmarshal numeric attribute as number via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlAttribute("minOccurs")
+        minOccurs?: number;
+      }
+
+      const xml = `<element minOccurs="0"/>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.minOccurs).toBe("number");
+      expect(result.minOccurs).toBe(0);
+    });
+
+    it("should unmarshal boolean attribute as boolean via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlAttribute("abstract")
+        abstract?: boolean;
+      }
+
+      const xml = `<element abstract="true"/>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.abstract).toBe("boolean");
+      expect(result.abstract).toBe(true);
+    });
+
+    it("should unmarshal string attribute as string without coercion", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlAttribute("name")
+        name?: string;
+      }
+
+      const xml = `<element name="foo"/>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.name).toBe("string");
+      expect(result.name).toBe("foo");
+    });
+
+    it("should prefer explicit type option over reflect-metadata design type", () => {
+      @XmlRoot("element")
+      class Element {
+        // design:type would be String, but we override with Number
+        @XmlAttribute("count", { type: Number })
+        count?: string;
+      }
+
+      const xml = `<element count="7"/>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.count).toBe("number");
+      expect(result.count).toBe(7);
+    });
   });
 
   describe("XmlElement", () => {

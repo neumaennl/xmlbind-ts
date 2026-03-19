@@ -25,7 +25,7 @@ describe("XSD Generator requiredness", () => {
       const gen = readFileSync(target, "utf8");
 
       // Required attribute becomes non-optional
-      expect(gen).toMatch(/@XmlAttribute\('id'\)[\s\S]*?\bid!?: number;/);
+      expect(gen).toMatch(/@XmlAttribute\('id',\s*\{\s*type:\s*Number\s*\}\)[\s\S]*?\bid!?: number;/);
 
       // Optional attribute stays optional
       expect(gen).toMatch(/@XmlAttribute\('note'\)[\s\S]*?\bnote\?: string;/);

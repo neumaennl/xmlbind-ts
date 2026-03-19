@@ -21,7 +21,7 @@ describe("XSD Generator", () => {
       expect(gen).toContain("namespace: 'http://example.com/ns'");
 
       // Check @XmlAttribute decorator for id
-      expect(gen).toMatch(/@XmlAttribute\('id'\)\s+id\?: number/);
+      expect(gen).toMatch(/@XmlAttribute\('id',\s*\{\s*type:\s*Number\s*\}\)\s+id\?: number/);
 
       // Check @XmlElement decorators for required elements (now non-optional)
       expect(gen).toMatch(

@@ -107,8 +107,8 @@ describe("XSD Generator - Restrictions", () => {
       // Should have attributes from both attributeGroups in base type
       expect(content).toContain("@XmlAttribute('id')");
       expect(content).toContain("@XmlAttribute('version')");
-      expect(content).toContain("@XmlAttribute('created')");
-      expect(content).toContain("@XmlAttribute('modified')");
+      expect(content).toContain("@XmlAttribute('created', { type: Date })");
+      expect(content).toContain("@XmlAttribute('modified', { type: Date })");
       expect(content).toContain("@XmlAttribute('status')");
     });
   });

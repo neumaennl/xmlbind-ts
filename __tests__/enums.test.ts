@@ -176,7 +176,7 @@ describe("Enums", () => {
       const task = unmarshal(Task, xml);
 
       expect(task).toBeInstanceOf(Task);
-      expect(task.id).toBe("1");
+      expect(task.id).toBe(1);
       expect(task.title).toBe("Review PR");
       expect(task.status).toBe("pending");
       expect(task.priority).toBe("high");
@@ -233,7 +233,7 @@ describe("Enums", () => {
       const xml = marshal(task);
       const unmarshalled = unmarshal(Task, xml);
 
-      expect(unmarshalled.id).toBe("3");
+      expect(unmarshalled.id).toBe(3);
       expect(unmarshalled.title).toBe(task.title);
       expect(unmarshalled.status).toBe("rejected");
       expect(unmarshalled.priority).toBe("low");
