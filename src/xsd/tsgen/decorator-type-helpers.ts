@@ -36,7 +36,7 @@ export function needsAllowStringFallback(
   // for Number or Boolean.  Date doesn't use string fallback semantics.
   if (decoratorType !== "Number" && decoratorType !== "Boolean") return false;
 
-  const typeDef = state.generatedEnums.get(tsType);
+  const typeDef = state.generatedSimpleTypes.get(tsType);
   if (!typeDef) return false;
   const typeExpr = extractTypeExpression(typeDef);
   if (!typeExpr) return false;
@@ -77,7 +77,7 @@ export function computeDecoratorType(
   if (requiresRuntimeTypeCoercion(tsType)) {
     return toDecoratorType(tsType);
   }
-  const typeDef = state.generatedEnums.get(tsType);
+  const typeDef = state.generatedSimpleTypes.get(tsType);
   if (!typeDef) return undefined;
 
   const typeExpr = extractTypeExpression(typeDef);

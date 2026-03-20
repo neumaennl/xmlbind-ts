@@ -16,16 +16,16 @@ import type { SchemaContext } from "./schema";
  * explicit imports from the shared enums file.
  *
  * @param typeName - The referenced type name
- * @param generatedEnums - Map containing generated enum and type alias code
+ * @param generatedSimpleTypes - Map of simple type names to their generated TypeScript code
  * @param imports - Mutable array collecting import statements
  */
 function addEnumImportIfNeeded(
   typeName: string,
-  generatedEnums: Map<string, string>,
+  generatedSimpleTypes: Map<string, string>,
   imports: string[]
 ): void {
   if (isPrimitiveTypeName(typeName)) return;
-  const generated = generatedEnums.get(typeName);
+  const generated = generatedSimpleTypes.get(typeName);
   if (generated && /export\s+enum/.test(generated)) {
     imports.push(`import { ${typeName} } from './enums';`);
   }
@@ -39,13 +39,13 @@ function addEnumImportIfNeeded(
  *
  * @param schemaContext - The indexed schema context
  * @param xsdPrefix - The XSD namespace prefix
- * @param generatedEnums - Map to store generated type aliases
+ * @param generatedSimpleTypes - Map of simple type names to their generated TypeScript code
  * @param reservedWords - Set of reserved keywords
  */
 export function processSimpleTypes(
   schemaContext: SchemaContext,
   xsdPrefix: string,
-  generatedEnums: Map<string, string>,
+  generatedSimpleTypes: Map<string, string>,
   reservedWords: Set<string>
 ): void {
   for (const [name, st] of schemaContext.simpleTypesMap.entries()) {
@@ -58,20 +58,20 @@ export function processSimpleTypes(
 
     const union = getChildByLocalName(st, "union", xsdPrefix);
     if (union) {
-      processUnion(union, typeName, xsdPrefix, generatedEnums);
+      processUnion(union, typeName, xsdPrefix, generatedSimpleTypes);
       continue;
     }
 
     const list = getChildByLocalName(st, "list", xsdPrefix);
     if (list) {
-      processList(list, typeName, generatedEnums);
+      processList(list, typeName, generatedSimpleTypes);
       continue;
     }
 
     // Handle restriction-based simpleTypes that aren't enums
     const restriction = getChildByLocalName(st, "restriction", xsdPrefix);
     if (restriction) {
-      processRestriction(restriction, typeName, generatedEnums);
+      processRestriction(restriction, typeName, generatedSimpleTypes);
     }
   }
 }
@@ -82,13 +82,13 @@ export function processSimpleTypes(
  * @param union - The XSD union element
  * @param typeName - The TypeScript type name
  * @param xsdPrefix - The XSD namespace prefix
- * @param generatedEnums - Map to store the generated type alias
+ * @param generatedSimpleTypes - Map of simple type names to their generated TypeScript code
  */
 function processUnion(
   union: XmldomElement,
   typeName: string,
   xsdPrefix: string,
-  generatedEnums: Map<string, string>
+  generatedSimpleTypes: Map<string, string>
 ): void {
   const memberTypesAttr = union.getAttribute("memberTypes");
   const memberTypes: string[] = [];
@@ -102,7 +102,7 @@ function processUnion(
 
     for (const memberType of memberTypesFromAttr) {
       const mapped = typeMapping(memberType);
-      addEnumImportIfNeeded(mapped, generatedEnums, imports);
+      addEnumImportIfNeeded(mapped, generatedSimpleTypes, imports);
       memberTypes.push(mapped);
     }
   }
@@ -124,7 +124,7 @@ function processUnion(
       if (base) {
         const mappedBase = typeMapping(base);
 
-        addEnumImportIfNeeded(mappedBase, generatedEnums, imports);
+        addEnumImportIfNeeded(mappedBase, generatedSimpleTypes, imports);
 
         memberTypes.push(mappedBase);
         continue;
@@ -137,7 +137,7 @@ function processUnion(
       if (itemType) {
         const mappedItemType = typeMapping(itemType);
 
-        addEnumImportIfNeeded(mappedItemType, generatedEnums, imports);
+        addEnumImportIfNeeded(mappedItemType, generatedSimpleTypes, imports);
 
         memberTypes.push(`${mappedItemType}[]`);
       } else {
@@ -155,7 +155,7 @@ function processUnion(
     const tsType = uniqueMemberTypes.join(" | ");
     const importLines =
       uniqueImports.length > 0 ? uniqueImports.join("\n") + "\n" : "";
-    generatedEnums.set(
+    generatedSimpleTypes.set(
       typeName,
       `${importLines}export type ${typeName} = ${tsType};`
     );
@@ -167,12 +167,12 @@ function processUnion(
  *
  * @param list - The XSD list element
  * @param typeName - The TypeScript type name
- * @param generatedEnums - Map to store the generated type alias
+ * @param generatedSimpleTypes - Map of simple type names to their generated TypeScript code
  */
 function processList(
   list: XmldomElement,
   typeName: string,
-  generatedEnums: Map<string, string>
+  generatedSimpleTypes: Map<string, string>
 ): void {
   const itemType = list.getAttribute("itemType");
   if (itemType) {
@@ -181,16 +181,16 @@ function processList(
 
     const imports: string[] = [];
     if (itemLocal && tsType === sanitizeTypeName(itemLocal)) {
-      addEnumImportIfNeeded(tsType, generatedEnums, imports);
+      addEnumImportIfNeeded(tsType, generatedSimpleTypes, imports);
     }
 
     const importLine = imports.length > 0 ? `${imports.join("\n")}\n` : "";
-    generatedEnums.set(
+    generatedSimpleTypes.set(
       typeName,
       `${importLine}export type ${typeName} = ${tsType}[];`
     );
   } else {
-    generatedEnums.set(typeName, `export type ${typeName} = string[];`);
+    generatedSimpleTypes.set(typeName, `export type ${typeName} = string[];`);
   }
 }
 
@@ -200,12 +200,12 @@ function processList(
  *
  * @param restriction - The XSD restriction element
  * @param typeName - The TypeScript type name
- * @param generatedEnums - Map to store the generated type alias
+ * @param generatedSimpleTypes - Map of simple type names to their generated TypeScript code
  */
 function processRestriction(
   restriction: XmldomElement,
   typeName: string,
-  generatedEnums: Map<string, string>
+  generatedSimpleTypes: Map<string, string>
 ): void {
   const base = restriction.getAttribute("base");
   if (base) {
@@ -214,17 +214,17 @@ function processRestriction(
 
     const imports: string[] = [];
     if (baseLocal && tsType === sanitizeTypeName(baseLocal)) {
-      addEnumImportIfNeeded(tsType, generatedEnums, imports);
+      addEnumImportIfNeeded(tsType, generatedSimpleTypes, imports);
     }
 
     const importLine = imports.length > 0 ? `${imports.join("\n")}\n` : "";
-    generatedEnums.set(
+    generatedSimpleTypes.set(
       typeName,
       `${importLine}export type ${typeName} = ${tsType};`
     );
   } else {
     // No base specified, default to string
-    generatedEnums.set(typeName, `export type ${typeName} = string;`);
+    generatedSimpleTypes.set(typeName, `export type ${typeName} = string;`);
   }
 }
 
@@ -232,15 +232,15 @@ function processRestriction(
  * Generates TypeScript enum declarations for all enumeration types.
  *
  * @param enumTypesMap - Map of enum names to their value arrays
- * @param generatedEnums - Map to store the generated enum code
+ * @param generatedSimpleTypes - Map of simple type names to their generated TypeScript code
  */
 export function generateEnumTypes(
   enumTypesMap: Map<string, string[]>,
-  generatedEnums: Map<string, string>
+  generatedSimpleTypes: Map<string, string>
 ): void {
   for (const [name, values] of enumTypesMap.entries()) {
     const enumCode = generateEnumCode(name, values);
     const sanitizedName = sanitizeTypeName(name);
-    generatedEnums.set(sanitizedName, enumCode);
+    generatedSimpleTypes.set(sanitizedName, enumCode);
   }
 }

@@ -26,8 +26,8 @@ export interface GeneratorState {
   xsdPrefix: string;
   /** Set of JavaScript/TypeScript reserved keywords to avoid */
   reservedWords: Set<string>;
-  /** Map of generated enum names to their code */
-  generatedEnums: Map<string, string>;
+  /** Map of generated simple type names (enums, unions, restrictions, lists) to their generated TypeScript code */
+  generatedSimpleTypes: Map<string, string>;
   /** Map of generated class names to their generation units */
   generated: Map<string, GenUnit>;
 }
@@ -106,7 +106,7 @@ export function resolveType(
   }
 
   const sanitized = sanitizeTypeName(local);
-  if (state.generatedEnums.has(sanitized)) {
+  if (state.generatedSimpleTypes.has(sanitized)) {
     return sanitized;
   }
 

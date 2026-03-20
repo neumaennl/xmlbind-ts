@@ -7,12 +7,12 @@ import type { GenUnit } from "./codegen";
  * Groups simple types and enums into consolidated files to reduce file count.
  *
  * @param generated - Map of class names to their generation units
- * @param generatedEnums - Map of enum names to their generated code
+ * @param generatedSimpleTypes - Map of simple type names (enums, unions, restrictions, lists) to their generated code
  * @param outDir - The output directory path
  */
 export function writeGeneratedFiles(
   generated: Map<string, GenUnit>,
-  generatedEnums: Map<string, string>,
+  generatedSimpleTypes: Map<string, string>,
   outDir: string
 ): void {
   // Track used filenames (case-insensitive) to prevent collisions
@@ -25,13 +25,13 @@ export function writeGeneratedFiles(
   const typeNames = new Set<string>();
   const enumNames = new Set<string>();
 
-  for (const [name, enumCode] of generatedEnums.entries()) {
-    const isTypeAlias = /\bexport\s+type\b/.test(enumCode);
+  for (const [name, typeCode] of generatedSimpleTypes.entries()) {
+    const isTypeAlias = /\bexport\s+type\b/.test(typeCode);
     if (isTypeAlias) {
-      typeAliases.push([name, enumCode]);
+      typeAliases.push([name, typeCode]);
       typeNames.add(name);
     } else {
-      enums.push([name, enumCode]);
+      enums.push([name, typeCode]);
       enumNames.add(name);
     }
   }

@@ -188,7 +188,7 @@ describe("XSD Generator - Union Types", () => {
   });
 
   test("generates { type: Date } decorator for a Date restriction alias (xs:date base)", () => {
-    // A simpleType restricting xs:date produces `export type MyDate = Date;` in generatedEnums.
+    // A simpleType restricting xs:date produces `export type MyDate = Date;` in generatedSimpleTypes.
     // computeDecoratorType must detect that and emit { type: Date }.
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
