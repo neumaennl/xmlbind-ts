@@ -65,8 +65,9 @@ describe("XSD Generator", () => {
           const content = readFileSync(path.join(tmp, "Record.ts"), "utf8");
 
           expect(content).toContain("import { StatusEnum } from './enums'");
-          // Lazy type reference to avoid circular dependency issues
-          expect(content).toContain("type: () => StatusEnum");
+          // Enum-backed types do not emit a type hint — the string value passes through unchanged.
+          expect(content).not.toContain("type: () => StatusEnum");
+          expect(content).toContain("status!: StatusEnum");
         });
       });
 

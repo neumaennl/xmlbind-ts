@@ -2,7 +2,9 @@
  * Casts a value to the specified type, handling primitives, enums, and custom types.
  *
  * Performs type coercion for String, Number, Boolean, and Date types.
- * When the type is Number, non-numeric strings produce `NaN` by default.
+ * When the type is Number, non-numeric strings produce `NaN` by default;
+ * however, empty or whitespace-only strings coerce to `0` per JavaScript's
+ * `Number()` semantics.
  * When the type is Boolean, non-boolean strings produce `false` by default.
  * Pass `allowStringFallback = true` to instead return the original string
  * unchanged when coercion would produce `NaN` / `false` — use this for

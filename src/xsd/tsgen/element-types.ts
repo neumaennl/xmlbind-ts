@@ -210,8 +210,18 @@ export function buildXmlElementDecorator(
       // Handles: string → type: String
       opts.push(`type: ${toDecoratorType(tsType)}`);
     } else {
-      // Complex class types: use lazy arrow-function reference to avoid circular-import issues.
-      opts.push(`type: () => ${tsType}`);
+      // Non-primitive identifier: decide between enum-backed simple type and complex class.
+      const simpleTypeCode = state.generatedSimpleTypes.get(tsType);
+      // The generated code for enum-backed types always starts with "export enum".
+      const isEnumType =
+        typeof simpleTypeCode === "string" && simpleTypeCode.startsWith("export enum");
+      if (!isEnumType) {
+        // Complex class types: use lazy arrow-function reference to avoid circular-import issues.
+        opts.push(`type: () => ${tsType}`);
+      }
+      // For enum-backed types, omit the type hint — the string value passes through
+      // castValue unchanged (type === undefined → val is returned as-is), which is
+      // correct because TypeScript enum member values are plain strings.
     }
   }
 
