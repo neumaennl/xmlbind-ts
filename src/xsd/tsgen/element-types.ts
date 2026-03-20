@@ -14,6 +14,7 @@ import {
 import { toClassName, toPropertyName } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { extractEnumValues, generateEnumCode } from "./enum";
+import { computeDecoratorType, needsAllowStringFallback } from "./decorator-type-helpers";
 
 /**
  * Resolves an XSD type reference for an element to a TypeScript type.
@@ -169,6 +170,63 @@ function handleInlineUnion(union: XmldomElement): string {
 }
 
 /**
+ * Builds the `@XmlElement(...)` decorator line for code generation.
+ *
+ * This is the single source of truth for element decorator emission, used by both
+ * `emitElementDecorator` and `emitElementRef` to avoid code duplication.
+ *
+ * Type option rules (mirrors the attribute helper):
+ * - Primitives with coercion needs (`number`, `boolean`, `Date`) → constructor directly, e.g. `type: Number`.
+ * - Union type aliases containing `number`/`boolean` → constructor + `allowStringFallback: true`,
+ *   e.g. `type: Number, allowStringFallback: true`.
+ * - `string` and other simple primitives → constructor directly, e.g. `type: String`.
+ * - Complex class types → lazy arrow-function reference, e.g. `type: () => MyClass`.
+ * - `any`, `unknown`, or types containing non-identifier characters → no type option.
+ *
+ * @param elName - The XML element name
+ * @param tsType - The resolved TypeScript type name
+ * @param isArray - Whether this is an array element
+ * @param nillable - Whether the element can be nil
+ * @param ens - Optional XML namespace URI for the element
+ * @param state - The generator state (used to look up union type aliases)
+ * @returns The decorator line string (e.g. `  @XmlElement('count', { type: Number })`)
+ */
+export function buildXmlElementDecorator(
+  elName: string,
+  tsType: string,
+  isArray: boolean,
+  nillable: boolean,
+  ens: string | null | undefined,
+  state: GeneratorState
+): string {
+  const opts: string[] = [];
+
+  if (tsType && tsType !== "any" && tsType !== "unknown" && /^[A-Za-z0-9_]+$/.test(tsType)) {
+    const decoratorType = computeDecoratorType(tsType, state);
+    if (decoratorType) {
+      // Handles: number, boolean, Date, and union aliases containing those types.
+      opts.push(`type: ${decoratorType}`);
+    } else if (isPrimitiveTypeName(tsType)) {
+      // Handles: string → type: String
+      opts.push(`type: ${toDecoratorType(tsType)}`);
+    } else {
+      // Complex class types: use lazy arrow-function reference to avoid circular-import issues.
+      opts.push(`type: () => ${tsType}`);
+    }
+  }
+
+  if (isArray) opts.push("array: true");
+  if (nillable) opts.push("nillable: true");
+  if (ens) opts.push(`namespace: '${ens}'`);
+  if (needsAllowStringFallback(tsType, state)) opts.push("allowStringFallback: true");
+
+  if (opts.length === 0) {
+    return `  @XmlElement('${elName}')`;
+  }
+  return `  @XmlElement('${elName}', { ${opts.join(", ")} })`;
+}
+
+/**
  * Emits the @XmlElement decorator and property declaration for an element.
  * Handles decorator options (type, array, nillable, namespace) and property optionality.
  *
@@ -195,39 +253,11 @@ export function emitElementDecorator(
   doc?: string
 ): void {
   const propName = toPropertyName(en, state.reservedWords);
-  const decoratorOpts: string[] = [];
-
-  if (
-    tsType &&
-    tsType !== "any" &&
-    tsType !== "unknown" &&
-    /^[A-Za-z0-9_]+$/.test(tsType)
-  ) {
-    // Use lazy type reference (arrow function) for non-primitive types to avoid circular dependency issues.
-    // Arrow functions are lazily evaluated, so they are safe even for self-referencing types.
-    if (isPrimitiveTypeName(tsType)) {
-      // Convert TypeScript primitive to JavaScript constructor for decorator
-      decoratorOpts.push(`type: ${toDecoratorType(tsType)}`);
-    } else {
-      decoratorOpts.push(`type: () => ${tsType}`);
-    }
-  }
-  if (isArray) decoratorOpts.push("array: true");
-  if (nillable) decoratorOpts.push("nillable: true");
-  if (ens) decoratorOpts.push(`namespace: '${ens}'`);
-
-  const decoratorBody = decoratorOpts.length
-    ? `{ ${decoratorOpts.join(", ")} }`
-    : "";
   // Emit documentation comment if present
   if (doc) {
     lines.push(...formatTsDoc(doc, "  "));
   }
-  lines.push(
-    decoratorBody
-      ? `  @XmlElement('${en}', ${decoratorBody})`
-      : `  @XmlElement('${en}')`
-  );
+  lines.push(buildXmlElementDecorator(en, tsType, isArray, nillable, ens, state));
   lines.push(
     `  ${propName}${makeRequired ? "!" : "?"}: ${tsType}${isArray ? "[]" : ""};`
   );

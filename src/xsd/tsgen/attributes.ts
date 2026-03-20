@@ -8,7 +8,8 @@ import {
 import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { sanitizeTypeName } from "./types";
-import { buildXmlAttributeDecorator, computeDecoratorType, needsAllowStringFallback } from "./attribute-emission";
+import { buildXmlAttributeDecorator } from "./attribute-emission";
+import { computeDecoratorType, needsAllowStringFallback } from "./decorator-type-helpers";
 
 /**
  * Emits @XmlAttribute decorators and properties for all attributes in an XSD element.
