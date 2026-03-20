@@ -101,22 +101,22 @@ export function generateFromXsd(xsdText: string, outDir: string): void {
   if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
   const reservedWords = getReservedWords();
-  const generatedEnums = new Map<string, string>();
+  const generatedSimpleTypes = new Map<string, string>();
   const generated = new Map<string, any>();
 
   const state: GeneratorState = {
     schemaContext,
     xsdPrefix,
     reservedWords,
-    generatedEnums,
+    generatedSimpleTypes,
     generated,
   };
 
   // Generate enum types
-  generateEnumTypes(schemaContext.enumTypesMap, generatedEnums);
+  generateEnumTypes(schemaContext.enumTypesMap, generatedSimpleTypes);
 
   // Process unions and lists for named simpleTypes
-  processSimpleTypes(schemaContext, xsdPrefix, generatedEnums, reservedWords);
+  processSimpleTypes(schemaContext, xsdPrefix, generatedSimpleTypes, reservedWords);
 
   // Generate classes for all named complexTypes
   for (const [name, ct] of schemaContext.complexTypesMap.entries()) {
@@ -148,5 +148,5 @@ export function generateFromXsd(xsdText: string, outDir: string): void {
   processTopLevelElements(schemaContext.topLevelElements, referencedTopLevels, state, ensureClass);
 
   // Write all generated files
-  writeGeneratedFiles(generated, generatedEnums, outDir);
+  writeGeneratedFiles(generated, generatedSimpleTypes, outDir);
 }

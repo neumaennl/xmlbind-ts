@@ -2,19 +2,37 @@
  * Casts a value to the specified type, handling primitives, enums, and custom types.
  *
  * Performs type coercion for String, Number, Boolean, and Date types.
+ * When the type is Number, non-numeric strings produce `NaN` by default;
+ * however, empty or whitespace-only strings coerce to `0` per JavaScript's
+ * `Number()` semantics.
+ * When the type is Boolean, non-boolean strings produce `false` by default.
+ * Pass `allowStringFallback = true` to instead return the original string
+ * unchanged when coercion would produce `NaN` / `false` — use this for
+ * union types such as `number | "unbounded"` or `boolean | "auto"`.
  * For enum types (objects with enum values), attempts to match the value or key.
  * Returns the value unchanged for unrecognized types.
  *
  * @param val - The value to cast (can be any type)
  * @param type - The target type constructor or enum object (optional)
+ * @param allowStringFallback - When true, returns the original value instead of
+ *   a failed coercion result (`NaN` for Number, `false` for Boolean).
  * @returns The casted value, or the original value if no casting is needed
  */
-export function castValue(val: any, type?: any) {
+export function castValue(val: any, type?: any, allowStringFallback = false) {
   if (val === null || val === undefined) return val;
   if (!type) return val;
   if (type === String) return String(val);
-  if (type === Number) return Number(val);
-  if (type === Boolean) return val === "true" || val === true;
+  if (type === Number) {
+    const num = Number(val);
+    return allowStringFallback && Number.isNaN(num) ? val : num;
+  }
+  if (type === Boolean) {
+    // XML Schema allows "1" and "0" in addition to "true" and "false".
+    const isTrue = val === true || val === "true" || val === 1 || val === "1";
+    const isFalse = val === false || val === "false" || val === 0 || val === "0";
+    if (allowStringFallback && !isTrue && !isFalse) return val;
+    return isTrue;
+  }
   if (type === Date) return new Date(val);
   // Handle enum types - check if type is an object with enum values
   if (typeof type === "object" && !Array.isArray(type)) {

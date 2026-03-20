@@ -270,7 +270,7 @@ function processElementWithInlineSimpleType(
     if (enumValues.length > 0) {
       const anonEnumName = toClassName(en + "Enum", state.reservedWords);
       const enumCode = generateEnumCode(anonEnumName, enumValues);
-      state.generatedEnums.set(anonEnumName, enumCode);
+      state.generatedSimpleTypes.set(anonEnumName, enumCode);
       tsType = anonEnumName;
       isEnum = true;
     } else {

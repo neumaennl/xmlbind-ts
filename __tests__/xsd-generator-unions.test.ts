@@ -85,6 +85,154 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
+  test("generates { type: Number, allowStringFallback: true } decorator for number-containing union element", () => {
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="allNNI">
+    <xs:union memberTypes="xs:nonNegativeInteger">
+      <xs:simpleType>
+        <xs:restriction base="xs:NMTOKEN">
+          <xs:enumeration value="unbounded"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
+  </xs:simpleType>
+
+  <xs:complexType name="Container">
+    <xs:sequence>
+      <xs:element name="maxOccurs" type="allNNI"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="Container" type="Container"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Container.ts"), "utf-8");
+      // Union-typed elements must carry both the type hint and the fallback flag
+      expect(content).toContain("@XmlElement('maxOccurs', { type: Number, allowStringFallback: true })");
+    });
+  });
+
+  test("generates { type: Number, allowStringFallback: true } decorator for number-containing union attribute", () => {
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="allNNI">
+    <xs:union memberTypes="xs:nonNegativeInteger">
+      <xs:simpleType>
+        <xs:restriction base="xs:NMTOKEN">
+          <xs:enumeration value="unbounded"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
+  </xs:simpleType>
+
+  <xs:complexType name="Occurrence">
+    <xs:attribute name="maxOccurs" type="allNNI"/>
+  </xs:complexType>
+  <xs:element name="Occurrence" type="Occurrence"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Occurrence.ts"), "utf-8");
+      // Union-typed attributes must carry both the type hint and the fallback flag
+      expect(content).toContain("@XmlAttribute('maxOccurs', { type: Number, allowStringFallback: true })");
+    });
+  });
+
+  test("does not generate allowStringFallback for a plain number alias (non-union)", () => {
+    // xs:nonNegativeInteger restriction (no union) → type Foo = number → no fallback
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="NonNegInt">
+    <xs:restriction base="xs:nonNegativeInteger"/>
+  </xs:simpleType>
+
+  <xs:complexType name="Item">
+    <xs:attribute name="count" type="NonNegInt"/>
+  </xs:complexType>
+  <xs:element name="Item" type="Item"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Item.ts"), "utf-8");
+      // Plain number alias: no fallback option should be emitted
+      expect(content).not.toContain("allowStringFallback");
+    });
+  });
+
+  test("does not generate type or allowStringFallback for a mixed number|boolean union", () => {
+    // A union of both number and boolean: no single type can be chosen, so both options are omitted
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="NumOrBool">
+    <xs:union memberTypes="xs:integer xs:boolean"/>
+  </xs:simpleType>
+
+  <xs:complexType name="Item">
+    <xs:attribute name="value" type="NumOrBool"/>
+  </xs:complexType>
+  <xs:element name="Item" type="Item"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Item.ts"), "utf-8");
+      // Mixed union: neither type coercion nor string fallback should be emitted
+      expect(content).not.toContain("type: Number");
+      expect(content).not.toContain("type: Boolean");
+      expect(content).not.toContain("allowStringFallback");
+    });
+  });
+
+  test("generates { type: Date } decorator for a Date restriction alias (xs:date base)", () => {
+    // A simpleType restricting xs:date produces `export type MyDate = Date;` in generatedSimpleTypes.
+    // computeDecoratorType must detect that and emit { type: Date }.
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="constrainedDate">
+    <xs:restriction base="xs:date"/>
+  </xs:simpleType>
+
+  <xs:complexType name="Event">
+    <xs:attribute name="startDate" type="constrainedDate"/>
+  </xs:complexType>
+  <xs:element name="Event" type="Event"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Event.ts"), "utf-8");
+      // Date restriction alias: should emit { type: Date } without allowStringFallback
+      expect(content).toContain("@XmlAttribute('startDate', { type: Date })");
+      expect(content).not.toContain("allowStringFallback");
+    });
+  });
+
+  test("does not generate type: Date for a Date | string union alias", () => {
+    // A union of Date and string: no single type can safely be applied.
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="DateOrString">
+    <xs:union memberTypes="xs:date xs:string"/>
+  </xs:simpleType>
+
+  <xs:complexType name="Item">
+    <xs:attribute name="value" type="DateOrString"/>
+  </xs:complexType>
+  <xs:element name="Item" type="Item"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Item.ts"), "utf-8");
+      // Date | string: no type coercion should be emitted
+      expect(content).not.toContain("type: Date");
+    });
+  });
+
   test("handles union with inline simpleType members", () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">

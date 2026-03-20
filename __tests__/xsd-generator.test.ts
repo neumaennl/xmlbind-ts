@@ -21,7 +21,7 @@ describe("XSD Generator", () => {
       expect(gen).toContain("namespace: 'http://example.com/ns'");
 
       // Check @XmlAttribute decorator for id
-      expect(gen).toMatch(/@XmlAttribute\('id'\)\s+id\?: number/);
+      expect(gen).toMatch(/@XmlAttribute\('id',\s*\{\s*type:\s*Number\s*\}\)\s+id\?: number/);
 
       // Check @XmlElement decorators for required elements (now non-optional)
       expect(gen).toMatch(
@@ -65,8 +65,9 @@ describe("XSD Generator", () => {
           const content = readFileSync(path.join(tmp, "Record.ts"), "utf8");
 
           expect(content).toContain("import { StatusEnum } from './enums'");
-          // Lazy type reference to avoid circular dependency issues
-          expect(content).toContain("type: () => StatusEnum");
+          // Enum-backed types do not emit a type hint — the string value passes through unchanged.
+          expect(content).not.toContain("type: () => StatusEnum");
+          expect(content).toContain("status!: StatusEnum");
         });
       });
 

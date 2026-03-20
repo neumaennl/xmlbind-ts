@@ -8,13 +8,10 @@ import {
 import {
   typeMapping,
   sanitizeTypeName,
-  isPrimitiveTypeName,
-  toDecoratorType,
 } from "./types";
-import { toPropertyName } from "./codegen";
+import { toPropertyName, toClassName } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
-import { handleInlineType } from "./element-types";
-import { toClassName } from "./codegen";
+import { handleInlineType, buildXmlElementDecorator } from "./element-types";
 
 /**
  * Resolves the namespace URI for a qualified name in the context of an element.
@@ -238,34 +235,7 @@ export function emitElementRef(
       lines.push(...formatTsDoc(doc, "  "));
     }
 
-    const decoratorOpts: string[] = [];
-    if (
-      tsType &&
-      tsType !== "any" &&
-      tsType !== "unknown" &&
-      /^[A-Za-z0-9_]+$/.test(tsType)
-    ) {
-      // Use lazy type reference (arrow function) for non-primitive types to avoid circular dependency issues.
-      // Arrow functions are lazily evaluated, so they are safe even for self-referencing types.
-      if (isPrimitiveTypeName(tsType)) {
-        // Convert TypeScript primitive to JavaScript constructor for decorator
-        decoratorOpts.push(`type: ${toDecoratorType(tsType)}`);
-      } else {
-        decoratorOpts.push(`type: () => ${tsType}`);
-      }
-    }
-    if (isArray) decoratorOpts.push("array: true");
-    if (nillable) decoratorOpts.push("nillable: true");
-    if (refNs) decoratorOpts.push(`namespace: '${refNs}'`);
-
-    const decoratorBody = decoratorOpts.length
-      ? `{ ${decoratorOpts.join(", ")} }`
-      : "";
-    lines.push(
-      decoratorBody
-        ? `  @XmlElement('${refLocalName}', ${decoratorBody})`
-        : `  @XmlElement('${refLocalName}')`
-    );
+    lines.push(buildXmlElementDecorator(refLocalName, tsType, isArray, nillable, refNs, state));
     lines.push(
       `  ${propName}${makeRequired ? "!" : "?"}: ${tsType}${
         isArray ? "[]" : ""

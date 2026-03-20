@@ -416,14 +416,14 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     expect(metaElement.constructor.name).toBe("localElement");
     expect(metaElement.name).toBe("meta");
     expect(metaElement.type_).toBe("choiceType");
-    expect(metaElement.minOccurs).toBe("0");
+    expect(metaElement.minOccurs).toBe(0);
 
     // Verify the second element is "product" (line 11 of example.xsd)
     const productElement = sequence.element[1];
     expect(productElement.constructor.name).toBe("localElement");
     expect(productElement.name).toBe("product");
     expect(productElement.type_).toBe("loggingType");
-    expect(productElement.minOccurs).toBe("0");
+    expect(productElement.minOccurs).toBe(0);
     expect(productElement.maxOccurs).toBe("unbounded");
   });
 });

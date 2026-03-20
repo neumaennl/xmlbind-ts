@@ -8,6 +8,8 @@ import {
 import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen";
 import type { GeneratorState, GenUnit } from "./codegen";
 import { sanitizeTypeName } from "./types";
+import { buildXmlAttributeDecorator } from "./attribute-emission";
+import { computeDecoratorType, needsAllowStringFallback } from "./decorator-type-helpers";
 
 /**
  * Emits @XmlAttribute decorators and properties for all attributes in an XSD element.
@@ -102,11 +104,7 @@ export function emitAttrs(
       lines.push(...formatTsDoc(doc, "  "));
     }
 
-    lines.push(
-      ans
-        ? `  @XmlAttribute('${an}', { namespace: '${ans}' })`
-        : `  @XmlAttribute('${an}')`
-    );
+    lines.push(buildXmlAttributeDecorator(an, ans, computeDecoratorType(tsType, state), needsAllowStringFallback(tsType, state)));
     const use = a.getAttribute("use");
     const makeRequired = use === "required";
     lines.push(`  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`);
@@ -175,11 +173,7 @@ function emitAttributeRef(
         lines.push(...formatTsDoc(doc, "  "));
       }
 
-      lines.push(
-        ans
-          ? `  @XmlAttribute('${an}', { namespace: '${ans}' })`
-          : `  @XmlAttribute('${an}')`
-      );
+      lines.push(buildXmlAttributeDecorator(an, ans, computeDecoratorType(tsType, state), needsAllowStringFallback(tsType, state)));
       const use = referencingUse || refDef.getAttribute("use");
       const makeRequired = use === "required";
       lines.push(`  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`);

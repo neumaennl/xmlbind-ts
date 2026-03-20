@@ -1,4 +1,37 @@
+import "reflect-metadata";
 import { ensureMeta } from "../metadata/MetadataRegistry";
+
+/**
+ * Resolves the type for an attribute field: the explicit `options.type` takes
+ * precedence; otherwise the TypeScript design type emitted by the compiler
+ * (when `emitDecoratorMetadata: true`) is used via `reflect-metadata`.
+ *
+ * Throws a TypeError when an explicit `options.type` is provided but conflicts
+ * with the concrete TypeScript design type (e.g. `{ type: Number }` on a
+ * `string` property). When the design type is `Object` — which TypeScript emits
+ * for union types such as `number | "unbounded"` — no conflict is reported,
+ * because the explicit type is a valid member of the union.
+ */
+function resolveAttributeType(
+  options: { type?: any } | undefined,
+  target: object,
+  propertyKey: string | symbol
+): any {
+  const reflectedType = Reflect.getMetadata("design:type", target, propertyKey);
+  if (
+    options?.type !== undefined &&
+    reflectedType !== undefined &&
+    reflectedType !== Object &&
+    options.type !== reflectedType
+  ) {
+    throw new TypeError(
+      `@XmlAttribute: explicit type option "${options.type?.name}" conflicts with the` +
+      ` declared TypeScript type "${reflectedType?.name}" for property` +
+      ` "${String(propertyKey)}". Remove the type option or align it with the property declaration.`
+    );
+  }
+  return options?.type ?? reflectedType;
+}
 
 /**
  * Decorator to mark a property as an XML attribute.
@@ -6,9 +39,21 @@ import { ensureMeta } from "../metadata/MetadataRegistry";
  * This decorator registers metadata for marshalling/unmarshalling a class property
  * to/from an XML attribute. Attributes are always scalar values (not arrays).
  *
+ * When `emitDecoratorMetadata` is enabled in `tsconfig.json` (legacy decorators),
+ * the TypeScript design type is read automatically via `reflect-metadata`, so numeric
+ * and boolean attributes are coerced to the correct primitive at deserialisation time
+ * without any extra configuration.
+ *
  * @param name - The XML attribute name (defaults to property name)
  * @param options - Optional configuration
  * @param options.namespace - The XML namespace URI for the attribute
+ * @param options.type - Explicit type constructor override (e.g. `Number`, `Boolean`).
+ *   Takes precedence over the automatically detected design type.  Useful for Stage 3
+ *   decorators where `reflect-metadata` design types are not emitted.
+ * @param options.allowStringFallback - When `true`, non-coercible values are returned
+ *   as their original string rather than producing `NaN` (for `Number`) or `false`
+ *   (for `Boolean`).  Use this for union types like `number | "unbounded"` or
+ *   `boolean | "auto"` where a non-numeric / non-boolean string is a valid value.
  * @returns A property decorator function
  *
  * @example
@@ -17,12 +62,17 @@ import { ensureMeta } from "../metadata/MetadataRegistry";
  *   @XmlAttribute('id')
  *   id?: string;
  *
+ *   // With emitDecoratorMetadata the Number type is detected automatically:
  *   @XmlAttribute('age')
  *   age?: number;
+ *
+ *   // Or supply the type explicitly (e.g. for Stage 3 decorators):
+ *   @XmlAttribute('score', { type: Number })
+ *   score?: number;
  * }
  * ```
  */
-export function XmlAttribute(name?: string, options?: { namespace?: string }) {
+export function XmlAttribute(name?: string, options?: { namespace?: string; type?: any; allowStringFallback?: boolean }) {
   return function (contextOrTarget: any, propertyKeyOrContext?: string | symbol | any) {
     // Stage 3 decorators: contextOrTarget is undefined/value, propertyKeyOrContext is context object
     if (propertyKeyOrContext && typeof propertyKeyOrContext === "object" && "kind" in propertyKeyOrContext) {
@@ -34,7 +84,9 @@ export function XmlAttribute(name?: string, options?: { namespace?: string }) {
           key: context.name.toString(),
           name: name ?? context.name.toString(),
           kind: "attribute",
+          type: options?.type,
           namespace: options?.namespace ?? null,
+          allowStringFallback: options?.allowStringFallback,
         });
       });
       return;
@@ -52,7 +104,9 @@ export function XmlAttribute(name?: string, options?: { namespace?: string }) {
         key: propertyKeyOrContext.toString(),
         name: name ?? propertyKeyOrContext.toString(),
         kind: "attribute",
+        type: resolveAttributeType(options, target, propertyKeyOrContext),
         namespace: options?.namespace ?? null,
+        allowStringFallback: options?.allowStringFallback,
       });
       return;
     }
@@ -68,7 +122,9 @@ export function XmlAttribute(name?: string, options?: { namespace?: string }) {
         key: prop.toString(),
         name: name ?? prop.toString(),
         kind: "attribute",
+        type: resolveAttributeType(options, target, prop),
         namespace: options?.namespace ?? null,
+        allowStringFallback: options?.allowStringFallback,
       });
     };
   } as any;

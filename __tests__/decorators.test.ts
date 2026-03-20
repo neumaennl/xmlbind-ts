@@ -105,6 +105,77 @@ describe("Decorators", () => {
       const field = meta?.fields.find((f: any) => f.key === "testProp");
       expect((field as any)?.namespace).toBe("http://test.com");
     });
+
+    it("should unmarshal numeric attribute as number via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlAttribute("minOccurs")
+        minOccurs?: number;
+      }
+
+      const xml = `<element minOccurs="0"/>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.minOccurs).toBe("number");
+      expect(result.minOccurs).toBe(0);
+    });
+
+    it("should unmarshal numeric maxOccurs as number for union-typed property (allNNI pattern)", () => {
+      // For union types TypeScript emits Object as the design:type via reflect-metadata,
+      // so the type cannot be auto-detected.  Using { type: Number, allowStringFallback: true }
+      // enables coercion: numeric values become numbers, non-numeric strings like "unbounded"
+      // pass through unchanged.
+      // In XSD-generated code the generator emits these options automatically when it
+      // detects that the union type alias includes 'number'.
+      type allNNI = number | "unbounded";
+      @XmlRoot("element")
+      class Element {
+        @XmlAttribute("maxOccurs", { type: Number, allowStringFallback: true })
+        maxOccurs?: allNNI;
+      }
+
+      const xmlNumeric = `<element maxOccurs="5"/>`;
+      const xmlUnbounded = `<element maxOccurs="unbounded"/>`;
+      expect(unmarshal(Element, xmlNumeric).maxOccurs).toBe(5);
+      expect(unmarshal(Element, xmlUnbounded).maxOccurs).toBe("unbounded");
+    });
+
+    it("should unmarshal boolean attribute as boolean via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlAttribute("abstract")
+        abstract?: boolean;
+      }
+
+      const xml = `<element abstract="true"/>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.abstract).toBe("boolean");
+      expect(result.abstract).toBe(true);
+    });
+
+    it("should unmarshal string attribute as string without coercion", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlAttribute("name")
+        name?: string;
+      }
+
+      const xml = `<element name="foo"/>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.name).toBe("string");
+      expect(result.name).toBe("foo");
+    });
+
+    it("should throw when explicit type option conflicts with declared TypeScript type", () => {
+      expect(() => {
+        @XmlRoot("element")
+        class Element {
+          // design:type is String, but { type: Number } is incompatible
+          @XmlAttribute("count", { type: Number })
+          count?: string;
+        }
+        void Element; // suppress unused-variable warning
+      }).toThrow(TypeError);
+    });
   });
 
   describe("XmlElement", () => {
@@ -157,6 +228,58 @@ describe("Decorators", () => {
 
       const xml = marshal(parent);
       expectStringsOnConsecutiveLines(xml, ["<child>", "<name>test</name>"]);
+    });
+
+    it("should unmarshal numeric element as number via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlElement("count")
+        count?: number;
+      }
+
+      const xml = `<element><count>42</count></element>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.count).toBe("number");
+      expect(result.count).toBe(42);
+    });
+
+    it("should unmarshal boolean element as boolean via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlElement("active")
+        active?: boolean;
+      }
+
+      const xml = `<element><active>true</active></element>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.active).toBe("boolean");
+      expect(result.active).toBe(true);
+    });
+
+    it("should unmarshal boolean element expressed as '1' via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlElement("flag")
+        flag?: boolean;
+      }
+
+      // XML Schema allows "1" for true and "0" for false
+      const xml = `<element><flag>1</flag></element>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.flag).toBe("boolean");
+      expect(result.flag).toBe(true);
+    });
+
+    it("should throw when explicit type option conflicts with declared element type", () => {
+      expect(() => {
+        @XmlRoot("element")
+        class Element {
+          // design:type is String, but { type: Number } is incompatible
+          @XmlElement("value", { type: Number })
+          value?: string;
+        }
+        void Element;
+      }).toThrow(TypeError);
     });
 
     it("should handle element without options", () => {
