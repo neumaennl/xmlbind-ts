@@ -119,6 +119,38 @@ describe("Decorators", () => {
       expect(result.minOccurs).toBe(0);
     });
 
+    it("should unmarshal positive numeric maxOccurs as number via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlAttribute("maxOccurs")
+        maxOccurs?: number;
+      }
+
+      const xml = `<element maxOccurs="2"/>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.maxOccurs).toBe("number");
+      expect(result.maxOccurs).toBe(2);
+    });
+
+    it("should leave maxOccurs as string for union-typed property (allNNI pattern)", () => {
+      // TypeScript emits Object for union types; reflect-metadata cannot determine intent,
+      // so the raw XML string is preserved. The explicit { type: Number } escape hatch
+      // would coerce "unbounded" to NaN, so union properties must stay untyped here.
+      type allNNI = number | "unbounded";
+      @XmlRoot("element")
+      class Element {
+        @XmlAttribute("maxOccurs")
+        maxOccurs?: allNNI;
+      }
+
+      const xmlNumeric = `<element maxOccurs="5"/>`;
+      const xmlUnbounded = `<element maxOccurs="unbounded"/>`;
+      expect(unmarshal(Element, xmlUnbounded).maxOccurs).toBe("unbounded");
+      // For a union-typed property the numeric value is preserved as-is from XML;
+      // callers that need numeric comparison can use Number(maxOccurs).
+      expect(unmarshal(Element, xmlNumeric).maxOccurs).toBe("5");
+    });
+
     it("should unmarshal boolean attribute as boolean via reflect-metadata", () => {
       @XmlRoot("element")
       class Element {
