@@ -104,6 +104,29 @@ describe("valueCasting", () => {
       const obj = { foo: "bar" };
       expect(castValue(obj, Object)).toBe(obj);
     });
+
+    describe("Object type (union-type natural coercion)", () => {
+      it("should coerce numeric string to number when type is Object", () => {
+        expect(castValue("2", Object)).toBe(2);
+        expect(castValue("0", Object)).toBe(0);
+        expect(castValue("1.5", Object)).toBe(1.5);
+      });
+
+      it("should leave non-numeric string as string when type is Object", () => {
+        expect(castValue("unbounded", Object)).toBe("unbounded");
+        expect(castValue("foo", Object)).toBe("foo");
+      });
+
+      it("should leave empty string unchanged when type is Object", () => {
+        expect(castValue("", Object)).toBe("");
+      });
+
+      it("should pass through non-string values unchanged when type is Object", () => {
+        expect(castValue(42, Object)).toBe(42);
+        const obj = { x: 1 };
+        expect(castValue(obj, Object)).toBe(obj);
+      });
+    });
   });
 
   describe("serializePrimitive", () => {
