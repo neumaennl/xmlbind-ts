@@ -32,6 +32,14 @@ export interface FieldMeta {
   namespace?: string | null;
   /** Whether the element can be explicitly null (xsi:nil) */
   nillable?: boolean;
+  /**
+   * When true, `castValue` returns the original string unchanged instead of
+   * `NaN` / `false` when the value cannot be coerced to `type`.  Opt-in for
+   * union types such as `number | "unbounded"` where a non-numeric string is
+   * a valid value, or `boolean | "auto"` where an unexpected string should
+   * pass through as-is.
+   */
+  allowStringFallback?: boolean;
   // For wildcards, we may later add filter info (e.g., namespaces, processContents)
   // For now, they act as catch-alls without filtering.
 }

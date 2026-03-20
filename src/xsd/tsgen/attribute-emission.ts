@@ -5,13 +5,34 @@ import type { GeneratorState, GenUnit } from "./codegen";
 import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen";
 
 /**
+ * Determines whether the `allowStringFallback` option should be emitted for
+ * the given TypeScript type.  Returns true when the type is a union type alias
+ * that includes `number` (or `boolean`) as a member — e.g.
+ * `allNNI = number | "unbounded"` — so that non-numeric strings like
+ * `"unbounded"` pass through as-is rather than coercing to `NaN`.
+ *
+ * @param tsType - The resolved TypeScript type name
+ * @param state - The generator state (used to look up generated type aliases)
+ */
+export function needsAllowStringFallback(
+  tsType: string,
+  state: GeneratorState
+): boolean {
+  const typeDef = state.generatedEnums.get(tsType);
+  if (!typeDef) return false;
+  return /\bnumber\b/.test(typeDef) || /\bboolean\b/.test(typeDef);
+}
+
+/**
  * Determines the JavaScript constructor name to include as `type` in the generated
  * `@XmlAttribute(...)` decorator, based on the resolved TypeScript type and the
  * full generator state.
  *
  * - Primitive types (`number`, `boolean`, `Date`) map to `Number`, `Boolean`, `Date`.
  * - Union type aliases whose definition includes `number` (e.g. `allNNI = number | "unbounded"`)
- *   also get `Number`, so the unmarshaller applies "number or original-string" coercion.
+ *   also get `Number` so the unmarshaller applies numeric coercion; the accompanying
+ *   `allowStringFallback: true` option (emitted separately) ensures non-numeric strings
+ *   pass through unchanged.
  * - Returns `undefined` when no explicit type hint is needed.
  *
  * @param tsType - The resolved TypeScript type name

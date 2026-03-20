@@ -50,6 +50,10 @@ function resolveAttributeType(
  * @param options.type - Explicit type constructor override (e.g. `Number`, `Boolean`).
  *   Takes precedence over the automatically detected design type.  Useful for Stage 3
  *   decorators where `reflect-metadata` design types are not emitted.
+ * @param options.allowStringFallback - When `true`, non-coercible values are returned
+ *   as their original string rather than producing `NaN` (for `Number`) or `false`
+ *   (for `Boolean`).  Use this for union types like `number | "unbounded"` or
+ *   `boolean | "auto"` where a non-numeric / non-boolean string is a valid value.
  * @returns A property decorator function
  *
  * @example
@@ -68,7 +72,7 @@ function resolveAttributeType(
  * }
  * ```
  */
-export function XmlAttribute(name?: string, options?: { namespace?: string; type?: any }) {
+export function XmlAttribute(name?: string, options?: { namespace?: string; type?: any; allowStringFallback?: boolean }) {
   return function (contextOrTarget: any, propertyKeyOrContext?: string | symbol | any) {
     // Stage 3 decorators: contextOrTarget is undefined/value, propertyKeyOrContext is context object
     if (propertyKeyOrContext && typeof propertyKeyOrContext === "object" && "kind" in propertyKeyOrContext) {
@@ -82,6 +86,7 @@ export function XmlAttribute(name?: string, options?: { namespace?: string; type
           kind: "attribute",
           type: options?.type,
           namespace: options?.namespace ?? null,
+          allowStringFallback: options?.allowStringFallback,
         });
       });
       return;
@@ -101,6 +106,7 @@ export function XmlAttribute(name?: string, options?: { namespace?: string; type
         kind: "attribute",
         type: resolveAttributeType(options, target, propertyKeyOrContext),
         namespace: options?.namespace ?? null,
+        allowStringFallback: options?.allowStringFallback,
       });
       return;
     }
@@ -118,6 +124,7 @@ export function XmlAttribute(name?: string, options?: { namespace?: string; type
         kind: "attribute",
         type: resolveAttributeType(options, target, prop),
         namespace: options?.namespace ?? null,
+        allowStringFallback: options?.allowStringFallback,
       });
     };
   } as any;

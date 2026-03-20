@@ -110,7 +110,7 @@ function bindFieldsToTarget(
         hereNs
       );
       if (k && (node as any)[k] !== undefined) {
-        target[f.key] = castValue((node as any)[k], resolveType(f.type));
+        target[f.key] = castValue((node as any)[k], resolveType(f.type), f.allowStringFallback);
       }
     } else if (f.kind === "element") {
       const k = matchElementKey(
@@ -324,7 +324,7 @@ function bindRootAttributes(
     if (k) {
       const value = (node as any)[k];
       if (value !== undefined)
-        target[f.key] = castValue(value, resolveType(f.type));
+        target[f.key] = castValue(value, resolveType(f.type), f.allowStringFallback);
     }
   }
 }
