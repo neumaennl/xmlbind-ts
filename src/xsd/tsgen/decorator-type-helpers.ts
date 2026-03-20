@@ -2,11 +2,6 @@ import { toDecoratorType, requiresRuntimeTypeCoercion } from "./types";
 import type { GeneratorState } from "./codegen";
 
 /**
- * Matches union type alias definitions that include a primitive that requires
- * runtime coercion: `number` or `boolean`.
- */
-const COERCIBLE_PRIMITIVE_RE = /\b(number|boolean)\b/;
-/**
  * Extracts the type expression from a stored type alias definition string.
  * e.g. `'export type allNNI = number | "unbounded";'` → `'number | "unbounded"'`
  * Import lines before the `export type` line are ignored.
@@ -18,14 +13,14 @@ function extractTypeExpression(typeDef: string): string | undefined {
 
 /**
  * Determines whether the `allowStringFallback` option should be emitted for
- * the given TypeScript type.  Returns true when the type is a union type alias
- * that includes `number` (or `boolean`) as a member **and** also includes at
- * least one non-coercible member (a string literal, `string`, enum reference,
- * etc.) — e.g. `allNNI = number | "unbounded"`.
+ * the given TypeScript type.  Returns true only when `computeDecoratorType`
+ * would emit `Number` or `Boolean` **and** the alias is a union that also
+ * contains at least one non-coercible member (a string literal, `string`,
+ * enum reference, etc.) — e.g. `allNNI = number | "unbounded"`.
  *
- * Returns false for:
- * - Non-union aliases such as `type Foo = number` or `type Bar = number[]`.
- * - Unions whose members are exclusively `number`/`boolean` (no fallback needed).
+ * This ties fallback emission directly to type-hint emission: if no `type`
+ * option is being generated (e.g. mixed `number | boolean`, `Date | string`,
+ * or list aliases), `allowStringFallback` is never emitted either.
  *
  * Used by both attribute and element decorator emission.
  *
@@ -36,16 +31,19 @@ export function needsAllowStringFallback(
   tsType: string,
   state: GeneratorState
 ): boolean {
+  const decoratorType = computeDecoratorType(tsType, state);
+  // Only emit allowStringFallback when a coercible type hint is being emitted
+  // for Number or Boolean.  Date doesn't use string fallback semantics.
+  if (decoratorType !== "Number" && decoratorType !== "Boolean") return false;
+
   const typeDef = state.generatedEnums.get(tsType);
   if (!typeDef) return false;
-  // Must be a union type (contains `|`)
-  if (!/\|/.test(typeDef)) return false;
-  // Must contain a coercible primitive
-  if (!COERCIBLE_PRIMITIVE_RE.test(typeDef)) return false;
-  // Must also have at least one non-coercible member so the fallback is meaningful.
   const typeExpr = extractTypeExpression(typeDef);
   if (!typeExpr) return false;
   const members = typeExpr.split("|").map((m) => m.trim());
+  // Must be a union with at least one non-coercible member.
+  // A plain `type Foo = number` (single member) doesn't need fallback.
+  if (members.length <= 1) return false;
   return members.some((m) => m !== "number" && m !== "boolean");
 }
 
@@ -55,15 +53,17 @@ export function needsAllowStringFallback(
  * resolved TypeScript type and the full generator state.
  *
  * - Primitive types (`number`, `boolean`, `Date`) map to `Number`, `Boolean`, `Date`.
- * - Union type aliases whose definition includes `number` but not `boolean`
- *   (e.g. `allNNI = number | "unbounded"`) get `Number`.
- * - Union type aliases whose definition includes `boolean` but not `number`
- *   (e.g. `boolOrAuto = boolean | "auto"`) get `Boolean`.
- * - Non-union aliases that are exactly `= Date` (e.g. a restriction of `xs:date`)
- *   get `Date`.
- * - Mixed unions containing both `number` and `boolean`, or `Date` mixed with
- *   other types, get `undefined` so no single-type coercion is applied at runtime.
- * - Returns `undefined` when no explicit type hint is needed.
+ * - Non-union aliases that are exactly `= number`, `= boolean`, or `= Date`
+ *   (e.g. a restriction of a numeric or date XSD type) get the corresponding
+ *   constructor.
+ * - Union aliases: exactly one coercible primitive member must be present and
+ *   it must be a standalone member (not `number[]`, not mixed `number | boolean`).
+ *   `Date` is not emitted for union aliases.
+ * - Returns `undefined` when no explicit type hint is needed (e.g. mixed unions,
+ *   list aliases, purely string aliases).
+ *
+ * Matching is done at the member level (splitting on `|`) to avoid false
+ * positives from list aliases like `number[]`.
  *
  * Used by both attribute and element decorator emission.
  *
@@ -80,20 +80,30 @@ export function computeDecoratorType(
   const typeDef = state.generatedEnums.get(tsType);
   if (!typeDef) return undefined;
 
-  const hasNumber = /\bnumber\b/.test(typeDef);
-  const hasBoolean = /\bboolean\b/.test(typeDef);
-  const hasDate = /\bDate\b/.test(typeDef);
+  const typeExpr = extractTypeExpression(typeDef);
+  if (!typeExpr) return undefined;
 
-  // Return a type hint only when exactly one coercible primitive is present.
-  // Mixed aliases (e.g. `number | boolean`, `Date | number`) get undefined so
-  // no single-type coercion is applied at runtime.
-  if (hasNumber && !hasBoolean && !hasDate) return "Number";
-  if (hasBoolean && !hasNumber && !hasDate) return "Boolean";
-  if (hasDate && !hasNumber && !hasBoolean) {
-    // Only emit Date for an alias that is purely `= Date` (no union, no array).
-    // For `Date | string` unions, skip coercion since no safe fallback exists.
-    const typeExpr = extractTypeExpression(typeDef);
-    return typeExpr?.trim() === "Date" ? "Date" : undefined;
+  const members = typeExpr.split("|").map((m) => m.trim());
+
+  // Non-union alias (single member): check for exact primitive names only.
+  if (members.length === 1) {
+    const m = members[0];
+    if (m === "number") return "Number";
+    if (m === "boolean") return "Boolean";
+    if (m === "Date") return "Date";
+    return undefined;
   }
+
+  // Union alias: a type hint is only emitted when exactly one coercible
+  // primitive is present as a standalone member.  `Date` is intentionally
+  // excluded from union handling — only a pure `= Date` alias gets a hint.
+  // Mixed aliases like `number | boolean` or `Date | number` return undefined.
+  const hasNumberMember = members.includes("number");
+  const hasBooleanMember = members.includes("boolean");
+  const hasDateMember = members.includes("Date");
+
+  if (hasNumberMember && !hasBooleanMember && !hasDateMember) return "Number";
+  if (hasBooleanMember && !hasNumberMember && !hasDateMember) return "Boolean";
   return undefined;
 }
+
