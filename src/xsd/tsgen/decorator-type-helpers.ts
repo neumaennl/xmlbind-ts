@@ -6,7 +6,6 @@ import type { GeneratorState } from "./codegen";
  * runtime coercion: `number` or `boolean`.
  */
 const COERCIBLE_PRIMITIVE_RE = /\b(number|boolean)\b/;
-
 /**
  * Extracts the type expression from a stored type alias definition string.
  * e.g. `'export type allNNI = number | "unbounded";'` → `'number | "unbounded"'`
@@ -60,8 +59,10 @@ export function needsAllowStringFallback(
  *   (e.g. `allNNI = number | "unbounded"`) get `Number`.
  * - Union type aliases whose definition includes `boolean` but not `number`
  *   (e.g. `boolOrAuto = boolean | "auto"`) get `Boolean`.
- * - Mixed unions containing both `number` and `boolean` get `undefined` so no
- *   single-type coercion is applied at runtime.
+ * - Non-union aliases that are exactly `= Date` (e.g. a restriction of `xs:date`)
+ *   get `Date`.
+ * - Mixed unions containing both `number` and `boolean`, or `Date` mixed with
+ *   other types, get `undefined` so no single-type coercion is applied at runtime.
  * - Returns `undefined` when no explicit type hint is needed.
  *
  * Used by both attribute and element decorator emission.
@@ -77,17 +78,22 @@ export function computeDecoratorType(
     return toDecoratorType(tsType);
   }
   const typeDef = state.generatedEnums.get(tsType);
-  if (typeDef && COERCIBLE_PRIMITIVE_RE.test(typeDef)) {
-    const hasNumber = /\bnumber\b/.test(typeDef);
-    const hasBoolean = /\bboolean\b/.test(typeDef);
-    if (hasNumber && !hasBoolean) {
-      return "Number";
-    }
-    if (hasBoolean && !hasNumber) {
-      return "Boolean";
-    }
-    // Mixed `number | boolean`: omit `type` so no single-type coercion is applied.
-    return undefined;
+  if (!typeDef) return undefined;
+
+  const hasNumber = /\bnumber\b/.test(typeDef);
+  const hasBoolean = /\bboolean\b/.test(typeDef);
+  const hasDate = /\bDate\b/.test(typeDef);
+
+  // Return a type hint only when exactly one coercible primitive is present.
+  // Mixed aliases (e.g. `number | boolean`, `Date | number`) get undefined so
+  // no single-type coercion is applied at runtime.
+  if (hasNumber && !hasBoolean && !hasDate) return "Number";
+  if (hasBoolean && !hasNumber && !hasDate) return "Boolean";
+  if (hasDate && !hasNumber && !hasBoolean) {
+    // Only emit Date for an alias that is purely `= Date` (no union, no array).
+    // For `Date | string` unions, skip coercion since no safe fallback exists.
+    const typeExpr = extractTypeExpression(typeDef);
+    return typeExpr?.trim() === "Date" ? "Date" : undefined;
   }
   return undefined;
 }

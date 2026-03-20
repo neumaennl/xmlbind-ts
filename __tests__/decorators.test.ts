@@ -230,6 +230,58 @@ describe("Decorators", () => {
       expectStringsOnConsecutiveLines(xml, ["<child>", "<name>test</name>"]);
     });
 
+    it("should unmarshal numeric element as number via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlElement("count")
+        count?: number;
+      }
+
+      const xml = `<element><count>42</count></element>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.count).toBe("number");
+      expect(result.count).toBe(42);
+    });
+
+    it("should unmarshal boolean element as boolean via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlElement("active")
+        active?: boolean;
+      }
+
+      const xml = `<element><active>true</active></element>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.active).toBe("boolean");
+      expect(result.active).toBe(true);
+    });
+
+    it("should unmarshal boolean element expressed as '1' via reflect-metadata", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlElement("flag")
+        flag?: boolean;
+      }
+
+      // XML Schema allows "1" for true and "0" for false
+      const xml = `<element><flag>1</flag></element>`;
+      const result = unmarshal(Element, xml);
+      expect(typeof result.flag).toBe("boolean");
+      expect(result.flag).toBe(true);
+    });
+
+    it("should throw when explicit type option conflicts with declared element type", () => {
+      expect(() => {
+        @XmlRoot("element")
+        class Element {
+          // design:type is String, but { type: Number } is incompatible
+          @XmlElement("value", { type: Number })
+          value?: string;
+        }
+        void Element;
+      }).toThrow(TypeError);
+    });
+
     it("should handle element without options", () => {
       @XmlRoot("simple")
       class Simple {

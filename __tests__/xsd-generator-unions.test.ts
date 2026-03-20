@@ -187,6 +187,52 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
+  test("generates { type: Date } decorator for a Date restriction alias (xs:date base)", () => {
+    // A simpleType restricting xs:date produces `export type MyDate = Date;` in generatedEnums.
+    // computeDecoratorType must detect that and emit { type: Date }.
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="constrainedDate">
+    <xs:restriction base="xs:date"/>
+  </xs:simpleType>
+
+  <xs:complexType name="Event">
+    <xs:attribute name="startDate" type="constrainedDate"/>
+  </xs:complexType>
+  <xs:element name="Event" type="Event"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Event.ts"), "utf-8");
+      // Date restriction alias: should emit { type: Date } without allowStringFallback
+      expect(content).toContain("@XmlAttribute('startDate', { type: Date })");
+      expect(content).not.toContain("allowStringFallback");
+    });
+  });
+
+  test("does not generate type: Date for a Date | string union alias", () => {
+    // A union of Date and string: no single type can safely be applied.
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="DateOrString">
+    <xs:union memberTypes="xs:date xs:string"/>
+  </xs:simpleType>
+
+  <xs:complexType name="Item">
+    <xs:attribute name="value" type="DateOrString"/>
+  </xs:complexType>
+  <xs:element name="Item" type="Item"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Item.ts"), "utf-8");
+      // Date | string: no type coercion should be emitted
+      expect(content).not.toContain("type: Date");
+    });
+  });
+
   test("handles union with inline simpleType members", () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">

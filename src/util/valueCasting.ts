@@ -25,10 +25,11 @@ export function castValue(val: any, type?: any, allowStringFallback = false) {
     return allowStringFallback && Number.isNaN(num) ? val : num;
   }
   if (type === Boolean) {
-    if (allowStringFallback && val !== "true" && val !== "false" && val !== true && val !== false) {
-      return val;
-    }
-    return val === "true" || val === true;
+    // XML Schema allows "1" and "0" in addition to "true" and "false".
+    const isTrue = val === true || val === "true" || val === 1 || val === "1";
+    const isFalse = val === false || val === "false" || val === 0 || val === "0";
+    if (allowStringFallback && !isTrue && !isFalse) return val;
+    return isTrue;
   }
   if (type === Date) return new Date(val);
   // Handle enum types - check if type is an object with enum values

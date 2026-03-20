@@ -52,6 +52,14 @@ describe("valueCasting", () => {
       expect(castValue("auto", Boolean)).toBe(false);
     });
 
+    it("should accept XML Schema numeric boolean values '1' and '0'", () => {
+      // XSD allows "1" (true) and "0" (false) in addition to "true"/"false"
+      expect(castValue("1", Boolean)).toBe(true);
+      expect(castValue("0", Boolean)).toBe(false);
+      expect(castValue(1, Boolean)).toBe(true);
+      expect(castValue(0, Boolean)).toBe(false);
+    });
+
     it("should cast to Date", () => {
       const dateStr = "2023-10-15T12:00:00.000Z";
       const result = castValue(dateStr, Date);
