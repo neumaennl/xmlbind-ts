@@ -8,11 +8,25 @@ import type { GeneratorState } from "./codegen";
 const COERCIBLE_PRIMITIVE_RE = /\b(number|boolean)\b/;
 
 /**
+ * Extracts the type expression from a stored type alias definition string.
+ * e.g. `'export type allNNI = number | "unbounded";'` → `'number | "unbounded"'`
+ * Import lines before the `export type` line are ignored.
+ */
+function extractTypeExpression(typeDef: string): string | undefined {
+  const match = /=\s*(.+?)\s*;?\s*$/.exec(typeDef.replace(/\r?\n/g, " "));
+  return match?.[1];
+}
+
+/**
  * Determines whether the `allowStringFallback` option should be emitted for
  * the given TypeScript type.  Returns true when the type is a union type alias
- * that includes `number` (or `boolean`) as a member — e.g.
- * `allNNI = number | "unbounded"` — so that non-numeric strings like
- * `"unbounded"` pass through as-is rather than coercing to `NaN`.
+ * that includes `number` (or `boolean`) as a member **and** also includes at
+ * least one non-coercible member (a string literal, `string`, enum reference,
+ * etc.) — e.g. `allNNI = number | "unbounded"`.
+ *
+ * Returns false for:
+ * - Non-union aliases such as `type Foo = number` or `type Bar = number[]`.
+ * - Unions whose members are exclusively `number`/`boolean` (no fallback needed).
  *
  * Used by both attribute and element decorator emission.
  *
@@ -24,7 +38,16 @@ export function needsAllowStringFallback(
   state: GeneratorState
 ): boolean {
   const typeDef = state.generatedEnums.get(tsType);
-  return typeDef !== undefined && COERCIBLE_PRIMITIVE_RE.test(typeDef);
+  if (!typeDef) return false;
+  // Must be a union type (contains `|`)
+  if (!/\|/.test(typeDef)) return false;
+  // Must contain a coercible primitive
+  if (!COERCIBLE_PRIMITIVE_RE.test(typeDef)) return false;
+  // Must also have at least one non-coercible member so the fallback is meaningful.
+  const typeExpr = extractTypeExpression(typeDef);
+  if (!typeExpr) return false;
+  const members = typeExpr.split("|").map((m) => m.trim());
+  return members.some((m) => m !== "number" && m !== "boolean");
 }
 
 /**
@@ -33,10 +56,12 @@ export function needsAllowStringFallback(
  * resolved TypeScript type and the full generator state.
  *
  * - Primitive types (`number`, `boolean`, `Date`) map to `Number`, `Boolean`, `Date`.
- * - Union type aliases whose definition includes `number` (e.g. `allNNI = number | "unbounded"`)
- *   also get `Number` so the unmarshaller applies numeric coercion; the accompanying
- *   `allowStringFallback: true` option (emitted separately) ensures non-numeric strings
- *   pass through unchanged.
+ * - Union type aliases whose definition includes `number` but not `boolean`
+ *   (e.g. `allNNI = number | "unbounded"`) get `Number`.
+ * - Union type aliases whose definition includes `boolean` but not `number`
+ *   (e.g. `boolOrAuto = boolean | "auto"`) get `Boolean`.
+ * - Mixed unions containing both `number` and `boolean` get `undefined` so no
+ *   single-type coercion is applied at runtime.
  * - Returns `undefined` when no explicit type hint is needed.
  *
  * Used by both attribute and element decorator emission.
@@ -53,7 +78,16 @@ export function computeDecoratorType(
   }
   const typeDef = state.generatedEnums.get(tsType);
   if (typeDef && COERCIBLE_PRIMITIVE_RE.test(typeDef)) {
-    return /\bnumber\b/.test(typeDef) ? "Number" : "Boolean";
+    const hasNumber = /\bnumber\b/.test(typeDef);
+    const hasBoolean = /\bboolean\b/.test(typeDef);
+    if (hasNumber && !hasBoolean) {
+      return "Number";
+    }
+    if (hasBoolean && !hasNumber) {
+      return "Boolean";
+    }
+    // Mixed `number | boolean`: omit `type` so no single-type coercion is applied.
+    return undefined;
   }
   return undefined;
 }

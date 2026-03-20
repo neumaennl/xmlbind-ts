@@ -141,6 +141,52 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
+  test("does not generate allowStringFallback for a plain number alias (non-union)", () => {
+    // xs:nonNegativeInteger restriction (no union) → type Foo = number → no fallback
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="NonNegInt">
+    <xs:restriction base="xs:nonNegativeInteger"/>
+  </xs:simpleType>
+
+  <xs:complexType name="Item">
+    <xs:attribute name="count" type="NonNegInt"/>
+  </xs:complexType>
+  <xs:element name="Item" type="Item"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Item.ts"), "utf-8");
+      // Plain number alias: no fallback option should be emitted
+      expect(content).not.toContain("allowStringFallback");
+    });
+  });
+
+  test("does not generate type or allowStringFallback for a mixed number|boolean union", () => {
+    // A union of both number and boolean: no single type can be chosen, so both options are omitted
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="NumOrBool">
+    <xs:union memberTypes="xs:integer xs:boolean"/>
+  </xs:simpleType>
+
+  <xs:complexType name="Item">
+    <xs:attribute name="value" type="NumOrBool"/>
+  </xs:complexType>
+  <xs:element name="Item" type="Item"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Item.ts"), "utf-8");
+      // Mixed union: neither type coercion nor string fallback should be emitted
+      expect(content).not.toContain("type: Number");
+      expect(content).not.toContain("type: Boolean");
+      expect(content).not.toContain("allowStringFallback");
+    });
+  });
+
   test("handles union with inline simpleType members", () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
