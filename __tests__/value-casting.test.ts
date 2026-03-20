@@ -105,26 +105,18 @@ describe("valueCasting", () => {
       expect(castValue(obj, Object)).toBe(obj);
     });
 
-    describe("Object type (union-type natural coercion)", () => {
-      it("should coerce numeric string to number when type is Object", () => {
-        expect(castValue("2", Object)).toBe(2);
-        expect(castValue("0", Object)).toBe(0);
-        expect(castValue("1.5", Object)).toBe(1.5);
+    describe("Number type - NaN fallback for union types", () => {
+      it("should coerce numeric string to number", () => {
+        expect(castValue("2", Number)).toBe(2);
+        expect(castValue("0", Number)).toBe(0);
+        expect(castValue("1.5", Number)).toBe(1.5);
       });
 
-      it("should leave non-numeric string as string when type is Object", () => {
-        expect(castValue("unbounded", Object)).toBe("unbounded");
-        expect(castValue("foo", Object)).toBe("foo");
-      });
-
-      it("should leave empty string unchanged when type is Object", () => {
-        expect(castValue("", Object)).toBe("");
-      });
-
-      it("should pass through non-string values unchanged when type is Object", () => {
-        expect(castValue(42, Object)).toBe(42);
-        const obj = { x: 1 };
-        expect(castValue(obj, Object)).toBe(obj);
+      it("should return original non-numeric string instead of NaN", () => {
+        // Enables "number or original string" semantics for union types such as
+        // number | "unbounded" when the decorator carries { type: Number }.
+        expect(castValue("unbounded", Number)).toBe("unbounded");
+        expect(castValue("abc", Number)).toBe("abc");
       });
     });
   });

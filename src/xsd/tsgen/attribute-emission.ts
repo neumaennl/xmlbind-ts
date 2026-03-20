@@ -5,24 +5,47 @@ import type { GeneratorState, GenUnit } from "./codegen";
 import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen";
 
 /**
- * Builds the `@XmlAttribute(...)` decorator line for code generation.
+ * Determines the JavaScript constructor name to include as `type` in the generated
+ * `@XmlAttribute(...)` decorator, based on the resolved TypeScript type and the
+ * full generator state.
  *
- * Includes the `type` option when the TypeScript type requires runtime coercion
- * (i.e. for `number`, `boolean`, and `Date`), so that the unmarshaller can cast
- * the XML string value to the correct primitive type.
+ * - Primitive types (`number`, `boolean`, `Date`) map to `Number`, `Boolean`, `Date`.
+ * - Union type aliases whose definition includes `number` (e.g. `allNNI = number | "unbounded"`)
+ *   also get `Number`, so the unmarshaller applies "number or original-string" coercion.
+ * - Returns `undefined` when no explicit type hint is needed.
+ *
+ * @param tsType - The resolved TypeScript type name
+ * @param state - The generator state (used to look up generated type aliases)
+ */
+export function computeDecoratorType(
+  tsType: string,
+  state: GeneratorState
+): string | undefined {
+  if (requiresRuntimeTypeCoercion(tsType)) {
+    return toDecoratorType(tsType);
+  }
+  // Check if it is a union type alias that includes 'number' as a member.
+  // generatedEnums stores entries like: "export type allNNI = number | \"unbounded\";"
+  const typeDef = state.generatedEnums.get(tsType);
+  if (typeDef && /\bnumber\b/.test(typeDef)) {
+    return "Number";
+  }
+  return undefined;
+}
+
+/**
+ * Builds the `@XmlAttribute(...)` decorator line for code generation.
  *
  * @param attrName - The XML attribute name
  * @param ans - Optional XML namespace URI for the attribute
- * @param tsType - The resolved TypeScript type name
+ * @param decoratorType - Pre-computed JS constructor name for `{ type: ... }`, or undefined
  * @returns The decorator line string (e.g. `  @XmlAttribute('id', { type: Number })`)
  */
 export function buildXmlAttributeDecorator(
   attrName: string,
   ans: string | null | undefined,
-  tsType: string
+  decoratorType: string | undefined
 ): string {
-  const decoratorType = requiresRuntimeTypeCoercion(tsType) ? toDecoratorType(tsType) : undefined;
-
   const opts: string[] = [];
   if (ans) opts.push(`namespace: '${ans}'`);
   if (decoratorType) opts.push(`type: ${decoratorType}`);
@@ -79,7 +102,7 @@ export function emitSingleAttribute(
   const makeRequired = useValue === "required";
   const propName = toPropertyName(attrName, state.reservedWords);
 
-  lines.push(buildXmlAttributeDecorator(attrName, ans, tsType));
+  lines.push(buildXmlAttributeDecorator(attrName, ans, computeDecoratorType(tsType, state)));
   lines.push(`  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`);
   lines.push("");
 }

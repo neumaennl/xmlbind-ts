@@ -133,13 +133,16 @@ describe("Decorators", () => {
     });
 
     it("should unmarshal numeric maxOccurs as number for union-typed property (allNNI pattern)", () => {
-      // TypeScript emits Object as design:type for union types.
-      // castValue detects Object and applies natural coercion: numeric strings
-      // become numbers, non-numeric strings (e.g. "unbounded") stay as strings.
+      // For union types TypeScript emits Object as the design:type via reflect-metadata,
+      // so the type cannot be auto-detected.  Using { type: Number } explicitly enables the
+      // "number or original string" fallback in castValue: numeric values coerce to numbers,
+      // non-numeric strings like "unbounded" pass through unchanged.
+      // In XSD-generated code the generator emits { type: Number } automatically when it
+      // detects that the union type alias includes 'number'.
       type allNNI = number | "unbounded";
       @XmlRoot("element")
       class Element {
-        @XmlAttribute("maxOccurs")
+        @XmlAttribute("maxOccurs", { type: Number })
         maxOccurs?: allNNI;
       }
 
