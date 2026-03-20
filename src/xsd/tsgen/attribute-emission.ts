@@ -5,6 +5,12 @@ import type { GeneratorState, GenUnit } from "./codegen";
 import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen";
 
 /**
+ * Matches union type alias definitions that include a primitive that requires
+ * runtime coercion: `number` or `boolean`.
+ */
+const COERCIBLE_PRIMITIVE_RE = /\b(number|boolean)\b/;
+
+/**
  * Determines whether the `allowStringFallback` option should be emitted for
  * the given TypeScript type.  Returns true when the type is a union type alias
  * that includes `number` (or `boolean`) as a member — e.g.
@@ -19,8 +25,7 @@ export function needsAllowStringFallback(
   state: GeneratorState
 ): boolean {
   const typeDef = state.generatedEnums.get(tsType);
-  if (!typeDef) return false;
-  return /\bnumber\b/.test(typeDef) || /\bboolean\b/.test(typeDef);
+  return typeDef !== undefined && COERCIBLE_PRIMITIVE_RE.test(typeDef);
 }
 
 /**
@@ -45,11 +50,9 @@ export function computeDecoratorType(
   if (requiresRuntimeTypeCoercion(tsType)) {
     return toDecoratorType(tsType);
   }
-  // Check if it is a union type alias that includes 'number' as a member.
-  // generatedEnums stores entries like: "export type allNNI = number | \"unbounded\";"
   const typeDef = state.generatedEnums.get(tsType);
-  if (typeDef && /\bnumber\b/.test(typeDef)) {
-    return "Number";
+  if (typeDef && COERCIBLE_PRIMITIVE_RE.test(typeDef)) {
+    return /\bnumber\b/.test(typeDef) ? "Number" : "Boolean";
   }
   return undefined;
 }
@@ -60,16 +63,19 @@ export function computeDecoratorType(
  * @param attrName - The XML attribute name
  * @param ans - Optional XML namespace URI for the attribute
  * @param decoratorType - Pre-computed JS constructor name for `{ type: ... }`, or undefined
+ * @param allowStringFallback - When true, emits `allowStringFallback: true` in the options
  * @returns The decorator line string (e.g. `  @XmlAttribute('id', { type: Number })`)
  */
 export function buildXmlAttributeDecorator(
   attrName: string,
   ans: string | null | undefined,
-  decoratorType: string | undefined
+  decoratorType: string | undefined,
+  allowStringFallback = false
 ): string {
   const opts: string[] = [];
   if (ans) opts.push(`namespace: '${ans}'`);
   if (decoratorType) opts.push(`type: ${decoratorType}`);
+  if (allowStringFallback) opts.push(`allowStringFallback: true`);
 
   if (opts.length === 0) {
     return `  @XmlAttribute('${attrName}')`;
@@ -123,7 +129,7 @@ export function emitSingleAttribute(
   const makeRequired = useValue === "required";
   const propName = toPropertyName(attrName, state.reservedWords);
 
-  lines.push(buildXmlAttributeDecorator(attrName, ans, computeDecoratorType(tsType, state)));
+  lines.push(buildXmlAttributeDecorator(attrName, ans, computeDecoratorType(tsType, state), needsAllowStringFallback(tsType, state)));
   lines.push(`  ${propName}${makeRequired ? "!" : "?"}: ${tsType};`);
   lines.push("");
 }

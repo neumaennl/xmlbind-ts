@@ -33,20 +33,23 @@ describe("valueCasting", () => {
       expect(castValue(null, String)).toBeNull();
     });
 
-    it("should cast to Number", () => {
+    it("should cast to Number strictly (NaN for non-numeric input)", () => {
       expect(castValue("123", Number)).toBe(123);
       expect(castValue("45.67", Number)).toBe(45.67);
       expect(castValue(true, Number)).toBe(1);
       expect(castValue(false, Number)).toBe(0);
+      expect(Number.isNaN(castValue("unbounded", Number))).toBe(true);
+      expect(Number.isNaN(castValue("abc", Number))).toBe(true);
     });
 
-    it("should cast to Boolean", () => {
+    it("should cast to Boolean strictly (false for non-boolean input)", () => {
       expect(castValue("true", Boolean)).toBe(true);
       expect(castValue("false", Boolean)).toBe(false);
       expect(castValue(true, Boolean)).toBe(true);
       expect(castValue(false, Boolean)).toBe(false);
       expect(castValue("anything", Boolean)).toBe(false);
       expect(castValue("", Boolean)).toBe(false);
+      expect(castValue("auto", Boolean)).toBe(false);
     });
 
     it("should cast to Date", () => {
@@ -105,18 +108,32 @@ describe("valueCasting", () => {
       expect(castValue(obj, Object)).toBe(obj);
     });
 
-    describe("Number type - NaN fallback for union types", () => {
-      it("should coerce numeric string to number", () => {
-        expect(castValue("2", Number)).toBe(2);
-        expect(castValue("0", Number)).toBe(0);
-        expect(castValue("1.5", Number)).toBe(1.5);
+    describe("allowStringFallback for union types", () => {
+      it("should coerce numeric string to number with allowStringFallback", () => {
+        expect(castValue("2", Number, true)).toBe(2);
+        expect(castValue("0", Number, true)).toBe(0);
+        expect(castValue("1.5", Number, true)).toBe(1.5);
       });
 
-      it("should return original non-numeric string instead of NaN", () => {
+      it("should return original non-numeric string instead of NaN when allowStringFallback is true", () => {
         // Enables "number or original string" semantics for union types such as
-        // number | "unbounded" when the decorator carries { type: Number }.
-        expect(castValue("unbounded", Number)).toBe("unbounded");
-        expect(castValue("abc", Number)).toBe("abc");
+        // number | "unbounded" when the decorator carries { type: Number, allowStringFallback: true }.
+        expect(castValue("unbounded", Number, true)).toBe("unbounded");
+        expect(castValue("abc", Number, true)).toBe("abc");
+      });
+
+      it("should coerce valid boolean strings to boolean with allowStringFallback", () => {
+        expect(castValue("true", Boolean, true)).toBe(true);
+        expect(castValue("false", Boolean, true)).toBe(false);
+        expect(castValue(true, Boolean, true)).toBe(true);
+        expect(castValue(false, Boolean, true)).toBe(false);
+      });
+
+      it("should return original non-boolean string instead of false when allowStringFallback is true", () => {
+        // Enables "boolean or original string" semantics for union types such as
+        // boolean | "auto" when the decorator carries { type: Boolean, allowStringFallback: true }.
+        expect(castValue("auto", Boolean, true)).toBe("auto");
+        expect(castValue("inherit", Boolean, true)).toBe("inherit");
       });
     });
   });

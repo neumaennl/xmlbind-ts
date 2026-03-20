@@ -53,14 +53,15 @@ const commentParser = new XMLParser({
  * Processes a primitive constructor value.
  * @param node - The parsed XML value
  * @param cls - The primitive constructor
+ * @param allowStringFallback - When true, non-coercible values pass through as-is
  * @returns The casted primitive value
  */
-function processPrimitiveValue(node: ParsedXmlValue, cls: any): any {
+function processPrimitiveValue(node: ParsedXmlValue, cls: any, allowStringFallback = false): any {
   if (isParsedXmlNode(node)) {
-    if (node["#text"] !== undefined) return castValue(node["#text"], cls);
-    return castValue(node, cls);
+    if (node["#text"] !== undefined) return castValue(node["#text"], cls, allowStringFallback);
+    return castValue(node, cls, allowStringFallback);
   }
-  return castValue(node, cls);
+  return castValue(node, cls, allowStringFallback);
 }
 
 /**
@@ -131,11 +132,11 @@ function bindFieldsToTarget(
               const itemPreserveOrder = occurrences[index]
                 ? [{ _item: occurrences[index] }]
                 : undefined;
-              return xmlValueToObject(v, resolvedType, hereNs, itemPreserveOrder, ["_item"]);
+              return xmlValueToObject(v, resolvedType, hereNs, itemPreserveOrder, ["_item"], f.allowStringFallback);
             });
           } else {
             target[f.key] = val.map((v) =>
-              xmlValueToObject(v, resolvedType, hereNs, undefined, undefined)
+              xmlValueToObject(v, resolvedType, hereNs, undefined, undefined, f.allowStringFallback)
             );
           }
         } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
@@ -146,7 +147,8 @@ function bindFieldsToTarget(
             resolvedType,
             hereNs,
             preserveOrderData,
-            path ? [...path, f.name || f.key] : undefined
+            path ? [...path, f.name || f.key] : undefined,
+            f.allowStringFallback
           );
         }
       }
@@ -205,6 +207,7 @@ function attachObjectMetadata(
  * @param nsMap - The namespace prefix mapping
  * @param preserveOrderData - Optional preserveOrder parsed data for comment extraction
  * @param path - Optional path to this element for nested comment extraction
+ * @param allowStringFallback - When true, non-coercible primitive values pass through as-is
  * @returns An instance of the target class populated with XML data
  */
 function xmlValueToObject<T>(
@@ -212,14 +215,15 @@ function xmlValueToObject<T>(
   cls: (new () => T) | undefined,
   nsMap: NsMap,
   preserveOrderData?: any,
-  path?: string[]
+  path?: string[],
+  allowStringFallback = false
 ): T {
   if (!cls) {
     return node as T;
   }
 
   if (isPrimitiveCtor(cls)) {
-    return processPrimitiveValue(node, cls);
+    return processPrimitiveValue(node, cls, allowStringFallback);
   }
 
   const inst = new cls();
@@ -361,7 +365,7 @@ function bindRootElements(
           : undefined;
         return xmlValueToObject(v, resolvedType, nsMap, itemPreserveOrder, [
           "_item",
-        ]);
+        ], f.allowStringFallback);
       });
     } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
       target[f.key] = null;
@@ -371,7 +375,8 @@ function bindRootElements(
         resolvedType,
         nsMap,
         parsedWithComments,
-        [rootName, f.name || f.key]
+        [rootName, f.name || f.key],
+        f.allowStringFallback
       );
     }
   }

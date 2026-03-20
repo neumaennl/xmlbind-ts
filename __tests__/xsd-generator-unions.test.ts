@@ -85,6 +85,33 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
+  test("generates { type: Number, allowStringFallback: true } decorator for number-containing union attribute", () => {
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="allNNI">
+    <xs:union memberTypes="xs:nonNegativeInteger">
+      <xs:simpleType>
+        <xs:restriction base="xs:NMTOKEN">
+          <xs:enumeration value="unbounded"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
+  </xs:simpleType>
+
+  <xs:complexType name="Occurrence">
+    <xs:attribute name="maxOccurs" type="allNNI"/>
+  </xs:complexType>
+  <xs:element name="Occurrence" type="Occurrence"/>
+</xs:schema>`;
+
+    withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+      const content = readFileSync(path.join(dir, "Occurrence.ts"), "utf-8");
+      // Union-typed attributes must carry both the type hint and the fallback flag
+      expect(content).toContain("@XmlAttribute('maxOccurs', { type: Number, allowStringFallback: true })");
+    });
+  });
+
   test("handles union with inline simpleType members", () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">

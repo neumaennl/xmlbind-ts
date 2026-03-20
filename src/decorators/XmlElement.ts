@@ -12,6 +12,10 @@ import { ensureMeta } from "../metadata/MetadataRegistry";
  * @param options.array - Whether the element can occur multiple times (array)
  * @param options.namespace - The XML namespace URI for the element
  * @param options.nillable - Whether the element can be explicitly null (xsi:nil)
+ * @param options.allowStringFallback - When `true`, non-coercible values are returned
+ *   as their original string rather than producing `NaN` (for `Number`) or `false`
+ *   (for `Boolean`).  Use this for union types like `number | "unbounded"` or
+ *   `boolean | "auto"` where a non-numeric / non-boolean string is a valid value.
  * @returns A property decorator function
  *
  * @example
@@ -32,6 +36,7 @@ export function XmlElement(
     array?: boolean;
     namespace?: string;
     nillable?: boolean;
+    allowStringFallback?: boolean;
   }
 ) {
   return function (contextOrTarget: any, propertyKeyOrContext?: string | symbol | any) {
@@ -49,6 +54,7 @@ export function XmlElement(
           isArray: !!options?.array,
           namespace: options?.namespace ?? null,
           nillable: !!options?.nillable,
+          allowStringFallback: options?.allowStringFallback,
         });
       });
       return;
@@ -70,6 +76,7 @@ export function XmlElement(
         isArray: !!options?.array,
         namespace: options?.namespace ?? null,
         nillable: !!options?.nillable,
+        allowStringFallback: options?.allowStringFallback,
       });
       return;
     }
@@ -89,6 +96,7 @@ export function XmlElement(
         isArray: !!options?.array,
         namespace: options?.namespace ?? null,
         nillable: !!options?.nillable,
+        allowStringFallback: options?.allowStringFallback,
       });
     };
   } as any;

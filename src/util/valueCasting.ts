@@ -25,8 +25,10 @@ export function castValue(val: any, type?: any, allowStringFallback = false) {
     return allowStringFallback && Number.isNaN(num) ? val : num;
   }
   if (type === Boolean) {
-    const bool = val === "true" || val === true;
-    return allowStringFallback && !bool && val !== "false" && val !== false ? val : bool;
+    if (allowStringFallback && val !== "true" && val !== "false" && val !== true && val !== false) {
+      return val;
+    }
+    return val === "true" || val === true;
   }
   if (type === Date) return new Date(val);
   // Handle enum types - check if type is an object with enum values
