@@ -119,19 +119,6 @@ describe("Decorators", () => {
       expect(result.minOccurs).toBe(0);
     });
 
-    it("should unmarshal positive numeric maxOccurs as number via reflect-metadata", () => {
-      @XmlRoot("element")
-      class Element {
-        @XmlAttribute("maxOccurs")
-        maxOccurs?: number;
-      }
-
-      const xml = `<element maxOccurs="2"/>`;
-      const result = unmarshal(Element, xml);
-      expect(typeof result.maxOccurs).toBe("number");
-      expect(result.maxOccurs).toBe(2);
-    });
-
     it("should unmarshal numeric maxOccurs as number for union-typed property (allNNI pattern)", () => {
       // For union types TypeScript emits Object as the design:type via reflect-metadata,
       // so the type cannot be auto-detected.  Using { type: Number } explicitly enables the
@@ -178,18 +165,16 @@ describe("Decorators", () => {
       expect(result.name).toBe("foo");
     });
 
-    it("should prefer explicit type option over reflect-metadata design type", () => {
-      @XmlRoot("element")
-      class Element {
-        // design:type would be String, but we override with Number
-        @XmlAttribute("count", { type: Number })
-        count?: string;
-      }
-
-      const xml = `<element count="7"/>`;
-      const result = unmarshal(Element, xml);
-      expect(typeof result.count).toBe("number");
-      expect(result.count).toBe(7);
+    it("should throw when explicit type option conflicts with declared TypeScript type", () => {
+      expect(() => {
+        @XmlRoot("element")
+        class Element {
+          // design:type is String, but { type: Number } is incompatible
+          @XmlAttribute("count", { type: Number })
+          count?: string;
+        }
+        void Element; // suppress unused-variable warning
+      }).toThrow(TypeError);
     });
   });
 

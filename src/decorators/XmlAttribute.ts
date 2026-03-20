@@ -5,15 +5,32 @@ import { ensureMeta } from "../metadata/MetadataRegistry";
  * Resolves the type for an attribute field: the explicit `options.type` takes
  * precedence; otherwise the TypeScript design type emitted by the compiler
  * (when `emitDecoratorMetadata: true`) is used via `reflect-metadata`.
+ *
+ * Throws a TypeError when an explicit `options.type` is provided but conflicts
+ * with the concrete TypeScript design type (e.g. `{ type: Number }` on a
+ * `string` property). When the design type is `Object` — which TypeScript emits
+ * for union types such as `number | "unbounded"` — no conflict is reported,
+ * because the explicit type is a valid member of the union.
  */
 function resolveAttributeType(
   options: { type?: any } | undefined,
   target: object,
   propertyKey: string | symbol
 ): any {
-  return (
-    options?.type ?? Reflect.getMetadata("design:type", target, propertyKey)
-  );
+  const reflectedType = Reflect.getMetadata("design:type", target, propertyKey);
+  if (
+    options?.type !== undefined &&
+    reflectedType !== undefined &&
+    reflectedType !== Object &&
+    options.type !== reflectedType
+  ) {
+    throw new TypeError(
+      `@XmlAttribute: explicit type option "${options.type?.name}" conflicts with the` +
+      ` declared TypeScript type "${reflectedType?.name}" for property` +
+      ` "${String(propertyKey)}". Remove the type option or align it with the property declaration.`
+    );
+  }
+  return options?.type ?? reflectedType;
 }
 
 /**
