@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { generateFromXsd } from "../src/xsd/TsGenerator";
+import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
 
 describe("Schema Unmarshalling Issue - Nested Compositors", () => {
   test("generates elements from nested sequence and choice compositors", () => {

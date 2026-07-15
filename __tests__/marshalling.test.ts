@@ -6,8 +6,8 @@ import {
   XmlAnyAttribute,
   marshal,
   unmarshal,
-} from "../src";
-import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils";
+} from "../src/index.ts";
+import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils/index.ts";
 
 @XmlRoot("Person", { namespace: "http://example.com/ns" })
 class Person {
@@ -60,7 +60,7 @@ describe("Marshalling", () => {
       
       // Verify that attributes appear on the same line as the opening tag
       const lines = xml.split('\n');
-      const personLine = lines.find(l => l.includes('<Person'));
+      const personLine = lines.find((l: string) => l.includes('<Person'));
       expect(personLine).toBeDefined();
       expectStringsOnSameLine(personLine!, [
         '<Person xmlns="http://example.com/ns"',
@@ -104,7 +104,7 @@ describe("Marshalling", () => {
         "<extra2",
       ]);
       // Find the line with extra2 and verify it has attr="y"
-      const extra2Line = lines.find(line => line.includes("<extra2"));
+      const extra2Line = lines.find((line: string) => line.includes("<extra2"));
       expect(extra2Line).toContain('attr="y"');
     });
   });
@@ -146,7 +146,7 @@ describe("Marshalling", () => {
       expect(xml).toContain("  <alias>");
 
       // Verify structure: opening tag on one line, child elements indented, closing tag on separate line
-      const lines = xml.split("\n").filter((line) => line.trim() !== "");
+      const lines = xml.split("\n").filter((line: string) => line.trim() !== "");
       expect(lines.length).toBeGreaterThan(3);
       expect(lines[0]).toContain("<Person");
       expect(lines[lines.length - 1]).toBe("</Person>");

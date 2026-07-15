@@ -1,5 +1,5 @@
-import { XmlRoot, XmlElement, XmlAnyAttribute, marshal, getMeta } from "../src";
-import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils";
+import { XmlRoot, XmlElement, XmlAnyAttribute, marshal, getMeta } from "../src/index.ts";
+import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils/index.ts";
 
 // Define classes at module level to avoid scoping issues
 @XmlRoot("Document")

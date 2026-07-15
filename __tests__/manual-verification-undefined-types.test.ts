@@ -1,4 +1,4 @@
-import { unmarshal, XmlRoot, XmlElement, XmlAttribute } from "../src/index";
+import { unmarshal, XmlRoot, XmlElement, XmlAttribute } from "../src/index.ts";
 
 describe("Manual Verification - Undefined Types Fix", () => {
   test("unmarshals XML schema with elements that have no type specified", () => {

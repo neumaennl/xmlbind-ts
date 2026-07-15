@@ -1,12 +1,12 @@
-import { parseXsd, getSchemaRoot, getXsdPrefix } from "./XsdParser";
+import { parseXsd, getSchemaRoot, getXsdPrefix } from "./XsdParser.ts";
 import { mkdirSync, existsSync } from "fs";
-import { indexSchema } from "./tsgen/schema";
-import { generateEnumTypes, processSimpleTypes } from "./tsgen/simpletypes";
-import { ensureClass } from "./tsgen/classgen";
-import { processTopLevelElements } from "./tsgen/toplevel";
-import { writeGeneratedFiles } from "./tsgen/writer";
-import { toClassName } from "./tsgen/codegen";
-import type { GeneratorState } from "./tsgen/codegen";
+import { indexSchema } from "./tsgen/schema.ts";
+import { generateEnumTypes, processSimpleTypes } from "./tsgen/simpletypes.ts";
+import { ensureClass } from "./tsgen/classgen.ts";
+import { processTopLevelElements } from "./tsgen/toplevel.ts";
+import { writeGeneratedFiles } from "./tsgen/writer.ts";
+import { toClassName } from "./tsgen/codegen.ts";
+import type { GeneratorState } from "./tsgen/codegen.ts";
 
 /**
  * Returns a set of JavaScript/TypeScript reserved words and common built-in types.

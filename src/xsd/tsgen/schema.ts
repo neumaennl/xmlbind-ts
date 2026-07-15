@@ -1,6 +1,6 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { directChildren } from "./xmlutils";
-import { extractEnumValues } from "./enum";
+import { directChildren } from "./xmlutils.ts";
+import { extractEnumValues } from "./enum.ts";
 
 /**
  * Container for all indexed components from an XSD schema.

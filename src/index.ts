@@ -30,7 +30,7 @@
  * ```
  */
 
-export * from "./decorators";
-export * from "./marshalling";
-export * from "./metadata/MetadataRegistry";
-export * from "./xsd/TsGenerator";
+export * from "./decorators/index.ts";
+export * from "./marshalling/index.ts";
+export * from "./metadata/MetadataRegistry.ts";
+export * from "./xsd/TsGenerator.ts";

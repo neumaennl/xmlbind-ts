@@ -21,7 +21,7 @@ import {
 import { Readable } from "stream";
 import os from "os";
 import path from "path";
-import { cleanupGeneratedFiles } from "../src/xsd/fileCleanup";
+import { cleanupGeneratedFiles } from "../src/xsd/fileCleanup.ts";
 
 describe("fileCleanup module", () => {
   let tmpDir: string;

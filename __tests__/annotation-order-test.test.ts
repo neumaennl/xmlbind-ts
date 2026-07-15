@@ -1,5 +1,5 @@
-import { unmarshal, marshal } from "../src/marshalling";
-import { XmlRoot, XmlElement } from "../src/decorators";
+import { unmarshal, marshal } from "../src/marshalling/index.ts";
+import { XmlRoot, XmlElement } from "../src/decorators/index.ts";
 
 describe("Annotation Element Order", () => {
   test("should preserve order when appinfo comes before documentation", () => {

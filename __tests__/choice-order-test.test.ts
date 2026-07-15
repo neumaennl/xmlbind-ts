@@ -1,5 +1,5 @@
-import { unmarshal } from "../src/marshalling";
-import { XmlRoot, XmlElement } from "../src/decorators";
+import { unmarshal } from "../src/marshalling/index.ts";
+import { XmlRoot, XmlElement } from "../src/decorators/index.ts";
 
 describe("Choice Element Order", () => {
   test("should handle choice between restriction and extension", () => {

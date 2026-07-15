@@ -1,17 +1,17 @@
 import XMLBuilder from "fast-xml-builder";
-import { getMeta, getAllFields } from "../metadata/MetadataRegistry";
-import { serializePrimitive } from "../util/valueCasting";
-import { resolveType } from "../util/typeResolution";
-import { isNamespaceDeclaration } from "../util/namespaceUtils";
-import { isPrimitiveCtor } from "./types";
-import { hasPositionedComments, groupCommentsByPosition } from "./commentUtils";
-import { sortFieldsByElementOrder } from "./elementOrderUtils";
+import { getMeta, getAllFields } from "../metadata/MetadataRegistry.ts";
+import { serializePrimitive } from "../util/valueCasting.ts";
+import { resolveType } from "../util/typeResolution.ts";
+import { isNamespaceDeclaration } from "../util/namespaceUtils.ts";
+import { isPrimitiveCtor } from "./types.ts";
+import { hasPositionedComments, groupCommentsByPosition } from "./commentUtils.ts";
+import { sortFieldsByElementOrder } from "./elementOrderUtils.ts";
 import {
   qName,
   writeAnyElements,
   postProcessComments,
   type NsContext,
-} from "./marshalContext";
+} from "./marshalContext.ts";
 
 const builder = new XMLBuilder({
   ignoreAttributes: false,

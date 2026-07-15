@@ -4,13 +4,13 @@ import {
   XmlAttribute,
   XmlText,
   XmlEnum,
-} from "../src/decorators";
-import { marshal, unmarshal } from "../src/marshalling";
-import { generateFromXsd } from "../src/xsd/TsGenerator";
+} from "../src/decorators/index.ts";
+import { marshal, unmarshal } from "../src/marshalling/index.ts";
+import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
 import { readFileSync } from "fs";
 
 import path from "path";
-import { withTmpDir, expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils";
+import { withTmpDir, expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils/index.ts";
 
 // Define test enums
 enum StatusEnum {
@@ -292,7 +292,7 @@ describe("Enums", () => {
   </xsd:complexType>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         // Enums are now in consolidated enums.ts file
@@ -308,7 +308,7 @@ describe("Enums", () => {
         const productFile = path.join(tmp, "Product.ts");
         const productContent = readFileSync(productFile, "utf8");
         expect(productContent).toContain(
-          "import { ColorType } from './enums';"
+          "import { ColorType } from './enums.ts';"
         );
         // Enum-backed types do not emit a type hint — the string value passes through unchanged.
         expect(productContent).not.toContain("type: () => ColorType");
@@ -337,7 +337,7 @@ describe("Enums", () => {
   </xsd:complexType>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         // Enums are now in consolidated enums.ts file
@@ -352,7 +352,7 @@ describe("Enums", () => {
 
         const orderFile = path.join(tmp, "Order.ts");
         const orderContent = readFileSync(orderFile, "utf8");
-        expect(orderContent).toContain("import { statusEnum } from './enums';");
+        expect(orderContent).toContain("import { statusEnum } from './enums.ts';");
         expect(orderContent).toMatch(/status!?:\s*statusEnum;/);
       });
     });
@@ -370,7 +370,7 @@ describe("Enums", () => {
   <xsd:element name="Size" type="SizeType"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         // Enums are now in consolidated enums.ts file
@@ -381,7 +381,7 @@ describe("Enums", () => {
 
         const sizeFile = path.join(tmp, "Size.ts");
         const sizeContent = readFileSync(sizeFile, "utf8");
-        expect(sizeContent).toContain("import { SizeType } from './enums';");
+        expect(sizeContent).toContain("import { SizeType } from './enums.ts';");
         expect(sizeContent).toMatch(/@XmlRoot\('Size'/);
         expect(sizeContent).toContain("@XmlText()");
         expect(sizeContent).toMatch(/value\?:\s*SizeType;/);
@@ -402,7 +402,7 @@ describe("Enums", () => {
   </xsd:element>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         // Enums are now in consolidated enums.ts file
@@ -418,7 +418,7 @@ describe("Enums", () => {
         const priorityFile = path.join(tmp, "Priority.ts");
         const priorityContent = readFileSync(priorityFile, "utf8");
         expect(priorityContent).toContain(
-          "import { PriorityEnum } from './enums';"
+          "import { PriorityEnum } from './enums.ts';"
         );
         expect(priorityContent).toMatch(/@XmlRoot\('Priority'/);
         expect(priorityContent).toMatch(/value\?:\s*PriorityEnum;/);
@@ -437,7 +437,7 @@ describe("Enums", () => {
   </xsd:simpleType>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         // Enums are now in consolidated enums.ts file
@@ -470,13 +470,13 @@ describe("Enums", () => {
   </xsd:complexType>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         const taskFile = path.join(tmp, "Task.ts");
         const taskContent = readFileSync(taskFile, "utf8");
 
-        expect(taskContent).toContain("import { TagType } from './enums';");
+        expect(taskContent).toContain("import { TagType } from './enums.ts';");
         // Enum-backed types do not emit a type hint — the string value passes through unchanged.
         expect(taskContent).not.toContain("type: () => TagType");
         expect(taskContent).toMatch(

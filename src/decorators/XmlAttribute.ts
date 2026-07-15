@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { ensureMeta } from "../metadata/MetadataRegistry";
+import { ensureMeta } from "../metadata/MetadataRegistry.ts";
 
 /**
  * Resolves the type for an attribute field: the explicit `options.type` takes

@@ -1,7 +1,7 @@
-import { generateFromXsd } from "../src/xsd/TsGenerator";
+import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
 import { readFileSync } from "fs";
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir";
+import { withTmpDir } from "./test-utils/temp-dir.ts";
 
 const SAMPLE_XSD = `<?xml version="1.0" encoding="utf-8"?>\n<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">\n  <xsd:complexType name="Person">\n    <xsd:sequence>\n      <xsd:element name="name" type="xsd:string"/>\n      <xsd:element name="age" type="xsd:int"/>\n      <xsd:element name="alias" type="xsd:string" maxOccurs="unbounded" minOccurs="0"/>\n    </xsd:sequence>\n    <xsd:attribute name="id" type="xsd:int"/>\n  </xsd:complexType>\n</xsd:schema>`;
 
@@ -64,7 +64,7 @@ describe("XSD Generator", () => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "Record.ts"), "utf8");
 
-          expect(content).toContain("import { StatusEnum } from './enums'");
+          expect(content).toContain("import { StatusEnum } from './enums.ts'");
           // Enum-backed types do not emit a type hint — the string value passes through unchanged.
           expect(content).not.toContain("type: () => StatusEnum");
           expect(content).toContain("status!: StatusEnum");
@@ -391,7 +391,7 @@ describe("XSD Generator", () => {
           // RestrictedString should be generated as a type alias and used in the property
           expect(content).toContain("code?: RestrictedString");
           expect(content).toContain(
-            "import type { RestrictedString } from './types'"
+            "import type { RestrictedString } from './types.ts'"
           );
 
           // RestrictedString should be a type alias in types.ts

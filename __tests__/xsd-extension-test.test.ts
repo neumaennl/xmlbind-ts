@@ -1,5 +1,5 @@
-import { unmarshal, marshal } from "../src/marshalling";
-import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators";
+import { unmarshal, marshal } from "../src/marshalling/index.ts";
+import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.ts";
 
 describe("XSD Extension Element Order", () => {
   test("should preserve order in nested extension with group and attribute", () => {

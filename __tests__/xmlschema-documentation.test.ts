@@ -1,11 +1,11 @@
 import { readFileSync } from "fs";
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir";
+import { withTmpDir } from "./test-utils/temp-dir.ts";
 import {
   setupGeneratedRuntime,
   loadGeneratedClasses,
-} from "./test-utils/generated-runtime";
-import { unmarshal } from "../src/marshalling/unmarshal";
+} from "./test-utils/generated-runtime.ts";
+import { unmarshal } from "../src/marshalling/unmarshal.ts";
 
 describe("XMLSchema Documentation Unmarshalling", () => {
   test("documentation text should be unmarshalled correctly", () => {

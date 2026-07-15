@@ -1,7 +1,7 @@
-import { generateFromXsd } from "../src/xsd/TsGenerator";
+import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
-import { withTmpDir, expectStringsOnConsecutiveLines } from "./test-utils";
+import { withTmpDir, expectStringsOnConsecutiveLines } from "./test-utils/index.ts";
 
 describe("XSD Generator - Groups", () => {
   test("generates classes with group references", () => {
@@ -27,7 +27,7 @@ describe("XSD Generator - Groups", () => {
   <xs:element name="Person" type="PersonType"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    withTmpDir((dir: string) => {
       generateFromXsd(xsd, dir);
 
       const personFile = path.join(dir, "PersonType.ts");
@@ -80,7 +80,7 @@ describe("XSD Generator - Groups", () => {
   <xs:element name="Employee" type="Employee"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    withTmpDir((dir: string) => {
       generateFromXsd(xsd, dir);
 
       const employeeFile = path.join(dir, "Employee.ts");
@@ -119,7 +119,7 @@ describe("XSD Generator - Groups", () => {
   <xs:element name="Order" type="Order"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    withTmpDir((dir: string) => {
       generateFromXsd(xsd, dir);
 
       const orderFile = path.join(dir, "Order.ts");
@@ -158,7 +158,7 @@ describe("XSD Generator - Groups", () => {
   <xs:element name="ShoppingCart" type="ShoppingCart"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    withTmpDir((dir: string) => {
       generateFromXsd(xsd, dir);
 
       const cartFile = path.join(dir, "ShoppingCart.ts");
@@ -216,7 +216,7 @@ describe("XSD Generator - Groups", () => {
   <xs:element name="Document" type="Document"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    withTmpDir((dir: string) => {
       generateFromXsd(xsd, dir);
 
       const docFile = path.join(dir, "Document.ts");
@@ -264,7 +264,7 @@ describe("XSD Generator - Groups", () => {
   <xs:element name="Article" type="Article"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    withTmpDir((dir: string) => {
       generateFromXsd(xsd, dir);
 
       const articleFile = path.join(dir, "Article.ts");

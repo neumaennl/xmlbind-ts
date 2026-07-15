@@ -1,6 +1,6 @@
 import path from "path";
 import { mkdirSync, writeFileSync } from "fs";
-import { generateFromXsd } from "../../src/xsd/TsGenerator";
+import { generateFromXsd } from "../../src/xsd/TsGenerator.ts";
 
 let tsNodeRegistered = false;
 

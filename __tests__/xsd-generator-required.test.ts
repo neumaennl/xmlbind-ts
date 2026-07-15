@@ -1,4 +1,4 @@
-import { generateFromXsd } from "../src/xsd/TsGenerator";
+import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
 import { readFileSync, mkdtempSync, rmSync } from "fs";
 import os from "os";
 import path from "path";

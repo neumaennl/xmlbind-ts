@@ -11,9 +11,9 @@
  * 2. With lazy type references (the fix), types are resolved at runtime correctly
  */
 
-import { XmlRoot, XmlElement, unmarshal, marshal } from "../src";
-import { getAllFields } from "../src/metadata/MetadataRegistry";
-import { resolveType } from "../src/util/typeResolution";
+import { XmlRoot, XmlElement, unmarshal, marshal } from "../src/index.ts";
+import { getAllFields } from "../src/metadata/MetadataRegistry.ts";
+import { resolveType } from "../src/util/typeResolution.ts";
 
 describe("Circular Dependency Bug Reproduction", () => {
   describe("Bug scenario: type is undefined at decorator time", () => {
@@ -126,7 +126,7 @@ describe("Circular Dependency Bug Reproduction", () => {
 
   describe("Generated code uses lazy type references", () => {
     test("generator emits lazy type references for non-primitive types", async () => {
-      const { generateFromXsd } = await import("../src/xsd/TsGenerator");
+      const { generateFromXsd } = await import("../src/xsd/TsGenerator.ts");
       const { mkdtempSync, rmSync, readFileSync } = await import("fs");
       const { join } = await import("path");
       const { tmpdir } = await import("os");

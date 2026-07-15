@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir";
-import { setupGeneratedRuntime } from "./test-utils/generated-runtime";
+import { withTmpDir } from "./test-utils/temp-dir.ts";
+import { setupGeneratedRuntime } from "./test-utils/generated-runtime.ts";
 
 describe("XSD Generator - Occurrence Handling", () => {
   const testResourcesDir = path.join(__dirname, "test-resources");

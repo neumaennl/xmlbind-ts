@@ -1,4 +1,4 @@
-import { ClassMeta, Constructor, FieldMeta } from "../types";
+import { ClassMeta, Constructor, FieldMeta } from "../types.ts";
 
 const META = new WeakMap<Constructor, ClassMeta>();
 

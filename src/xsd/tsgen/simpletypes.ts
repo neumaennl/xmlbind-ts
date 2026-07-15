@@ -3,11 +3,11 @@ import {
   localName,
   getChildByLocalName,
   getChildrenByLocalName,
-} from "./utils";
-import { typeMapping, sanitizeTypeName, isPrimitiveTypeName } from "./types";
-import { generateEnumCode, extractEnumValues } from "./enum";
-import { toClassName } from "./codegen";
-import type { SchemaContext } from "./schema";
+} from "./utils.ts";
+import { typeMapping, sanitizeTypeName, isPrimitiveTypeName } from "./types.ts";
+import { generateEnumCode, extractEnumValues } from "./enum.ts";
+import { toClassName } from "./codegen.ts";
+import type { SchemaContext } from "./schema.ts";
 
 /**
  * Adds an import statement for a referenced enum type when needed.
@@ -27,7 +27,7 @@ function addEnumImportIfNeeded(
   if (isPrimitiveTypeName(typeName)) return;
   const generated = generatedSimpleTypes.get(typeName);
   if (generated && /export\s+enum/.test(generated)) {
-    imports.push(`import { ${typeName} } from './enums';`);
+    imports.push(`import { ${typeName} } from './enums.ts';`);
   }
 }
 

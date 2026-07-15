@@ -1,5 +1,5 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { getChildrenByLocalName } from "./utils";
+import { getChildrenByLocalName } from "./utils.ts";
 
 /**
  * Extracts enumeration values from an XSD restriction element.

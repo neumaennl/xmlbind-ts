@@ -1,8 +1,8 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getChildByLocalName, getChildrenByLocalName } from "./utils";
-import { isBuiltinType } from "./types";
-import type { GeneratorState, GenUnit } from "./codegen";
-import { emitSingleAttribute, emitAnyAttributeIfNeeded } from "./attribute-emission";
+import { localName, getChildByLocalName, getChildrenByLocalName } from "./utils.ts";
+import { isBuiltinType } from "./types.ts";
+import type { GeneratorState, GenUnit } from "./codegen.ts";
+import { emitSingleAttribute, emitAnyAttributeIfNeeded } from "./attribute-emission.ts";
 
 /**
  * Emits all attributes (attributeGroups, direct attributes, anyAttribute) from a base type.

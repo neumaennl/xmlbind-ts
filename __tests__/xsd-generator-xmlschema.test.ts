@@ -1,9 +1,9 @@
 import { readFileSync, readdirSync, writeFileSync } from "fs";
 
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir";
+import { withTmpDir } from "./test-utils/temp-dir.ts";
 import { execSync } from "child_process";
-import { setupGeneratedRuntime } from "./test-utils/generated-runtime";
+import { setupGeneratedRuntime } from "./test-utils/generated-runtime.ts";
 
 describe("XSD Generator - XML Schema XSD", () => {
   test("generates TypeScript classes from XML Schema XSD and verifies compilation", () => {
@@ -62,7 +62,9 @@ describe("XSD Generator - XML Schema XSD", () => {
       const tsConfig = {
         compilerOptions: {
           target: "ES2020",
-          module: "commonjs",
+          module: "NodeNext",
+          moduleResolution: "NodeNext",
+          rewriteRelativeImportExtensions: true,
           lib: ["ES2020"],
           declaration: true,
           outDir: path.join(tmpDir, "dist"),
@@ -70,7 +72,6 @@ describe("XSD Generator - XML Schema XSD", () => {
           esModuleInterop: true,
           skipLibCheck: true,
           forceConsistentCasingInFileNames: true,
-          moduleResolution: "node",
           resolveJsonModule: true,
         },
         include: ["*.ts"],

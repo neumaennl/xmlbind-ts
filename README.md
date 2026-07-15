@@ -19,6 +19,27 @@ JAXB-like XML binding for TypeScript.
 npm install @neumaennl/xmlbind-ts
 ```
 
+## Module System
+
+This package is published as **ESM-only**.
+
+- Use `import` / `export` in consumers.
+- If you still need CommonJS, pin to the last CJS-compatible release (`1.0.0`).
+
+### Using from CommonJS
+
+CommonJS consumers can still load this package via dynamic `import()`:
+
+```javascript
+// CommonJS file (.cjs)
+async function main() {
+  const { marshal, unmarshal, XmlRoot, XmlElement } = await import("@neumaennl/xmlbind-ts");
+  // use API here
+}
+
+main().catch(console.error);
+```
+
 ## TypeScript Decorator Support
 
 This library supports both **legacy decorators** (TypeScript's experimental decorators) and **Stage 3 decorators** (the TC39 standard):

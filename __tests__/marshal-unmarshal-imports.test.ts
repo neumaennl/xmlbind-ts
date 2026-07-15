@@ -1,4 +1,4 @@
-import { marshal, unmarshal } from "../src/marshalling";
+import { marshal, unmarshal } from "../src/marshalling/index.ts";
 import { mkdtempSync, rmSync, existsSync } from "fs";
 import os from "os";
 import path from "path";
@@ -7,7 +7,7 @@ import {
   loadGeneratedClasses,
   expectStringsOnConsecutiveLines,
   expectStringsOnSameLine,
-} from "./test-utils";
+} from "./test-utils/index.ts";
 
 const ADDRESS_XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 

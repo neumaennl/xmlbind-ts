@@ -16,8 +16,8 @@ import {
   XmlEnum,
   marshal,
   getMeta,
-} from "../src";
-import { expectStringsOnSameLine } from "./test-utils";
+} from "../src/index.ts";
+import { expectStringsOnSameLine } from "./test-utils/index.ts";
 
 enum TestEnum {
   Value1 = "value1",

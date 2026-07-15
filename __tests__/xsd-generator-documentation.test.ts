@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
-import { generateFromXsd } from "../src/xsd/TsGenerator";
-import { withTmpDir } from "./test-utils/temp-dir";
+import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
+import { withTmpDir } from "./test-utils/temp-dir.ts";
 
 describe("XSD Generator: Documentation", () => {
   test("generates TSDoc comments from xs:annotation/xs:documentation for complex types", () => {

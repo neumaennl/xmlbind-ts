@@ -1,7 +1,7 @@
-import { generateFromXsd } from "../src/xsd/TsGenerator";
+import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir";
+import { withTmpDir } from "./test-utils/temp-dir.ts";
 
 
 

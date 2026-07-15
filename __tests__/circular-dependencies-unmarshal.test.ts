@@ -12,9 +12,9 @@
 import { mkdtempSync, rmSync, readFileSync, readdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { generateFromXsd } from "../src/xsd/TsGenerator";
-import { unmarshal } from "../src";
-import { resolveType } from "../src/util/typeResolution";
+import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
+import { unmarshal } from "../src/index.ts";
+import { resolveType } from "../src/util/typeResolution.ts";
 
 describe("Circular Dependencies Unmarshalling Fix", () => {
   let tmpDir: string;

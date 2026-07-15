@@ -1,6 +1,6 @@
 {
   "name": "@neumaennl/xmlbind-ts",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "JAXB-like XML binding for TypeScript",
   "author": "Martin Neumann <neumaennl@gmx.net>",
   "license": "GPL-3.0-only",
@@ -12,8 +12,16 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "bin": {
     "xsd2ts": "dist/xsd/cli.js"
   },

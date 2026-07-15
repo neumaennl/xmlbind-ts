@@ -1,4 +1,4 @@
-import { ensureMeta } from "../metadata/MetadataRegistry";
+import { ensureMeta } from "../metadata/MetadataRegistry.ts";
 
 /**
  * Decorator to mark a class as an XML root element.

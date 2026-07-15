@@ -1,5 +1,5 @@
-import { marshal, unmarshal } from "../src/marshalling";
-import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators";
+import { marshal, unmarshal } from "../src/marshalling/index.ts";
+import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.ts";
 
 @XmlRoot("Child", { namespace: "http://b.example/ns" })
 class Child {

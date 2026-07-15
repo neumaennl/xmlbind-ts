@@ -1,5 +1,5 @@
-import { toDecoratorType, requiresRuntimeTypeCoercion } from "./types";
-import type { GeneratorState } from "./codegen";
+import { toDecoratorType, requiresRuntimeTypeCoercion } from "./types.ts";
+import type { GeneratorState } from "./codegen.ts";
 
 /**
  * Extracts the type expression from a stored type alias definition string.

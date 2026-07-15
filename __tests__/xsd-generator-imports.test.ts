@@ -1,8 +1,8 @@
-import { generateFromXsd } from "../src/xsd/TsGenerator";
+import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
 import { readFileSync } from "fs";
 
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir";
+import { withTmpDir } from "./test-utils/temp-dir.ts";
 
 describe("XSD Generator - Multiple schemas with imports and cross-namespace references", () => {
 
@@ -50,7 +50,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
       expect(personFile).toContain("export class Person");
       expect(personFile).toContain("@XmlRoot('Person'");
       expect(personFile).toContain("namespace: 'http://example.com/person'");
-      expect(personFile).toContain("import { Address } from './Address';");
+      expect(personFile).toContain("import { Address } from './Address.ts';");
       // Lazy type reference to avoid circular dependency issues
       expect(personFile).toMatch(
         /@XmlElement\('homeAddress',\s*\{\s*type:\s*\(\)\s*=>\s*Address/
@@ -120,15 +120,15 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
 
       const deptFile = readFileSync(path.join(tmp, "Department.ts"), "utf8");
       expect(deptFile).toContain("export class Department");
-      expect(deptFile).toContain("import { Email } from './Email';");
-      expect(deptFile).toContain("import { Phone } from './Phone';");
+      expect(deptFile).toContain("import { Email } from './Email.ts';");
+      expect(deptFile).toContain("import { Phone } from './Phone.ts';");
   expect(deptFile).toMatch(/contactEmail!?:\s*Email;/);
   expect(deptFile).toMatch(/contactPhone!?:\s*Phone;/);
 
       const companyFile = readFileSync(path.join(tmp, "Company.ts"), "utf8");
       expect(companyFile).toContain("export class Company");
       expect(companyFile).toContain(
-        "import { Department } from './Department';"
+        "import { Department } from './Department.ts';"
       );
   expect(companyFile).toMatch(/departments!?:\s*Department\[\];/);
     });
@@ -199,7 +199,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
       const metadataFile = readFileSync(path.join(tmp, "Metadata.ts"), "utf8");
       expect(metadataFile).toContain("export class Metadata");
       expect(metadataFile).toContain(
-        "import { Identifier } from './Identifier';"
+        "import { Identifier } from './Identifier.ts';"
       );
       expect(metadataFile).toMatch(/identifier!?:\s*Identifier;/);
       // Generate document types
@@ -219,10 +219,10 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
         "'http://example.com/metadata': 'meta'"
       );
       expect(documentTypeFile).toContain(
-        "import { Identifier } from './Identifier';"
+        "import { Identifier } from './Identifier.ts';"
       );
       expect(documentTypeFile).toContain(
-        "import { Metadata } from './Metadata';"
+        "import { Metadata } from './Metadata.ts';"
       );
       expect(documentTypeFile).toMatch(/docId!?:\s*Identifier;/);
       expect(documentTypeFile).toMatch(/meta!?:\s*Metadata;/);
@@ -297,7 +297,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
         "utf8"
       );
   expect(messageTypeFile).toContain("export class Message");
-  expect(messageTypeFile).toContain("import { Status } from './Status';");
+  expect(messageTypeFile).toContain("import { Status } from './Status.ts';");
   expect(messageTypeFile).toMatch(/status!?:\s*Status;/);
     });
   });
@@ -340,13 +340,13 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
       generateFromXsd(ORDER_XSD, tmp);
       const orderFile = readFileSync(path.join(tmp, "Order.ts"), "utf8");
       expect(orderFile).toContain("export class Order");
-      expect(orderFile).toContain("import { Customer } from './Customer';");
+      expect(orderFile).toContain("import { Customer } from './Customer.ts';");
 
       // Generate customer types
       generateFromXsd(CUSTOMER_XSD, tmp);
       const customerFile = readFileSync(path.join(tmp, "Customer.ts"), "utf8");
       expect(customerFile).toContain("export class Customer");
-      expect(customerFile).toContain("import { Order } from './Order';");
+      expect(customerFile).toContain("import { Order } from './Order.ts';");
       expect(customerFile).toMatch(/recentOrders\?:\s*Order\[\];/);
     });
   });

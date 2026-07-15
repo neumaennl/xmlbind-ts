@@ -4,14 +4,14 @@ import {
   getDocumentation,
   formatTsDoc,
   getChildByLocalName,
-} from "./utils";
+} from "./utils.ts";
 import {
   typeMapping,
   sanitizeTypeName,
-} from "./types";
-import { toPropertyName, toClassName } from "./codegen";
-import type { GeneratorState, GenUnit } from "./codegen";
-import { handleInlineType, buildXmlElementDecorator } from "./element-types";
+} from "./types.ts";
+import { toPropertyName, toClassName } from "./codegen.ts";
+import type { GeneratorState, GenUnit } from "./codegen.ts";
+import { handleInlineType, buildXmlElementDecorator } from "./element-types.ts";
 
 /**
  * Resolves the namespace URI for a qualified name in the context of an element.

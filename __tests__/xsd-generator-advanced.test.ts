@@ -1,7 +1,7 @@
-import { generateFromXsd } from "../src/xsd/TsGenerator";
+import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
 import { readFileSync } from "fs";
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir";
+import { withTmpDir } from "./test-utils/temp-dir.ts";
 
 describe("XSD Generator advanced features", () => {
   test("adds imports for referenced complex types", () => {
@@ -23,7 +23,7 @@ describe("XSD Generator advanced features", () => {
     withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const person = readFileSync(path.join(tmp, "Person.ts"), "utf8");
-      expect(person).toContain("import { Address } from './Address';");
+      expect(person).toContain("import { Address } from './Address.ts';");
       // Lazy type reference to avoid circular dependency issues
       expect(person).toMatch(
         /@XmlElement\('address',\s*\{\s*type:\s*\(\)\s*=>\s*Address,\s*namespace:\s*'http:\/\/example.com\/ns'\s*\}\)/
@@ -81,7 +81,7 @@ describe("XSD Generator advanced features", () => {
     withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const empType = readFileSync(path.join(tmp, "EmployeeType.ts"), "utf8");
-      expect(empType).toContain("import { BaseType } from './BaseType';");
+      expect(empType).toContain("import { BaseType } from './BaseType.ts';");
       expect(empType).toMatch(/export class EmployeeType extends BaseType/);
       const emp = readFileSync(path.join(tmp, "Employee.ts"), "utf8");
       expect(emp).toMatch(/@XmlRoot\('Employee'/);

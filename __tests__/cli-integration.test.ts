@@ -56,7 +56,7 @@ describe("CLI tool (xsd2ts)", () => {
     const outDir = path.join(tmpDir, "output");
 
     // Run the CLI tool using ts-node with --no-delete to skip interactive prompt
-    const command = `npx ts-node src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --no-delete`;
+    const command = `node --loader ts-node/esm src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --no-delete`;
 
     try {
       execSync(command, {
@@ -92,7 +92,7 @@ describe("CLI tool (xsd2ts)", () => {
 
   test("CLI requires input and output options", () => {
     // Test that the CLI fails without required options
-    const command = `npx ts-node src/xsd/cli.ts`;
+    const command = `node --loader ts-node/esm src/xsd/cli.ts`;
 
     expect(() => {
       execSync(command, {
@@ -106,7 +106,7 @@ describe("CLI tool (xsd2ts)", () => {
   test("CLI fails gracefully with non-existent input file", () => {
     const outDir = path.join(tmpDir, "output");
     const nonExistentFile = path.join(tmpDir, "does-not-exist.xsd");
-    const command = `npx ts-node src/xsd/cli.ts -i "${nonExistentFile}" -o "${outDir}" --no-delete`;
+    const command = `node --loader ts-node/esm src/xsd/cli.ts -i "${nonExistentFile}" -o "${outDir}" --no-delete`;
 
     expect(() => {
       execSync(command, {
@@ -122,7 +122,7 @@ describe("CLI tool (xsd2ts)", () => {
     mkdirSync(outDir, { recursive: true });
     writeFileSync(path.join(outDir, "existing.ts"), "// existing file", "utf8");
 
-    const command = `npx ts-node src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --no-delete`;
+    const command = `node --loader ts-node/esm src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --no-delete`;
 
     execSync(command, {
       cwd: path.resolve(__dirname, ".."),
@@ -151,7 +151,7 @@ describe("CLI tool (xsd2ts)", () => {
       "utf8"
     );
 
-    const command = `npx ts-node src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --force`;
+    const command = `node --loader ts-node/esm src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --force`;
 
     const output = execSync(command, {
       cwd: path.resolve(__dirname, ".."),
@@ -175,7 +175,7 @@ describe("CLI tool (xsd2ts)", () => {
     mkdirSync(outDir, { recursive: true });
     writeFileSync(path.join(outDir, "existing.ts"), "// existing file", "utf8");
 
-    const command = `npx ts-node src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --force --no-delete`;
+    const command = `node --loader ts-node/esm src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --force --no-delete`;
 
     execSync(command, {
       cwd: path.resolve(__dirname, ".."),
