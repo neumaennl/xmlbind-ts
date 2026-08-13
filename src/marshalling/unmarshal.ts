@@ -14,7 +14,7 @@ import {
 } from "./types.ts";
 import {
   collectNs,
-  matchElementKey,
+  matchAllElementKeys,
   matchAttributeKey,
   collectWildcardAttributes,
   collectWildcardElements,
@@ -114,43 +114,54 @@ function bindFieldsToTarget(
         target[f.key] = castValue((node as any)[k], resolveType(f.type), f.allowStringFallback);
       }
     } else if (f.kind === "element") {
-      const k = matchElementKey(
+      const keys = matchAllElementKeys(
         node,
         f.name || f.key,
         f.namespace ?? undefined,
         hereNs
       );
-      if (k && (node as any)[k] !== undefined) {
-        const val = (node as any)[k];
-        const resolvedType = resolveType(f.type);
-        if (Array.isArray(val)) {
-          // Process array with preserveOrder data
-          if (preserveOrderData && path) {
-            const itemPath = [...path, f.name || f.key];
-            const occurrences = findElementOccurrences(preserveOrderData, itemPath);
-            target[f.key] = val.map((v, index) => {
-              const itemPreserveOrder = occurrences[index]
-                ? [{ _item: occurrences[index] }]
-                : undefined;
-              return xmlValueToObject(v, resolvedType, hereNs, itemPreserveOrder, ["_item"], f.allowStringFallback);
-            });
-          } else {
-            target[f.key] = val.map((v) =>
-              xmlValueToObject(v, resolvedType, hereNs, undefined, undefined, f.allowStringFallback)
-            );
-          }
-        } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
-          target[f.key] = null;
+      if (keys.length === 0) continue;
+      // Collect values from all namespace-equivalent keys and merge into one array
+      const allValues: any[] = [];
+      for (const k of keys) {
+        const raw = (node as any)[k];
+        if (raw === undefined) continue;
+        if (Array.isArray(raw)) {
+          allValues.push(...raw);
         } else {
-          target[f.key] = xmlValueToObject(
-            val,
-            resolvedType,
-            hereNs,
-            preserveOrderData,
-            path ? [...path, f.name || f.key] : undefined,
-            f.allowStringFallback
+          allValues.push(raw);
+        }
+      }
+      if (allValues.length === 0) continue;
+      const val = allValues.length === 1 ? allValues[0] : allValues;
+      const resolvedType = resolveType(f.type);
+      if (Array.isArray(val)) {
+        // Process array with preserveOrder data
+        if (preserveOrderData && path) {
+          const itemPath = [...path, f.name || f.key];
+          const occurrences = findElementOccurrences(preserveOrderData, itemPath);
+          target[f.key] = val.map((v, index) => {
+            const itemPreserveOrder = occurrences[index]
+              ? [{ _item: occurrences[index] }]
+              : undefined;
+            return xmlValueToObject(v, resolvedType, hereNs, itemPreserveOrder, ["_item"], f.allowStringFallback);
+          });
+        } else {
+          target[f.key] = val.map((v) =>
+            xmlValueToObject(v, resolvedType, hereNs, undefined, undefined, f.allowStringFallback)
           );
         }
+      } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
+        target[f.key] = null;
+      } else {
+        target[f.key] = xmlValueToObject(
+          val,
+          resolvedType,
+          hereNs,
+          preserveOrderData,
+          path ? [...path, f.name || f.key] : undefined,
+          f.allowStringFallback
+        );
       }
     }
   }
@@ -351,9 +362,21 @@ function bindRootElements(
   parsedWithComments: any
 ): void {
   for (const f of fields.filter((f) => f.kind === "element")) {
-    const k = matchElementKey(node, f.name, f.namespace ?? undefined, nsMap);
-    if (!k) continue;
-    const val = (node as any)[k];
+    const keys = matchAllElementKeys(node, f.name, f.namespace ?? undefined, nsMap);
+    if (keys.length === 0) continue;
+    // Collect values from all namespace-equivalent keys and merge into one array
+    const allValues: any[] = [];
+    for (const k of keys) {
+      const raw = (node as any)[k];
+      if (raw === undefined) continue;
+      if (Array.isArray(raw)) {
+        allValues.push(...raw);
+      } else {
+        allValues.push(raw);
+      }
+    }
+    if (allValues.length === 0) continue;
+    const val = allValues.length === 1 ? allValues[0] : allValues;
     const resolvedType = resolveType(f.type);
     if (Array.isArray(val) || (f.isArray && Array.isArray(val))) {
       const arrayVal = Array.isArray(val) ? val : [val];

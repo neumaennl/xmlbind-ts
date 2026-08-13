@@ -46,9 +46,27 @@ export function matchElementKey(
   ns: string | undefined,
   nsMap: NsMap
 ): string | undefined {
-  // try direct match first
-  if (node[local] !== undefined && ns === undefined) return local;
-  // otherwise scan keys and match by local name and namespace
+  return matchAllElementKeys(node, local, ns, nsMap)[0];
+}
+
+/**
+ * Finds all element keys in the parsed XML node that match the given local name and namespace.
+ * Multiple keys can exist when the same element appears with different namespace prefixes
+ * (e.g., both `simpleType` and `xs:simpleType` when both prefixes resolve to the same namespace).
+ *
+ * @param node - The parsed XML node
+ * @param local - The local name of the element
+ * @param ns - The expected namespace URI (optional)
+ * @param nsMap - The namespace prefix mapping
+ * @returns All matching keys from the node
+ */
+export function matchAllElementKeys(
+  node: ParsedXmlNode,
+  local: string,
+  ns: string | undefined,
+  nsMap: NsMap
+): string[] {
+  const result: string[] = [];
   for (const key of Object.keys(node)) {
     if (key.startsWith("@_") || key === "#text") continue;
     const idx = key.indexOf(":");
@@ -56,9 +74,9 @@ export function matchElementKey(
     if (kLocal !== local) continue;
     const prefix = idx >= 0 ? key.substring(0, idx) : "";
     const uri = prefix ? nsMap[prefix] : nsMap[""];
-    if (ns === undefined || uri === ns) return key;
+    if (ns === undefined || uri === ns) result.push(key);
   }
-  return undefined;
+  return result;
 }
 
 /**
