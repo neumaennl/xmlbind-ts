@@ -50,7 +50,15 @@ export function matchElementKey(
   // This preserves the original behavior where callers that intentionally omit `ns` always
   // get the unprefixed key back instead of a prefix-qualified key that happens to appear
   // first in the object's key iteration order.
-  if (ns === undefined && (node as any)[local] !== undefined) {
+  // Guard: the fast-path applies the same element-key filter that matchAllElementKeys uses
+  // (skip attribute keys and the text-node sentinel) so that attribute or #text values
+  // that happen to share `local` as their key name are never returned.
+  if (
+    ns === undefined &&
+    !local.startsWith("@_") &&
+    local !== "#text" &&
+    (node as any)[local] !== undefined
+  ) {
     return local;
   }
   return matchAllElementKeys(node, local, ns, nsMap)[0];
