@@ -81,6 +81,24 @@ export function matchAllElementKeys(
   ns: string | undefined,
   nsMap: NsMap
 ): string[] {
+  // When the caller does not specify a namespace, infer it from the first matching
+  // candidate key so that only namespace-equivalent aliases of that same element are
+  // collected. Without this guard an unprefixed <item> and a foreign <ext:item> that
+  // share only the local name (but not the URI) would both be merged into the same
+  // field, producing incorrect results.
+  let effectiveNs = ns;
+  if (ns === undefined) {
+    for (const key of Object.keys(node)) {
+      if (key.startsWith("@_") || key === "#text") continue;
+      const idx = key.indexOf(":");
+      const kLocal = idx >= 0 ? key.substring(idx + 1) : key;
+      if (kLocal !== local) continue;
+      const prefix = idx >= 0 ? key.substring(0, idx) : "";
+      effectiveNs = prefix ? nsMap[prefix] : nsMap[""];
+      break;
+    }
+  }
+
   const result: string[] = [];
   for (const key of Object.keys(node)) {
     if (key.startsWith("@_") || key === "#text") continue;
@@ -89,7 +107,7 @@ export function matchAllElementKeys(
     if (kLocal !== local) continue;
     const prefix = idx >= 0 ? key.substring(0, idx) : "";
     const uri = prefix ? nsMap[prefix] : nsMap[""];
-    if (ns === undefined || uri === ns) result.push(key);
+    if (effectiveNs === undefined || uri === effectiveNs) result.push(key);
   }
   return result;
 }

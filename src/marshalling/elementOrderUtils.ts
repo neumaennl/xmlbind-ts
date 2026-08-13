@@ -180,6 +180,131 @@ export function findElementOccurrences(
   return occurrences;
 }
 
+import type { ParsedXmlValue } from "./types.ts";
+
+/**
+ * Result entry returned by mergeElementsByDocumentOrder.
+ * `value` is the parsed XML node, `occurrence` is the corresponding preserve-order
+ * entry that carries nested comment and element-order metadata.
+ */
+export interface MergedElementEntry {
+  value: ParsedXmlValue;
+  occurrence: unknown | undefined;
+}
+
+/**
+ * Rebuilds the merged value sequence in true document order when multiple
+ * namespace-equivalent parser keys (e.g. `simpleType` and `xs:simpleType`) hold
+ * values for the same logical field.
+ *
+ * The fast-xml-parser regular parse groups values by key, so iterating over
+ * `keys` naively produces `[a,c,b,d]` instead of `[a,b,c,d]` for interleaved
+ * occurrences.  The preserve-order tree, however, still lists children in
+ * document order; this function uses that tree to recover the correct sequence
+ * and simultaneously returns the per-item occurrence node so that nested
+ * `_elementOrder` / `_comments` metadata is preserved.
+ *
+ * Falls back to simple concatenation (no occurrence context) when no
+ * preserve-order data is available or when the path cannot be found.
+ *
+ * @param keys - All namespace-equivalent parser keys for the field (e.g. ["simpleType","xs:simpleType"])
+ * @param localName - The local element name shared by all keys
+ * @param valuesByKey - A record mapping each key to its raw parsed value(s)
+ * @param preserveOrderData - The preserve-order tree from the comment parser
+ * @param path - The path to the **parent** element in the preserve-order tree;
+ *               the last segment is the parent element name, children are iterated within it
+ * @returns Array of {value, occurrence} in document order
+ */
+export function mergeElementsByDocumentOrder(
+  keys: string[],
+  localName: string,
+  valuesByKey: Record<string, unknown>,
+  preserveOrderData: unknown,
+  path: string[]
+): MergedElementEntry[] {
+  // Build per-key queues from the flat parsed values
+  const queues = new Map<string, unknown[]>();
+  for (const k of keys) {
+    const raw = valuesByKey[k];
+    if (raw === undefined) continue;
+    queues.set(k, Array.isArray(raw) ? [...raw] : [raw]);
+  }
+
+  const totalCount = [...queues.values()].reduce((s, q) => s + q.length, 0);
+  if (totalCount === 0) return [];
+
+  // Try to walk the preserve-order tree to recover document order
+  if (Array.isArray(preserveOrderData) && path.length > 0) {
+    // Navigate to the parent node's children array in the preserve-order tree
+    let current: unknown = preserveOrderData;
+    for (const segment of path) {
+      if (!Array.isArray(current)) { current = undefined; break; }
+      let found = false;
+      for (const item of current as unknown[]) {
+        if (!item || typeof item !== "object") continue;
+        for (const key of Object.keys(item as Record<string, unknown>)) {
+          if (key === segment || getLocalName(key) === segment) {
+            current = (item as Record<string, unknown>)[key];
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+      if (!found) { current = undefined; break; }
+    }
+
+    if (Array.isArray(current)) {
+      const result: MergedElementEntry[] = [];
+      for (const child of current as unknown[]) {
+        if (!child || typeof child !== "object") continue;
+        for (const childKey of Object.keys(child as Record<string, unknown>)) {
+          if (childKey.startsWith("@_") || childKey === "#text" || childKey === "#comment") continue;
+          const childLocal = getLocalName(childKey);
+          if (childLocal !== localName) break;
+          // Find which parser key this preserve-order child key corresponds to.
+          // Prefer an exact key match (e.g. "ns:Item" → "ns:Item" queue) so that
+          // interleaved prefixed/unprefixed occurrences are dequeued from the correct
+          // per-key queue and maintain document order.
+          const exactMatch = queues.get(childKey);
+          if (exactMatch && exactMatch.length > 0) {
+            result.push({
+              value: exactMatch.shift() as ParsedXmlValue,
+              occurrence: (child as Record<string, unknown>)[childKey],
+            });
+          } else {
+            // Fall back to any queue with a matching local name (same namespace alias)
+            for (const k of keys) {
+              const queue = queues.get(k);
+              if (!queue || queue.length === 0) continue;
+              if (getLocalName(k) === childLocal) {
+                result.push({
+                  value: queue.shift() as ParsedXmlValue,
+                  occurrence: (child as Record<string, unknown>)[childKey],
+                });
+                break;
+              }
+            }
+          }
+          break;
+        }
+      }
+      // If we consumed all values through the preserve-order tree, return
+      if (result.length === totalCount) return result;
+      // Otherwise fall through to simple concatenation below
+    }
+  }
+
+  // Fallback: simple concatenation without occurrence context
+  const result: MergedElementEntry[] = [];
+  for (const k of keys) {
+    const queue = queues.get(k);
+    if (!queue) continue;
+    for (const v of queue) result.push({ value: v as ParsedXmlValue, occurrence: undefined });
+  }
+  return result;
+}
+
 /**
  * Sort element fields by the stored element order
  * @param elementFields - Array of field metadata for element fields

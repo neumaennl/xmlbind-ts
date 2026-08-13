@@ -30,6 +30,7 @@ import {
   extractElementOrderFromPreserveOrder,
   extractNestedElementOrder,
   findElementOccurrences,
+  mergeElementsByDocumentOrder,
 } from "./elementOrderUtils.ts";
 
 // Main parser for data
@@ -121,49 +122,46 @@ function bindFieldsToTarget(
         hereNs
       );
       if (keys.length === 0) continue;
-      // Collect values from all namespace-equivalent keys and merge into one array
-      const allValues: any[] = [];
+      // Collect values from all namespace-equivalent keys
+      const valuesByKey: Record<string, unknown> = {};
+      let totalCount = 0;
       for (const k of keys) {
         const raw = (node as any)[k];
         if (raw === undefined) continue;
-        if (Array.isArray(raw)) {
-          allValues.push(...raw);
-        } else {
-          allValues.push(raw);
-        }
+        valuesByKey[k] = raw;
+        totalCount += Array.isArray(raw) ? raw.length : 1;
       }
-      if (allValues.length === 0) continue;
-      const val = allValues.length === 1 ? allValues[0] : allValues;
+      if (totalCount === 0) continue;
       const resolvedType = resolveType(f.type);
-      if (Array.isArray(val)) {
-        // When values were merged from multiple namespace-equivalent keys (keys.length > 1),
-        // the merged array preserves per-key order rather than document order, so passing
-        // preserveOrder occurrence data would misalign indices. Skip it in that case.
-        if (preserveOrderData && path && keys.length === 1) {
-          const itemPath = [...path, f.name || f.key];
-          const occurrences = findElementOccurrences(preserveOrderData, itemPath);
-          target[f.key] = val.map((v, index) => {
-            const itemPreserveOrder = occurrences[index]
-              ? [{ _item: occurrences[index] }]
-              : undefined;
-            return xmlValueToObject(v, resolvedType, hereNs, itemPreserveOrder, ["_item"], f.allowStringFallback);
-          });
+      if (totalCount > 1) {
+        // Array case: rebuild in document order with per-item occurrence context
+        const entries = (preserveOrderData && path)
+          ? mergeElementsByDocumentOrder(keys, f.name || f.key, valuesByKey, preserveOrderData, path)
+          : keys.flatMap(k => {
+              const raw = valuesByKey[k];
+              return raw === undefined ? [] : (Array.isArray(raw) ? raw : [raw]);
+            }).map(v => ({ value: v as ParsedXmlValue, occurrence: undefined as unknown }));
+        target[f.key] = entries.map(({ value: v, occurrence }) => {
+          const itemPreserveOrder = occurrence ? [{ _item: occurrence }] : undefined;
+          return xmlValueToObject(v, resolvedType, hereNs, itemPreserveOrder, ["_item"], f.allowStringFallback);
+        });
+      } else {
+        // Single value — find the first key that contributed a value
+        const activeKey = keys.find(k => valuesByKey[k] !== undefined) ?? keys[0];
+        const raw = valuesByKey[activeKey];
+        const val = Array.isArray(raw) ? raw[0] : raw;
+        if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
+          target[f.key] = null;
         } else {
-          target[f.key] = val.map((v) =>
-            xmlValueToObject(v, resolvedType, hereNs, undefined, undefined, f.allowStringFallback)
+          target[f.key] = xmlValueToObject(
+            val,
+            resolvedType,
+            hereNs,
+            preserveOrderData,
+            path ? [...path, f.name || f.key] : undefined,
+            f.allowStringFallback
           );
         }
-      } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
-        target[f.key] = null;
-      } else {
-        target[f.key] = xmlValueToObject(
-          val,
-          resolvedType,
-          hereNs,
-          preserveOrderData,
-          path ? [...path, f.name || f.key] : undefined,
-          f.allowStringFallback
-        );
       }
     }
   }
@@ -366,52 +364,49 @@ function bindRootElements(
   for (const f of fields.filter((f) => f.kind === "element")) {
     const keys = matchAllElementKeys(node, f.name, f.namespace ?? undefined, nsMap);
     if (keys.length === 0) continue;
-    // Collect values from all namespace-equivalent keys and merge into one array
-    const allValues: any[] = [];
+    // Collect raw values per key
+    const valuesByKey: Record<string, unknown> = {};
+    let totalCount = 0;
     for (const k of keys) {
       const raw = (node as any)[k];
       if (raw === undefined) continue;
-      if (Array.isArray(raw)) {
-        allValues.push(...raw);
-      } else {
-        allValues.push(raw);
-      }
+      valuesByKey[k] = raw;
+      totalCount += Array.isArray(raw) ? raw.length : 1;
     }
-    if (allValues.length === 0) continue;
-    const val = allValues.length === 1 ? allValues[0] : allValues;
+    if (totalCount === 0) continue;
     const resolvedType = resolveType(f.type);
-    if (Array.isArray(val) || (f.isArray && Array.isArray(val))) {
-      const arrayVal = Array.isArray(val) ? val : [val];
-      // When values were merged from multiple namespace-equivalent keys (keys.length > 1),
-      // the merged array preserves per-key order rather than document order, so passing
-      // preserveOrder occurrence data would misalign indices. Skip it in that case.
-      if (keys.length === 1) {
-        const itemPath = [rootName, f.name || f.key];
-        const occurrences = findElementOccurrences(parsedWithComments, itemPath);
-        target[f.key] = arrayVal.map((v, index) => {
-          const itemPreserveOrder = occurrences[index]
-            ? [{ _item: occurrences[index] }]
-            : undefined;
-          return xmlValueToObject(v, resolvedType, nsMap, itemPreserveOrder, [
-            "_item",
-          ], f.allowStringFallback);
-        });
+    // Enter array path only when the actual parsed data has multiple values
+    // (totalCount > 1), mirroring the original Array.isArray(val) check.
+    // f.isArray is intentionally NOT used here: when only one XML occurrence
+    // is present, fast-xml-parser returns a single object (not an array), and
+    // we preserve that single-item behavior regardless of the decorator setting.
+    const isArray = totalCount > 1;
+    if (isArray) {
+      // Rebuild in document order with per-item occurrence context
+      const entries = mergeElementsByDocumentOrder(
+        keys, f.name || f.key, valuesByKey, parsedWithComments, [rootName]
+      );
+      target[f.key] = entries.map(({ value: v, occurrence }) => {
+        const itemPreserveOrder = occurrence ? [{ _item: occurrence }] : undefined;
+        return xmlValueToObject(v, resolvedType, nsMap, itemPreserveOrder, ["_item"], f.allowStringFallback);
+      });
+    } else {
+      // Single value — find the first key that contributed a value
+      const activeKey = keys.find(k => valuesByKey[k] !== undefined) ?? keys[0];
+      const raw = valuesByKey[activeKey];
+      const val = Array.isArray(raw) ? raw[0] : raw;
+      if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
+        target[f.key] = null;
       } else {
-        target[f.key] = arrayVal.map((v) =>
-          xmlValueToObject(v, resolvedType, nsMap, undefined, undefined, f.allowStringFallback)
+        target[f.key] = xmlValueToObject(
+          val,
+          resolvedType,
+          nsMap,
+          parsedWithComments,
+          [rootName, f.name || f.key],
+          f.allowStringFallback
         );
       }
-    } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
-      target[f.key] = null;
-    } else {
-      target[f.key] = xmlValueToObject(
-        val,
-        resolvedType,
-        nsMap,
-        parsedWithComments,
-        [rootName, f.name || f.key],
-        f.allowStringFallback
-      );
     }
   }
 }
