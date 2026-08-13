@@ -46,6 +46,13 @@ export function matchElementKey(
   ns: string | undefined,
   nsMap: NsMap
 ): string | undefined {
+  // Fast-path: when no namespace is required, prefer the exact unprefixed key when present.
+  // This preserves the original behavior where callers that intentionally omit `ns` always
+  // get the unprefixed key back instead of a prefix-qualified key that happens to appear
+  // first in the object's key iteration order.
+  if (ns === undefined && (node as any)[local] !== undefined) {
+    return local;
+  }
   return matchAllElementKeys(node, local, ns, nsMap)[0];
 }
 
@@ -167,13 +174,14 @@ export function collectWildcardElements(
 ): any[] {
   const boundElemKeys = new Set<string>();
   for (const f of fields.filter((f) => f.kind === "element")) {
-    const k = matchElementKey(
+    for (const k of matchAllElementKeys(
       node,
       f.name || f.key,
       f.namespace ?? undefined,
       nsMap
-    );
-    if (k) boundElemKeys.add(k);
+    )) {
+      boundElemKeys.add(k);
+    }
   }
   const collected: any[] = [];
   for (const key of Object.keys(node)) {

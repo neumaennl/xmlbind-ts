@@ -136,8 +136,10 @@ function bindFieldsToTarget(
       const val = allValues.length === 1 ? allValues[0] : allValues;
       const resolvedType = resolveType(f.type);
       if (Array.isArray(val)) {
-        // Process array with preserveOrder data
-        if (preserveOrderData && path) {
+        // When values were merged from multiple namespace-equivalent keys (keys.length > 1),
+        // the merged array preserves per-key order rather than document order, so passing
+        // preserveOrder occurrence data would misalign indices. Skip it in that case.
+        if (preserveOrderData && path && keys.length === 1) {
           const itemPath = [...path, f.name || f.key];
           const occurrences = findElementOccurrences(preserveOrderData, itemPath);
           target[f.key] = val.map((v, index) => {
@@ -380,16 +382,25 @@ function bindRootElements(
     const resolvedType = resolveType(f.type);
     if (Array.isArray(val) || (f.isArray && Array.isArray(val))) {
       const arrayVal = Array.isArray(val) ? val : [val];
-      const itemPath = [rootName, f.name || f.key];
-      const occurrences = findElementOccurrences(parsedWithComments, itemPath);
-      target[f.key] = arrayVal.map((v, index) => {
-        const itemPreserveOrder = occurrences[index]
-          ? [{ _item: occurrences[index] }]
-          : undefined;
-        return xmlValueToObject(v, resolvedType, nsMap, itemPreserveOrder, [
-          "_item",
-        ], f.allowStringFallback);
-      });
+      // When values were merged from multiple namespace-equivalent keys (keys.length > 1),
+      // the merged array preserves per-key order rather than document order, so passing
+      // preserveOrder occurrence data would misalign indices. Skip it in that case.
+      if (keys.length === 1) {
+        const itemPath = [rootName, f.name || f.key];
+        const occurrences = findElementOccurrences(parsedWithComments, itemPath);
+        target[f.key] = arrayVal.map((v, index) => {
+          const itemPreserveOrder = occurrences[index]
+            ? [{ _item: occurrences[index] }]
+            : undefined;
+          return xmlValueToObject(v, resolvedType, nsMap, itemPreserveOrder, [
+            "_item",
+          ], f.allowStringFallback);
+        });
+      } else {
+        target[f.key] = arrayVal.map((v) =>
+          xmlValueToObject(v, resolvedType, nsMap, undefined, undefined, f.allowStringFallback)
+        );
+      }
     } else if (isParsedXmlNode(val) && val["@_xsi:nil"] === "true") {
       target[f.key] = null;
     } else {

@@ -117,10 +117,9 @@ describe("unmarshal prefixed duplicate element occurrences", () => {
     expect(result.simpleType).toBeDefined();
     const names = result.simpleType!.map((item) => item.name);
     expect(names).toHaveLength(4);
-    expect(names).toContain("a");
-    expect(names).toContain("b");
-    expect(names).toContain("c");
-    expect(names).toContain("d");
+    // fast-xml-parser groups elements by key; unprefixed entries come before prefixed entries,
+    // so document order is NOT preserved across prefix boundaries.
+    expect(names).toEqual(["a", "c", "b", "d"]);
   });
 
   test("merges unprefixed and prefixed complexType entries", () => {
