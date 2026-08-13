@@ -3,6 +3,7 @@
  */
 
 import type { FieldMeta } from "../types.ts";
+import type { ParsedXmlValue } from "./types.ts";
 
 /**
  * Helper to extract local name from a potentially namespaced element name
@@ -180,8 +181,6 @@ export function findElementOccurrences(
   return occurrences;
 }
 
-import type { ParsedXmlValue } from "./types.ts";
-
 /**
  * Result entry returned by mergeElementsByDocumentOrder.
  * `value` is the parsed XML node, `occurrence` is the corresponding preserve-order
@@ -261,7 +260,7 @@ export function mergeElementsByDocumentOrder(
         for (const childKey of Object.keys(child as Record<string, unknown>)) {
           if (childKey.startsWith("@_") || childKey === "#text" || childKey === "#comment") continue;
           const childLocal = getLocalName(childKey);
-          if (childLocal !== localName) break;
+          if (childLocal !== localName) continue;
           // Find which parser key this preserve-order child key corresponds to.
           // Prefer an exact key match (e.g. "ns:Item" → "ns:Item" queue) so that
           // interleaved prefixed/unprefixed occurrences are dequeued from the correct
