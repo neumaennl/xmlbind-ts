@@ -86,7 +86,12 @@ export function matchAllElementKeys(
   // collected. Without this guard an unprefixed <item> and a foreign <ext:item> that
   // share only the local name (but not the URI) would both be merged into the same
   // field, producing incorrect results.
-  let effectiveNs = ns;
+  //
+  // A sentinel is used so that "effectiveNs resolved to undefined (no default namespace)"
+  // is distinguishable from "no candidate was found yet". This prevents the filter from
+  // treating an explicitly-no-namespace element as "match any namespace".
+  const NOT_FOUND = Symbol();
+  let effectiveNs: string | undefined | typeof NOT_FOUND = ns === undefined ? NOT_FOUND : ns;
   if (ns === undefined) {
     for (const key of Object.keys(node)) {
       if (key.startsWith("@_") || key === "#text") continue;
@@ -107,7 +112,7 @@ export function matchAllElementKeys(
     if (kLocal !== local) continue;
     const prefix = idx >= 0 ? key.substring(0, idx) : "";
     const uri = prefix ? nsMap[prefix] : nsMap[""];
-    if (effectiveNs === undefined || uri === effectiveNs) result.push(key);
+    if (effectiveNs === NOT_FOUND || uri === effectiveNs) result.push(key);
   }
   return result;
 }

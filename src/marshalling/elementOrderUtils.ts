@@ -288,9 +288,18 @@ export function mergeElementsByDocumentOrder(
           break;
         }
       }
-      // If we consumed all values through the preserve-order tree, return
-      if (result.length === totalCount) return result;
-      // Otherwise fall through to simple concatenation below
+      // Return the result from the preserve-order walk. Any values not consumed by the
+      // walk (e.g. because the preserve-order tree was incomplete) are appended without
+      // occurrence context so no data is lost.
+      if (result.length > 0) {
+        for (const k of keys) {
+          const queue = queues.get(k);
+          if (!queue) continue;
+          for (const v of queue) result.push({ value: v as ParsedXmlValue, occurrence: undefined });
+        }
+        return result;
+      }
+      // Walk produced nothing — fall through to simple concatenation
     }
   }
 
