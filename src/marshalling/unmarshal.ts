@@ -29,7 +29,6 @@ import {
   getLocalName,
   extractElementOrderFromPreserveOrder,
   extractNestedElementOrder,
-  findElementOccurrences,
   mergeElementsByDocumentOrder,
 } from "./elementOrderUtils.ts";
 

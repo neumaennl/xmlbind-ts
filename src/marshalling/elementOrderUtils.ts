@@ -272,18 +272,7 @@ export function mergeElementsByDocumentOrder(
               occurrence: (child as Record<string, unknown>)[childKey],
             });
           } else {
-            // Fall back to any queue with a matching local name (same namespace alias)
-            for (const k of keys) {
-              const queue = queues.get(k);
-              if (!queue || queue.length === 0) continue;
-              if (getLocalName(k) === childLocal) {
-                result.push({
-                  value: queue.shift() as ParsedXmlValue,
-                  occurrence: (child as Record<string, unknown>)[childKey],
-                });
-                break;
-              }
-            }
+            // No exact key match in queues — skip (foreign-namespace element).
           }
           break;
         }

@@ -93,14 +93,27 @@ export function matchAllElementKeys(
   const NOT_FOUND = Symbol();
   let effectiveNs: string | undefined | typeof NOT_FOUND = ns === undefined ? NOT_FOUND : ns;
   if (ns === undefined) {
+    // Prefer the unprefixed key as the namespace anchor when it exists, so that
+    // <ext:item/><item/> binds to `item` (no-namespace) rather than `ext:item`.
+    let firstPrefixedCandidate: string | undefined | typeof NOT_FOUND = NOT_FOUND;
     for (const key of Object.keys(node)) {
       if (key.startsWith("@_") || key === "#text") continue;
       const idx = key.indexOf(":");
       const kLocal = idx >= 0 ? key.substring(idx + 1) : key;
       if (kLocal !== local) continue;
-      const prefix = idx >= 0 ? key.substring(0, idx) : "";
-      effectiveNs = prefix ? nsMap[prefix] : nsMap[""];
-      break;
+      if (idx < 0) {
+        // Exact unprefixed match — use it as anchor immediately.
+        effectiveNs = nsMap[""];
+        firstPrefixedCandidate = NOT_FOUND; // signal: no need to fall back
+        break;
+      }
+      if (firstPrefixedCandidate === NOT_FOUND) {
+        const prefix = key.substring(0, idx);
+        firstPrefixedCandidate = nsMap[prefix];
+      }
+    }
+    if (effectiveNs === NOT_FOUND && firstPrefixedCandidate !== NOT_FOUND) {
+      effectiveNs = firstPrefixedCandidate;
     }
   }
 
