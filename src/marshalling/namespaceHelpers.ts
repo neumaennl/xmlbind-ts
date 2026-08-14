@@ -46,9 +46,78 @@ export function matchElementKey(
   ns: string | undefined,
   nsMap: NsMap
 ): string | undefined {
-  // try direct match first
-  if (node[local] !== undefined && ns === undefined) return local;
-  // otherwise scan keys and match by local name and namespace
+  // Fast-path: when no namespace is required, prefer the exact unprefixed key when present.
+  // This preserves the original behavior where callers that intentionally omit `ns` always
+  // get the unprefixed key back instead of a prefix-qualified key that happens to appear
+  // first in the object's key iteration order.
+  // Guard: the fast-path applies the same element-key filter that matchAllElementKeys uses
+  // (skip attribute keys and the text-node sentinel) so that attribute or #text values
+  // that happen to share `local` as their key name are never returned.
+  if (
+    ns === undefined &&
+    !local.startsWith("@_") &&
+    local !== "#text" &&
+    (node as any)[local] !== undefined
+  ) {
+    return local;
+  }
+  return matchAllElementKeys(node, local, ns, nsMap)[0];
+}
+
+/**
+ * Finds all element keys in the parsed XML node that match the given local name and namespace.
+ * Multiple keys can exist when the same element appears with different namespace prefixes
+ * (e.g., both `simpleType` and `xs:simpleType` when both prefixes resolve to the same namespace).
+ *
+ * @param node - The parsed XML node
+ * @param local - The local name of the element
+ * @param ns - The expected namespace URI (optional)
+ * @param nsMap - The namespace prefix mapping
+ * @returns All matching keys from the node
+ */
+export function matchAllElementKeys(
+  node: ParsedXmlNode,
+  local: string,
+  ns: string | undefined,
+  nsMap: NsMap
+): string[] {
+  // When the caller does not specify a namespace, infer it from the first matching
+  // candidate key so that only namespace-equivalent aliases of that same element are
+  // collected. Without this guard an unprefixed <item> and a foreign <ext:item> that
+  // share only the local name (but not the URI) would both be merged into the same
+  // field, producing incorrect results.
+  //
+  // A sentinel is used so that "effectiveNs resolved to undefined (no default namespace)"
+  // is distinguishable from "no candidate was found yet". This prevents the filter from
+  // treating an explicitly-no-namespace element as "match any namespace".
+  const NOT_FOUND = Symbol();
+  let effectiveNs: string | undefined | typeof NOT_FOUND = ns === undefined ? NOT_FOUND : ns;
+  if (ns === undefined) {
+    // Prefer the unprefixed key as the namespace anchor when it exists, so that
+    // <ext:item/><item/> binds to `item` (no-namespace) rather than `ext:item`.
+    let firstPrefixedCandidate: string | undefined | typeof NOT_FOUND = NOT_FOUND;
+    for (const key of Object.keys(node)) {
+      if (key.startsWith("@_") || key === "#text") continue;
+      const idx = key.indexOf(":");
+      const kLocal = idx >= 0 ? key.substring(idx + 1) : key;
+      if (kLocal !== local) continue;
+      if (idx < 0) {
+        // Exact unprefixed match — use it as anchor immediately.
+        effectiveNs = nsMap[""];
+        firstPrefixedCandidate = NOT_FOUND; // signal: no need to fall back
+        break;
+      }
+      if (firstPrefixedCandidate === NOT_FOUND) {
+        const prefix = key.substring(0, idx);
+        firstPrefixedCandidate = nsMap[prefix];
+      }
+    }
+    if (effectiveNs === NOT_FOUND && firstPrefixedCandidate !== NOT_FOUND) {
+      effectiveNs = firstPrefixedCandidate;
+    }
+  }
+
+  const result: string[] = [];
   for (const key of Object.keys(node)) {
     if (key.startsWith("@_") || key === "#text") continue;
     const idx = key.indexOf(":");
@@ -56,9 +125,9 @@ export function matchElementKey(
     if (kLocal !== local) continue;
     const prefix = idx >= 0 ? key.substring(0, idx) : "";
     const uri = prefix ? nsMap[prefix] : nsMap[""];
-    if (ns === undefined || uri === ns) return key;
+    if (effectiveNs === NOT_FOUND || uri === effectiveNs) result.push(key);
   }
-  return undefined;
+  return result;
 }
 
 /**
@@ -149,13 +218,14 @@ export function collectWildcardElements(
 ): any[] {
   const boundElemKeys = new Set<string>();
   for (const f of fields.filter((f) => f.kind === "element")) {
-    const k = matchElementKey(
+    for (const k of matchAllElementKeys(
       node,
       f.name || f.key,
       f.namespace ?? undefined,
       nsMap
-    );
-    if (k) boundElemKeys.add(k);
+    )) {
+      boundElemKeys.add(k);
+    }
   }
   const collected: any[] = [];
   for (const key of Object.keys(node)) {
