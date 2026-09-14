@@ -4,12 +4,12 @@ import {
   getChildrenByLocalName,
   getDocumentation,
   formatTsDoc,
-} from "./utils.ts";
-import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen.ts";
-import type { GeneratorState, GenUnit } from "./codegen.ts";
-import { sanitizeTypeName } from "./types.ts";
-import { buildXmlAttributeDecorator } from "./attribute-emission.ts";
-import { computeDecoratorType, needsAllowStringFallback } from "./decorator-type-helpers.ts";
+} from "./utils.js";
+import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen.js";
+import type { GeneratorState, GenUnit } from "./codegen.js";
+import { sanitizeTypeName } from "./types.js";
+import { buildXmlAttributeDecorator } from "./attribute-emission.js";
+import { computeDecoratorType, needsAllowStringFallback } from "./decorator-type-helpers.js";
 
 /**
  * Emits @XmlAttribute decorators and properties for all attributes in an XSD element.

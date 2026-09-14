@@ -1,5 +1,5 @@
-import { unmarshal, marshal } from "../src/marshalling/index.ts";
-import { XmlRoot, XmlElement } from "../src/decorators/index.ts";
+import { unmarshal, marshal } from "../src/marshalling/index.js";
+import { XmlRoot, XmlElement } from "../src/decorators/index.js";
 
 describe("XML Comments Preservation (Metadata Approach)", () => {
   test("should preserve XML comments in unmarshal/marshal roundtrip", () => {

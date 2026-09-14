@@ -1,2 +1,2 @@
-export * from "./marshal.ts";
-export * from "./unmarshal.ts";
+export * from "./marshal.js";
+export * from "./unmarshal.js";

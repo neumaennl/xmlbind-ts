@@ -1,8 +1,8 @@
-import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
+import { generateFromXsd } from "../src/xsd/TsGenerator.js";
 import { readFileSync, existsSync } from "fs";
 
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir.ts";
+import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator - Barrel Export", () => {
 
@@ -53,19 +53,19 @@ describe("XSD Generator - Barrel Export", () => {
       const indexContent = readFileSync(indexPath, "utf-8");
 
       // Verify exports for classes
-      expect(indexContent).toContain("export { Person } from './Person.ts';");
-      expect(indexContent).toContain("export { Address } from './Address.ts';");
+      expect(indexContent).toContain("export { Person } from './Person.js';");
+      expect(indexContent).toContain("export { Address } from './Address.js';");
       expect(indexContent).toContain(
-        "export { PersonElement } from './PersonElement.ts';"
+        "export { PersonElement } from './PersonElement.js';"
       );
       expect(indexContent).toContain(
-        "export { AddressElement } from './AddressElement.ts';"
+        "export { AddressElement } from './AddressElement.js';"
       );
 
       // Verify exports for enums/types from consolidated files
-      expect(indexContent).toContain("export { StatusEnum } from './enums.ts';");
+      expect(indexContent).toContain("export { StatusEnum } from './enums.js';");
       expect(indexContent).toContain(
-        "export type { CodeList } from './types.ts';"
+        "export type { CodeList } from './types.js';"
       );
 
       // Verify consolidated files exist
@@ -101,12 +101,12 @@ describe("XSD Generator - Barrel Export", () => {
       const indexContent = readFileSync(indexPath, "utf-8");
 
       // Verify both types are exported - type from consolidated file, class from individual file
-      expect(indexContent).toContain("export { notation } from './notation.ts';");
+      expect(indexContent).toContain("export { notation } from './notation.js';");
       expect(indexContent).toContain(
-        "export type { NOTATION } from './types.ts';"
+        "export type { NOTATION } from './types.js';"
       );
       expect(indexContent).toContain(
-        "export { notationElement } from './notationElement.ts';"
+        "export { notationElement } from './notationElement.js';"
       );
 
       // Verify the NOTATION type is in types.ts, not a separate file
@@ -149,10 +149,10 @@ describe("XSD Generator - Barrel Export", () => {
 
       // Type aliases should use 'export type' from consolidated types.ts
       expect(indexContent).toContain(
-        "export type { MyString } from './types.ts';"
+        "export type { MyString } from './types.js';"
       );
-      expect(indexContent).toContain("export type { MyUnion } from './types.ts';");
-      expect(indexContent).toContain("export type { MyList } from './types.ts';");
+      expect(indexContent).toContain("export type { MyUnion } from './types.js';");
+      expect(indexContent).toContain("export type { MyList } from './types.js';");
 
       // Verify types.ts contains all type aliases
       const typesPath = path.join(tmpDir, "types.ts");
@@ -163,9 +163,9 @@ describe("XSD Generator - Barrel Export", () => {
       expect(typesContent).toContain("export type MyList");
 
       // Classes should use regular 'export'
-      expect(indexContent).toContain("export { MyClass } from './MyClass.ts';");
+      expect(indexContent).toContain("export { MyClass } from './MyClass.js';");
       expect(indexContent).toContain(
-        "export { MyClassElement } from './MyClassElement.ts';"
+        "export { MyClassElement } from './MyClassElement.js';"
       );
     });
   });

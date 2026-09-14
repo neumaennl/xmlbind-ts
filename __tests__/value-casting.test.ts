@@ -1,4 +1,4 @@
-import { castValue, serializePrimitive } from "../src/util/valueCasting.ts";
+import { castValue, serializePrimitive } from "../src/util/valueCasting.js";
 
 enum TestEnum {
   ValueOne = "one",

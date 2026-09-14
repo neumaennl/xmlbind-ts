@@ -1,7 +1,7 @@
 import path from "path";
 import { mkdirSync, writeFileSync } from "fs";
 import { pathToFileURL } from "url";
-import { generateFromXsd } from "../../src/xsd/TsGenerator.ts";
+import { generateFromXsd } from "../../src/xsd/TsGenerator.js";
 
 /**
  * Generates .ts files from provided XSD strings into outDir,

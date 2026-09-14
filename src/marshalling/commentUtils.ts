@@ -2,7 +2,7 @@
  * Utilities for preserving XML comments during unmarshal/marshal roundtrip
  */
 
-import { getLocalName } from "./elementOrderUtils.ts";
+import { getLocalName } from "./elementOrderUtils.js";
 
 /**
  * Finds element data in an item by matching either exact name or local name (for namespaced elements).

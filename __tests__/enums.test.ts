@@ -4,13 +4,13 @@ import {
   XmlAttribute,
   XmlText,
   XmlEnum,
-} from "../src/decorators/index.ts";
-import { marshal, unmarshal } from "../src/marshalling/index.ts";
-import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
+} from "../src/decorators/index.js";
+import { marshal, unmarshal } from "../src/marshalling/index.js";
+import { generateFromXsd } from "../src/xsd/TsGenerator.js";
 import { readFileSync } from "fs";
 
 import path from "path";
-import { withTmpDir, expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils/index.ts";
+import { withTmpDir, expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils/index.js";
 
 // Define test enums
 enum StatusEnum {
@@ -308,7 +308,7 @@ describe("Enums", () => {
         const productFile = path.join(tmp, "Product.ts");
         const productContent = readFileSync(productFile, "utf8");
         expect(productContent).toContain(
-          "import { ColorType } from './enums.ts';"
+          "import { ColorType } from './enums.js';"
         );
         // Enum-backed types do not emit a type hint — the string value passes through unchanged.
         expect(productContent).not.toContain("type: () => ColorType");
@@ -352,7 +352,7 @@ describe("Enums", () => {
 
         const orderFile = path.join(tmp, "Order.ts");
         const orderContent = readFileSync(orderFile, "utf8");
-        expect(orderContent).toContain("import { statusEnum } from './enums.ts';");
+        expect(orderContent).toContain("import { statusEnum } from './enums.js';");
         expect(orderContent).toMatch(/status!?:\s*statusEnum;/);
       });
     });
@@ -381,7 +381,7 @@ describe("Enums", () => {
 
         const sizeFile = path.join(tmp, "Size.ts");
         const sizeContent = readFileSync(sizeFile, "utf8");
-        expect(sizeContent).toContain("import { SizeType } from './enums.ts';");
+        expect(sizeContent).toContain("import { SizeType } from './enums.js';");
         expect(sizeContent).toMatch(/@XmlRoot\('Size'/);
         expect(sizeContent).toContain("@XmlText()");
         expect(sizeContent).toMatch(/value\?:\s*SizeType;/);
@@ -418,7 +418,7 @@ describe("Enums", () => {
         const priorityFile = path.join(tmp, "Priority.ts");
         const priorityContent = readFileSync(priorityFile, "utf8");
         expect(priorityContent).toContain(
-          "import { PriorityEnum } from './enums.ts';"
+          "import { PriorityEnum } from './enums.js';"
         );
         expect(priorityContent).toMatch(/@XmlRoot\('Priority'/);
         expect(priorityContent).toMatch(/value\?:\s*PriorityEnum;/);
@@ -476,7 +476,7 @@ describe("Enums", () => {
         const taskFile = path.join(tmp, "Task.ts");
         const taskContent = readFileSync(taskFile, "utf8");
 
-        expect(taskContent).toContain("import { TagType } from './enums.ts';");
+        expect(taskContent).toContain("import { TagType } from './enums.js';");
         // Enum-backed types do not emit a type hint — the string value passes through unchanged.
         expect(taskContent).not.toContain("type: () => TagType");
         expect(taskContent).toMatch(

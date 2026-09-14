@@ -1,4 +1,4 @@
-import { ClassMeta, Constructor, FieldMeta } from "../types.ts";
+import { ClassMeta, Constructor, FieldMeta } from "../types.js";
 
 const GLOBAL_META_KEY = Symbol.for("@neumaennl/xmlbind-ts/META");
 const META: WeakMap<Constructor, ClassMeta> =

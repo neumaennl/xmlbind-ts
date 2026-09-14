@@ -2,8 +2,8 @@
  * Namespace and wildcard attribute/element helpers for unmarshalling
  */
 
-import { isNamespaceDeclaration } from "../util/namespaceUtils.ts";
-import { ParsedXmlNode } from "./types.ts";
+import { isNamespaceDeclaration } from "../util/namespaceUtils.js";
+import { ParsedXmlNode } from "./types.js";
 
 export type NsMap = { [prefix: string]: string };
 

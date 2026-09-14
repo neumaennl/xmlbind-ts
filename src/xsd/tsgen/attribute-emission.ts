@@ -1,9 +1,9 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName } from "./utils.ts";
-import { sanitizeTypeName } from "./types.ts";
-import type { GeneratorState, GenUnit } from "./codegen.ts";
-import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen.ts";
-import { computeDecoratorType, needsAllowStringFallback } from "./decorator-type-helpers.ts";
+import { localName } from "./utils.js";
+import { sanitizeTypeName } from "./types.js";
+import type { GeneratorState, GenUnit } from "./codegen.js";
+import { resolveType, toPropertyName, attributeNamespaceFor } from "./codegen.js";
+import { computeDecoratorType, needsAllowStringFallback } from "./decorator-type-helpers.js";
 
 /**
  * Builds the `@XmlAttribute(...)` decorator line for code generation.

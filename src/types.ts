@@ -28,7 +28,7 @@ export interface FieldMeta {
   type?: any;
   /** Whether this field represents an array of elements */
   isArray?: boolean;
-  /** The XML namespace URI for this field */
+  /** The XML namespace URI for the element */
   namespace?: string | null;
   /** Whether the element can be explicitly null (xsi:nil) */
   nillable?: boolean;

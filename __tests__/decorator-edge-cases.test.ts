@@ -1,11 +1,11 @@
-import { XmlAnyAttribute } from "../src/decorators/XmlAnyAttribute.ts";
-import { XmlAnyElement } from "../src/decorators/XmlAnyElement.ts";
-import { XmlAttribute } from "../src/decorators/XmlAttribute.ts";
-import { XmlElement } from "../src/decorators/XmlElement.ts";
-import { XmlEnum } from "../src/decorators/XmlEnum.ts";
-import { XmlRoot } from "../src/decorators/XmlRoot.ts";
-import { XmlText } from "../src/decorators/XmlText.ts";
-import { getMeta } from "../src/metadata/MetadataRegistry.ts";
+import { XmlAnyAttribute } from "../src/decorators/XmlAnyAttribute.js";
+import { XmlAnyElement } from "../src/decorators/XmlAnyElement.js";
+import { XmlAttribute } from "../src/decorators/XmlAttribute.js";
+import { XmlElement } from "../src/decorators/XmlElement.js";
+import { XmlEnum } from "../src/decorators/XmlEnum.js";
+import { XmlRoot } from "../src/decorators/XmlRoot.js";
+import { XmlText } from "../src/decorators/XmlText.js";
+import { getMeta } from "../src/metadata/MetadataRegistry.js";
 
 enum TestEnum {
   One = "one",

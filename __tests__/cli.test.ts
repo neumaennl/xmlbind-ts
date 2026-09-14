@@ -24,7 +24,7 @@ vi.mock("../src/xsd/fileCleanup", () => ({
 }));
 
 // Import after mocking
-import { cliAction, type CliOptions } from "../src/xsd/cli.ts";
+import { cliAction, type CliOptions } from "../src/xsd/cli.js";
 
 const SAMPLE_XSD = `<?xml version="1.0" encoding="utf-8"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">

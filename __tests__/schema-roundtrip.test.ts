@@ -1,13 +1,13 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { DOMParser } from "@xmldom/xmldom";
-import { withTmpDir } from "./test-utils/temp-dir.ts";
+import { withTmpDir } from "./test-utils/temp-dir.js";
 import {
   setupGeneratedRuntime,
   loadGeneratedClasses,
-} from "./test-utils/generated-runtime.ts";
-import { unmarshal } from "../src/marshalling/unmarshal.ts";
-import { marshal } from "../src/marshalling/marshal.ts";
+} from "./test-utils/generated-runtime.js";
+import { unmarshal } from "../src/marshalling/unmarshal.js";
+import { marshal } from "../src/marshalling/marshal.js";
 
 /**
  * Removes DOCTYPE declaration from XML content.

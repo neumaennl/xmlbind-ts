@@ -4,12 +4,12 @@ import {
   getChildByLocalName,
   getDocumentation,
   formatTsDoc,
-} from "./utils.ts";
-import { typeMapping, sanitizeTypeName, isBuiltinType } from "./types.ts";
-import { extractEnumValues, generateEnumCode } from "./enum.ts";
-import { toClassName } from "./codegen.ts";
-import { ensureClassNoRoot, injectNamespacePrefixesField } from "./classgen.ts";
-import type { GeneratorState, GenUnit } from "./codegen.ts";
+} from "./utils.js";
+import { typeMapping, sanitizeTypeName, isBuiltinType } from "./types.js";
+import { extractEnumValues, generateEnumCode } from "./enum.js";
+import { toClassName } from "./codegen.js";
+import { ensureClassNoRoot, injectNamespacePrefixesField } from "./classgen.js";
+import type { GeneratorState, GenUnit } from "./codegen.js";
 
 /**
  * Processes all top-level element declarations in the schema.

@@ -6,8 +6,8 @@ import {
   XmlAnyAttribute,
   marshal,
   unmarshal,
-} from "../src/index.ts";
-import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils/index.ts";
+} from "../src/index.js";
+import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils/index.js";
 
 @XmlRoot("Person", { namespace: "http://example.com/ns" })
 class Person {

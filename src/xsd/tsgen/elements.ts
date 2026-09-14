@@ -1,13 +1,13 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getChildrenByLocalName, getDocumentation } from "./utils.ts";
-import { elementNamespaceFor } from "./codegen.ts";
-import type { GeneratorState, GenUnit } from "./codegen.ts";
-import { emitElementRef } from "./element-refs.ts";
+import { localName, getChildrenByLocalName, getDocumentation } from "./utils.js";
+import { elementNamespaceFor } from "./codegen.js";
+import type { GeneratorState, GenUnit } from "./codegen.js";
+import { emitElementRef } from "./element-refs.js";
 import {
   resolveElementType,
   handleInlineType,
   emitElementDecorator,
-} from "./element-types.ts";
+} from "./element-types.js";
 
 /**
  * Determines if a maxOccurs attribute value indicates an array.

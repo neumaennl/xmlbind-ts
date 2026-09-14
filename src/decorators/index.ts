@@ -1,7 +1,7 @@
-export { XmlRoot } from "./XmlRoot.ts";
-export { XmlElement } from "./XmlElement.ts";
-export { XmlAttribute } from "./XmlAttribute.ts";
-export { XmlText } from "./XmlText.ts";
-export { XmlEnum } from "./XmlEnum.ts";
-export { XmlAnyElement } from "./XmlAnyElement.ts";
-export { XmlAnyAttribute } from "./XmlAnyAttribute.ts";
+export { XmlRoot } from "./XmlRoot.js";
+export { XmlElement } from "./XmlElement.js";
+export { XmlAttribute } from "./XmlAttribute.js";
+export { XmlText } from "./XmlText.js";
+export { XmlEnum } from "./XmlEnum.js";
+export { XmlAnyElement } from "./XmlAnyElement.js";
+export { XmlAnyAttribute } from "./XmlAnyAttribute.js";

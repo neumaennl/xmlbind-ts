@@ -1,9 +1,9 @@
 import { readFileSync, readdirSync, writeFileSync } from "fs";
 
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir.ts";
+import { withTmpDir } from "./test-utils/temp-dir.js";
 import { execSync } from "child_process";
-import { setupGeneratedRuntime } from "./test-utils/generated-runtime.ts";
+import { setupGeneratedRuntime } from "./test-utils/generated-runtime.js";
 
 describe("XSD Generator - XML Schema XSD", () => {
   test("generates TypeScript classes from XML Schema XSD and verifies compilation", () => {

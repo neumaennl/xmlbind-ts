@@ -1,4 +1,4 @@
-import { parseXsd, getSchemaRoot, getXsdPrefix } from "../src/xsd/XsdParser.ts";
+import { parseXsd, getSchemaRoot, getXsdPrefix } from "../src/xsd/XsdParser.js";
 
 describe("XsdParser", () => {
   describe("parseXsd", () => {

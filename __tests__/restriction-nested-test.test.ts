@@ -1,5 +1,5 @@
-import { unmarshal, marshal } from "../src/marshalling/index.ts";
-import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.ts";
+import { unmarshal, marshal } from "../src/marshalling/index.js";
+import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.js";
 
 describe("Restriction with Nested ComplexContent", () => {
   test("should preserve order in complexContent > restriction > sequence/attributes", () => {

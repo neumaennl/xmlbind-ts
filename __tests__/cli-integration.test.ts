@@ -1,16 +1,10 @@
 /**
  * Integration tests for the CLI tool (xsd2ts).
  *
- * These tests run the CLI as a subprocess via ts-node, which provides
- * end-to-end testing but doesn't contribute to code coverage metrics.
- * The CLI is a thin wrapper that orchestrates fileCleanup and generateFromXsd,
- * both of which have dedicated unit tests with high coverage.
- *
- * Coverage for the CLI module's core logic is provided by:
- * - file-cleanup.test.ts: Tests fileCleanup.ts (100% statement coverage)
- * - xsd-generator*.test.ts: Tests generateFromXsd and related functions
+ * This test installs the packed package into a temporary consumer project and
+ * invokes its xsd2ts binary. Unit tests cover CLI behavior separately.
  */
-import { execSync } from "child_process";
+import { execFileSync, spawnSync } from "child_process";
 import {
   writeFileSync,
   readFileSync,
@@ -34,7 +28,32 @@ const SAMPLE_XSD = `<?xml version="1.0" encoding="utf-8"?>
   </xsd:complexType>
 </xsd:schema>`;
 
-describe("CLI tool (xsd2ts)", () => {
+function installPackedPackage(tmpDir: string): string {
+  const packageRoot = process.cwd();
+  const consumerDir = path.join(tmpDir, "consumer");
+  const [packResult] = JSON.parse(
+    execFileSync("npm", ["pack", "--json", "--pack-destination", tmpDir], {
+      cwd: packageRoot,
+      encoding: "utf8",
+    })
+  );
+  const packageTarball = path.join(tmpDir, packResult.filename);
+
+  mkdirSync(consumerDir);
+  writeFileSync(
+    path.join(consumerDir, "package.json"),
+    JSON.stringify({ private: true }, null, 2),
+    "utf8"
+  );
+  execFileSync("npm", ["install", "--ignore-scripts", packageTarball], {
+    cwd: consumerDir,
+    encoding: "utf8",
+  });
+
+  return consumerDir;
+}
+
+describe("packaged xsd2ts CLI", () => {
   let tmpDir: string;
   let xsdFile: string;
 
@@ -52,25 +71,15 @@ describe("CLI tool (xsd2ts)", () => {
     }
   });
 
-  test("CLI generates TypeScript file from XSD", () => {
-    const outDir = path.join(tmpDir, "output");
+  test("generates classes that type-check in an ESM consumer", () => {
+    const consumerDir = installPackedPackage(tmpDir);
+    const outDir = path.join(consumerDir, "output");
 
-    // Run the CLI tool using ts-node with --no-delete to skip interactive prompt
-    const command = `node --loader ts-node/esm src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --no-delete`;
-
-    try {
-      execSync(command, {
-        cwd: path.resolve(__dirname, ".."),
-        encoding: "utf8",
-        stdio: "pipe",
-      });
-    } catch (error: any) {
-      // If the command fails, log the error for debugging
-      console.error("CLI execution failed:", error.message);
-      if (error.stdout) console.error("stdout:", error.stdout);
-      if (error.stderr) console.error("stderr:", error.stderr);
-      throw error;
-    }
+    execFileSync(
+      path.join(consumerDir, "node_modules", ".bin", "xsd2ts"),
+      ["--input", xsdFile, "--out", outDir],
+      { cwd: consumerDir, encoding: "utf8" }
+    );
 
     // Verify the output file exists
     const outputFile = path.join(outDir, "Book.ts");
@@ -88,103 +97,90 @@ describe("CLI tool (xsd2ts)", () => {
     expect(generatedContent).toContain("@XmlRoot");
     expect(generatedContent).toContain("@XmlElement");
     expect(generatedContent).toContain("@XmlAttribute");
-  });
 
-  test("CLI requires input and output options", () => {
-    // Test that the CLI fails without required options
-    const command = `node --loader ts-node/esm src/xsd/cli.ts`;
-
-    expect(() => {
-      execSync(command, {
-        cwd: path.resolve(__dirname, ".."),
-        encoding: "utf8",
-        stdio: "pipe",
-      });
-    }).toThrow();
-  });
-
-  test("CLI fails gracefully with non-existent input file", () => {
-    const outDir = path.join(tmpDir, "output");
-    const nonExistentFile = path.join(tmpDir, "does-not-exist.xsd");
-    const command = `node --loader ts-node/esm src/xsd/cli.ts -i "${nonExistentFile}" -o "${outDir}" --no-delete`;
-
-    expect(() => {
-      execSync(command, {
-        cwd: path.resolve(__dirname, ".."),
-        encoding: "utf8",
-        stdio: "pipe",
-      });
-    }).toThrow();
-  });
-
-  test("CLI with --no-delete skips file deletion", () => {
-    const outDir = path.join(tmpDir, "output");
-    mkdirSync(outDir, { recursive: true });
-    writeFileSync(path.join(outDir, "existing.ts"), "// existing file", "utf8");
-
-    const command = `node --loader ts-node/esm src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --no-delete`;
-
-    execSync(command, {
-      cwd: path.resolve(__dirname, ".."),
-      encoding: "utf8",
-      stdio: "pipe",
-    });
-
-    // Verify both files exist
-    expect(existsSync(path.join(outDir, "existing.ts"))).toBe(true);
-    expect(existsSync(path.join(outDir, "Book.ts"))).toBe(true);
-  });
-
-  test("CLI with --force deletes existing files without prompting", () => {
-    const outDir = path.join(tmpDir, "output");
-    mkdirSync(outDir, { recursive: true });
-
-    // Create existing TypeScript files
     writeFileSync(
-      path.join(outDir, "existing1.ts"),
-      "// existing file 1",
+      path.join(consumerDir, "tsconfig.json"),
+      JSON.stringify(
+        {
+          compilerOptions: {
+            target: "ES2022",
+            module: "NodeNext",
+            moduleResolution: "NodeNext",
+            noEmit: true,
+          },
+          include: ["output"],
+        },
+        null,
+        2
+      ),
       "utf8"
     );
+    execFileSync(
+      path.join(process.cwd(), "node_modules", ".bin", "tsc"),
+      ["--project", "tsconfig.json"],
+      { cwd: consumerDir, encoding: "utf8" }
+    );
+  }, 30000);
+
+  test("generates classes that compile and round-trip XML in a CommonJS consumer", () => {
+    const consumerDir = installPackedPackage(tmpDir);
+    const outDir = path.join(consumerDir, "generated");
+
+    execFileSync(
+      path.join(consumerDir, "node_modules", ".bin", "xsd2ts"),
+      ["--input", xsdFile, "--out", outDir],
+      { cwd: consumerDir, encoding: "utf8" }
+    );
     writeFileSync(
-      path.join(outDir, "existing2.ts"),
-      "// existing file 2",
+      path.join(consumerDir, "tsconfig.json"),
+      JSON.stringify(
+        {
+          compilerOptions: {
+            target: "ES2022",
+            module: "CommonJS",
+            moduleResolution: "Node",
+            outDir: "compiled",
+            experimentalDecorators: true,
+            emitDecoratorMetadata: true,
+            esModuleInterop: true,
+            skipLibCheck: true,
+            types: [],
+          },
+          include: ["generated"],
+        },
+        null,
+        2
+      ),
       "utf8"
     );
+    execFileSync(
+      path.join(process.cwd(), "node_modules", ".bin", "tsc"),
+      ["--project", "tsconfig.json"],
+      { cwd: consumerDir, encoding: "utf8" }
+    );
+    const output = execFileSync(
+      "node",
+      [
+        "-e",
+        "const { Book } = require('./compiled/Book.js'); " +
+          "const { marshal, unmarshal } = require('@neumaennl/xmlbind-ts'); " +
+          "const book = new Book(); book.title = 'The Hobbit'; " +
+          "const xml = marshal(book); " +
+          "if (unmarshal(Book, xml).title !== 'The Hobbit') process.exit(1);",
+      ],
+      { cwd: consumerDir, encoding: "utf8" }
+    );
 
-    const command = `node --loader ts-node/esm src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --force`;
+    expect(output).toBe("");
+  }, 30000);
 
-    const output = execSync(command, {
-      cwd: path.resolve(__dirname, ".."),
-      encoding: "utf8",
-      stdio: "pipe",
-    });
+  test("reports missing required options", () => {
+    const consumerDir = installPackedPackage(tmpDir);
+    const cliPath = path.join(consumerDir, "node_modules", ".bin", "xsd2ts");
 
-    // Verify output mentions file deletion
-    expect(output).toContain("Deleted");
+    const result = spawnSync(cliPath, [], { cwd: consumerDir, encoding: "utf8" });
 
-    // Verify old files are gone
-    expect(existsSync(path.join(outDir, "existing1.ts"))).toBe(false);
-    expect(existsSync(path.join(outDir, "existing2.ts"))).toBe(false);
-
-    // Verify new files were generated
-    expect(existsSync(path.join(outDir, "Book.ts"))).toBe(true);
-  });
-
-  test("CLI with --force and --no-delete uses --no-delete (no deletion)", () => {
-    const outDir = path.join(tmpDir, "output");
-    mkdirSync(outDir, { recursive: true });
-    writeFileSync(path.join(outDir, "existing.ts"), "// existing file", "utf8");
-
-    const command = `node --loader ts-node/esm src/xsd/cli.ts -i "${xsdFile}" -o "${outDir}" --force --no-delete`;
-
-    execSync(command, {
-      cwd: path.resolve(__dirname, ".."),
-      encoding: "utf8",
-      stdio: "pipe",
-    });
-
-    // Verify existing file still exists (--no-delete takes precedence)
-    expect(existsSync(path.join(outDir, "existing.ts"))).toBe(true);
-    expect(existsSync(path.join(outDir, "Book.ts"))).toBe(true);
-  });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("required option '-i, --input <file>' not specified");
+  }, 30000);
 });

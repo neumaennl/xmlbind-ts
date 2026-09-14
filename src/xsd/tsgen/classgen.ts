@@ -4,16 +4,16 @@ import {
   getChildByLocalName,
   getDocumentation,
   formatTsDoc,
-} from "./utils.ts";
-import { isBuiltinType, typeMapping } from "./types.ts";
-import { emitAttrs } from "./attributes.ts";
-import { emitElements } from "./elements.ts";
-import type { GeneratorState, GenUnit } from "./codegen.ts";
+} from "./utils.js";
+import { isBuiltinType, typeMapping } from "./types.js";
+import { emitAttrs } from "./attributes.js";
+import { emitElements } from "./elements.js";
+import type { GeneratorState, GenUnit } from "./codegen.js";
 import {
   collectExcludedAttributesInRestrictionChain,
   emitAttrsExcludingProhibited,
-} from "./restriction-helpers.ts";
-import { emitBaseAttributes } from "./base-attribute-helpers.ts";
+} from "./restriction-helpers.js";
+import { emitBaseAttributes } from "./base-attribute-helpers.js";
 
 /**
  * Ensures a class is generated for a given XSD element, creating it if it doesn't exist.

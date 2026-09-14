@@ -3,15 +3,15 @@ import {
   getMeta,
   ensureMeta,
   getAllFields,
-} from "../metadata/MetadataRegistry.ts";
-import { castValue } from "../util/valueCasting.ts";
-import { resolveType } from "../util/typeResolution.ts";
+} from "../metadata/MetadataRegistry.js";
+import { castValue } from "../util/valueCasting.js";
+import { resolveType } from "../util/typeResolution.js";
 import {
   ParsedXmlNode,
   ParsedXmlValue,
   isParsedXmlNode,
   isPrimitiveCtor,
-} from "./types.ts";
+} from "./types.js";
 import {
   collectNs,
   matchAllElementKeys,
@@ -19,18 +19,18 @@ import {
   collectWildcardAttributes,
   collectWildcardElements,
   type NsMap,
-} from "./namespaceHelpers.ts";
+} from "./namespaceHelpers.js";
 import {
   extractCommentsFromPreserveOrder,
   extractNestedComments,
   extractDocumentLevelComments,
-} from "./commentUtils.ts";
+} from "./commentUtils.js";
 import {
   getLocalName,
   extractElementOrderFromPreserveOrder,
   extractNestedElementOrder,
   mergeElementsByDocumentOrder,
-} from "./elementOrderUtils.ts";
+} from "./elementOrderUtils.js";
 
 // Main parser for data
 const parser = new XMLParser({

@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import { ensureMeta } from "../metadata/MetadataRegistry.ts";
-import { resolveType } from "../util/typeResolution.ts";
+import { ensureMeta } from "../metadata/MetadataRegistry.js";
+import { resolveType } from "../util/typeResolution.js";
 
 /**
  * Resolves the type for an element field: the explicit `options.type` takes

@@ -2,8 +2,8 @@
 
 import { program } from "commander";
 import { readFileSync } from "fs";
-import { generateFromXsd } from "./TsGenerator.ts";
-import { cleanupGeneratedFiles } from "./fileCleanup.ts";
+import { generateFromXsd } from "./TsGenerator.js";
+import { cleanupGeneratedFiles } from "./fileCleanup.js";
 
 /**
  * Options interface for the CLI action handler.
@@ -67,7 +67,7 @@ program
 // Only parse arguments if this file is being run directly (not imported)
 const isDirectExecution =
   process.argv[1] !== undefined &&
-  /(?:^|[\\/])cli(?:\.[mc]?js|\.ts)?$/.test(process.argv[1]);
+  /(?:^|[\\/])(?:cli(?:\.[mc]?js|\.ts)?|xsd2ts)$/.test(process.argv[1]);
 
 if (isDirectExecution) {
   program.parse(process.argv);
