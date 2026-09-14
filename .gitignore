@@ -40,9 +40,10 @@ pids/
 # Linux swap
 *~
 
-# Jest
+# Vitest
 /coverage/
-/jest.*.cache
+/.vitest/
+/*.cache
 
 # TypeScript
 *.tsbuildinfo

@@ -96,13 +96,13 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
       path.join(tmpDir, "Department.ts"),
       path.join(tmpDir, "Company.ts"),
     ];
-    /* eslint-disable jest/no-standalone-expect -- Expects in beforeAll are needed to validate file generation during test setup */
+    /* eslint-disable vitest/no-standalone-expect -- Expects in beforeAll are needed to validate file generation during test setup */
     expectedFiles.forEach((f) => {
       expect(existsSync(f)).toBe(true);
     });
-    /* eslint-enable jest/no-standalone-expect */
+    /* eslint-enable vitest/no-standalone-expect */
 
-    const loaded = loadGeneratedClasses(tmpDir, [
+    const loaded = await loadGeneratedClasses(tmpDir, [
       "Address",
       "Person",
       "Email",
@@ -299,7 +299,7 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
       expect(restored.companyName).toBe("RoundTrip Co");
 
       // departments may not be restored as array if it's a single element
-      /* eslint-disable jest/no-conditional-expect -- Conditional expects needed to handle both array and non-array unmarshalling behavior */
+      /* eslint-disable vitest/no-conditional-expect -- Conditional expects needed to handle both array and non-array unmarshalling behavior */
       if (Array.isArray(restored.departments)) {
         expect(restored.departments.length).toBe(1);
         const restoredDept = restored.departments[0];
@@ -317,7 +317,7 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
         expect(restoredDept.contactEmail.address).toBe("it@roundtrip.com");
         expect(restoredDept.contactEmail.isPrimary).toBe(true);
       }
-      /* eslint-enable jest/no-conditional-expect */
+      /* eslint-enable vitest/no-conditional-expect */
     });
   });
 });

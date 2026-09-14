@@ -7,16 +7,19 @@
 import { writeFileSync, mkdtempSync, mkdirSync, rmSync } from "fs";
 import os from "os";
 import path from "path";
+import { vi, describe, beforeEach, afterEach, test, expect } from "vitest";
 
 // Mock the dependencies before importing
-const mockGenerateFromXsd = jest.fn();
-const mockCleanupGeneratedFiles = jest.fn();
+const { mockGenerateFromXsd, mockCleanupGeneratedFiles } = vi.hoisted(() => ({
+  mockGenerateFromXsd: vi.fn(),
+  mockCleanupGeneratedFiles: vi.fn(),
+}));
 
-jest.mock("../src/xsd/TsGenerator", () => ({
+vi.mock("../src/xsd/TsGenerator", () => ({
   generateFromXsd: mockGenerateFromXsd,
 }));
 
-jest.mock("../src/xsd/fileCleanup", () => ({
+vi.mock("../src/xsd/fileCleanup", () => ({
   cleanupGeneratedFiles: mockCleanupGeneratedFiles,
 }));
 
@@ -44,7 +47,7 @@ describe("CLI module (unit tests)", () => {
     writeFileSync(xsdFile, SAMPLE_XSD, "utf8");
 
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockGenerateFromXsd.mockImplementation(() => {});
     mockCleanupGeneratedFiles.mockResolvedValue(true);
 
@@ -53,7 +56,7 @@ describe("CLI module (unit tests)", () => {
     exitCode = undefined;
 
     // Mock process.exit to capture exit code
-    process.exit = jest.fn((code?: number) => {
+    process.exit = vi.fn((code?: number) => {
       exitCode = code;
       throw new Error(`process.exit(${code})`);
     }) as any;

@@ -1,6 +1,9 @@
 import { ClassMeta, Constructor, FieldMeta } from "../types.ts";
 
-const META = new WeakMap<Constructor, ClassMeta>();
+const GLOBAL_META_KEY = Symbol.for("@neumaennl/xmlbind-ts/META");
+const META: WeakMap<Constructor, ClassMeta> =
+  (globalThis as any)[GLOBAL_META_KEY] ||
+  ((globalThis as any)[GLOBAL_META_KEY] = new WeakMap<Constructor, ClassMeta>());
 
 /**
  * Ensures that metadata exists for a class constructor, creating it if necessary.

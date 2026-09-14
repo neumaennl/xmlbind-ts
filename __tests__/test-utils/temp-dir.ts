@@ -8,13 +8,13 @@ import { tmpdir } from "os";
  * @param callback - Function to run with the temporary directory path
  * @param prefix - Optional prefix for the temp directory name (default: "xmlbind-test-")
  */
-export function withTmpDir(
-  callback: (dir: string) => void,
+export async function withTmpDir(
+  callback: (dir: string) => void | Promise<void>,
   prefix: string = "xmlbind-test-"
-): void {
+): Promise<void> {
   const tmpDir = mkdtempSync(join(tmpdir(), prefix));
   try {
-    callback(tmpDir);
+    await callback(tmpDir);
   } finally {
     try {
       rmSync(tmpDir, { recursive: true, force: true });
