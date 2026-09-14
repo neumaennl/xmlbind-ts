@@ -1,5 +1,4 @@
 import { defineConfig } from "vitest/config";
-import typescript from "@rollup/plugin-typescript";
 import ts from "typescript";
 
 export default defineConfig({
@@ -8,27 +7,26 @@ export default defineConfig({
   },
   plugins: [
     {
-      name: "transpile-tmp-ts",
+      name: "typescript-transpile",
       transform(code, id) {
-        if (id.includes("/tmp/") && id.endsWith(".ts")) {
+        if (id.endsWith(".ts") || id.endsWith(".tsx") || id.endsWith(".mts")) {
           const result = ts.transpileModule(code, {
             compilerOptions: {
               target: ts.ScriptTarget.ES2022,
               module: ts.ModuleKind.ESNext,
               experimentalDecorators: true,
               emitDecoratorMetadata: true,
+              sourceMap: true,
             },
+            fileName: id,
           });
-          return { code: result.outputText, map: null };
+          return {
+            code: result.outputText,
+            map: result.sourceMapText ? JSON.parse(result.sourceMapText) : null,
+          };
         }
       },
     },
-    typescript({
-      tsconfig: "./tsconfig.test.json",
-      compilerOptions: {
-        rewriteRelativeImportExtensions: false,
-      },
-    }),
   ],
   test: {
     environment: "node",
@@ -42,6 +40,7 @@ export default defineConfig({
         "junit",
         {
           outputFile: "test-results/vitest-junit.xml",
+          suiteNameTemplate: "{title}",
           classnameTemplate: "{basename}",
           titleTemplate: "{title}",
         },
@@ -55,6 +54,7 @@ export default defineConfig({
     ],
     coverage: {
       provider: "v8",
+      include: ["src/**"],
       reporter: ["json-summary", "text", "lcov"],
     },
   },
