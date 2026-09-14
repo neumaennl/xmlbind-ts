@@ -12,9 +12,9 @@
 import { mkdtempSync, rmSync, readFileSync, readdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
-import { unmarshal } from "../src/index.ts";
-import { resolveType } from "../src/util/typeResolution.ts";
+import { generateFromXsd } from "../src/xsd/TsGenerator.js";
+import { unmarshal } from "../src/index.js";
+import { resolveType } from "../src/util/typeResolution.js";
 
 describe("Circular Dependencies Unmarshalling Fix", () => {
   let tmpDir: string;
@@ -41,7 +41,7 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
         let content = readFileSync(filePath, "utf-8");
         content = content.replace(
           "from '@neumaennl/xmlbind-ts'",
-          `from '${join(__dirname, "..", "src")}'`
+          `from '${join(__dirname, "..", "src", "index.ts")}'`
         );
         writeFileSync(filePath, content);
       }
@@ -90,7 +90,7 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     generateAndFixImports(XSD);
 
     // Dynamically import the generated schema class
-    const { schema } = await import(join(tmpDir, "schema"));
+    const { schema } = await import(join(tmpDir, "schema.ts"));
 
     // Test XML with nested structures
     const testXml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -247,8 +247,8 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     expect(explicitGroupFile).toMatch(/@XmlElement\('sequence',\s*\{[^}]*type:\s*\(\)\s*=>\s*explicitGroup/);
 
     // Import and verify the types are properly resolved at runtime
-    const { explicitGroup } = await import(join(tmpDir, "explicitGroup"));
-    const { localElement } = await import(join(tmpDir, "localElement"));
+    const { explicitGroup } = await import(join(tmpDir, "explicitGroup.ts"));
+    const { localElement } = await import(join(tmpDir, "localElement.ts"));
 
     // Both types should be properly defined
     expect(explicitGroup).toBeDefined();
@@ -268,7 +268,7 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     generateAndFixImports(xmlSchemaXsd);
 
     // Import the generated schema class
-    const { schema } = await import(join(tmpDir, "schema"));
+    const { schema } = await import(join(tmpDir, "schema.ts"));
 
     // Read and unmarshal example.xsd
     const exampleXsd = readFileSync(
@@ -326,7 +326,7 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     generateAndFixImports(xmlSchemaXsd);
 
     // Import the generated schema class
-    const { schema } = await import(join(tmpDir, "schema"));
+    const { schema } = await import(join(tmpDir, "schema.ts"));
 
     // An XML schema document that has a complexType with a nested xs:choice inside xs:sequence.
     // When deserialized, ct.sequence should be an explicitGroup and ct.sequence.choice
@@ -378,7 +378,7 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     generateAndFixImports(xmlSchemaXsd);
 
     // Import the generated schema class
-    const { schema } = await import(join(tmpDir, "schema"));
+    const { schema } = await import(join(tmpDir, "schema.ts"));
 
     // Read and unmarshal example.xsd
     const exampleXsd = readFileSync(

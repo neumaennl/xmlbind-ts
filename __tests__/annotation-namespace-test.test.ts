@@ -1,5 +1,5 @@
-import { unmarshal, marshal } from "../src/marshalling/index.ts";
-import { XmlRoot, XmlElement } from "../src/decorators/index.ts";
+import { unmarshal, marshal } from "../src/marshalling/index.js";
+import { XmlRoot, XmlElement } from "../src/decorators/index.js";
 
 describe("Annotation with Namespace Order", () => {
   test("should preserve order with namespaced elements", () => {

@@ -1,2 +1,2 @@
-export * from "./valueCasting.ts";
-export * from "./typeResolution.ts";
+export * from "./valueCasting.js";
+export * from "./typeResolution.js";

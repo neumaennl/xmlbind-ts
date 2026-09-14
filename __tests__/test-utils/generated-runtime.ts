@@ -1,20 +1,13 @@
 import path from "path";
 import { mkdirSync, writeFileSync } from "fs";
-import { generateFromXsd } from "../../src/xsd/TsGenerator.ts";
-
-let tsNodeRegistered = false;
+import { pathToFileURL } from "url";
+import { generateFromXsd } from "../../src/xsd/TsGenerator.js";
 
 /**
- * Registers ts-node (once), generates .ts files from provided XSD strings into outDir,
- * and creates a local stub for '@neumaennl/xmlbind-ts' so generated files can resolve decorators.
+ * Generates .ts files from provided XSD strings into outDir,
+ * and creates a local ESM stub for '@neumaennl/xmlbind-ts' so generated files resolve decorators via Vitest.
  */
 export function setupGeneratedRuntime(outDir: string, xsds: string[]): void {
-  if (!tsNodeRegistered) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require("ts-node/register/transpile-only");
-    tsNodeRegistered = true;
-  }
-
   // Generate .ts files from XSD inputs
   for (const xsd of xsds) {
     generateFromXsd(xsd, outDir);
@@ -30,14 +23,13 @@ export function setupGeneratedRuntime(outDir: string, xsds: string[]): void {
   mkdirSync(stubPkgDir, { recursive: true });
 
   const projectRoot = process.cwd();
-  // Escape backslashes for use inside JS string literals on Windows
-  const rootForRequire = projectRoot.replace(/\\/g, "\\\\");
+  const srcIndexPath = path.join(projectRoot, "src", "index.ts");
+  const relPath = path.relative(stubPkgDir, srcIndexPath).replace(/\\/g, "/");
 
-  // CommonJS stub that re-exports decorators from project source
   writeFileSync(
     path.join(stubPkgDir, "package.json"),
     JSON.stringify(
-      { name: "@neumaennl/xmlbind-ts", main: "index.js" },
+      { name: "@neumaennl/xmlbind-ts", type: "module", main: "index.js" },
       null,
       2
     ),
@@ -45,25 +37,7 @@ export function setupGeneratedRuntime(outDir: string, xsds: string[]): void {
   );
   writeFileSync(
     path.join(stubPkgDir, "index.js"),
-    "const XmlRoot = require('" +
-      rootForRequire +
-      "/src/decorators/XmlRoot.ts').XmlRoot;\n" +
-      "const XmlElement = require('" +
-      rootForRequire +
-      "/src/decorators/XmlElement.ts').XmlElement;\n" +
-      "const XmlAttribute = require('" +
-      rootForRequire +
-      "/src/decorators/XmlAttribute.ts').XmlAttribute;\n" +
-      "const XmlText = require('" +
-      rootForRequire +
-      "/src/decorators/XmlText.ts').XmlText;\n" +
-      "const XmlAnyElement = require('" +
-      rootForRequire +
-      "/src/decorators/XmlAnyElement.ts').XmlAnyElement;\n" +
-      "const XmlAnyAttribute = require('" +
-      rootForRequire +
-      "/src/decorators/XmlAnyAttribute.ts').XmlAnyAttribute;\n" +
-      "module.exports = { XmlRoot, XmlElement, XmlAttribute, XmlText, XmlAnyElement, XmlAnyAttribute };\n",
+    `export * from "${relPath}";\n`,
     "utf8"
   );
   writeFileSync(
@@ -74,18 +48,18 @@ export function setupGeneratedRuntime(outDir: string, xsds: string[]): void {
 }
 
 /**
- * Loads generated classes by name from outDir and returns a map of { ClassName: ctor }.
+ * Loads generated classes by name from outDir using Vitest's dynamic module import.
  */
-export function loadGeneratedClasses<T extends string>(
+export async function loadGeneratedClasses<T extends string>(
   outDir: string,
   names: T[]
-): Record<T, any> {
+): Promise<Record<T, any>> {
   const loaded = {} as Record<T, any>;
   for (const n of names) {
     const file = path.join(outDir, `${n}.ts`);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const mod = require(file);
+      const fileUrl = pathToFileURL(file).href;
+      const mod = await import(fileUrl);
       loaded[n] = mod[n];
       if (!loaded[n]) {
         throw new Error(`Export ${n} not found in ${file}`);

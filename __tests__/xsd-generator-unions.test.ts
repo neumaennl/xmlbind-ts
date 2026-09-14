@@ -1,7 +1,7 @@
-import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
+import { generateFromXsd } from "../src/xsd/TsGenerator.js";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir.ts";
+import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator - Union Types", () => {
   test("generates type alias for union with memberTypes", () => {
@@ -79,7 +79,7 @@ describe("XSD Generator - Union Types", () => {
       const enumsPath = path.join(dir, "enums.ts");
       if (existsSync(enumsPath)) {
         const enumsContent = readFileSync(enumsPath, "utf-8");
-        // eslint-disable-next-line jest/no-conditional-expect -- Conditional expect needed because enums.ts file is optional
+        // eslint-disable-next-line vitest/no-conditional-expect -- Conditional expect needed because enums.ts file is optional
         expect(enumsContent).not.toContain("enum allNNI");
       }
     });

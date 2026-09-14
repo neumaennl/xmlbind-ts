@@ -1,7 +1,7 @@
 import type { Element as XmldomElement } from "@xmldom/xmldom";
-import { localName, getChildByLocalName } from "./utils.ts";
-import { typeMapping, sanitizeTypeName, isBuiltinType } from "./types.ts";
-import type { SchemaContext } from "./schema.ts";
+import { localName, getChildByLocalName } from "./utils.js";
+import { typeMapping, sanitizeTypeName, isBuiltinType } from "./types.js";
+import type { SchemaContext } from "./schema.js";
 
 /**
  * A generation unit representing the code and dependencies for a single class or type.

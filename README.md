@@ -23,8 +23,9 @@ npm install @neumaennl/xmlbind-ts
 
 This package is published as **ESM-only**.
 
-- Use `import` / `export` in consumers.
-- If you still need CommonJS, pin to the last CJS-compatible release (`1.0.0`).
+- ESM consumers should use `import` / `export`.
+- CommonJS consumers can load the package with dynamic `import()`.
+- Generated classes use `.js` relative module specifiers, so TypeScript can compile them for either ESM or CommonJS consumers.
 
 ### Using from CommonJS
 
@@ -39,6 +40,8 @@ async function main() {
 
 main().catch(console.error);
 ```
+
+Generated classes compiled as CommonJS import this package with `require()`. This works on modern Node.js versions that support synchronous `require()` of compatible ESM module graphs, including the Node.js versions covered by this project's tests. For portable CommonJS support across Node.js runtimes, load `xmlbind-ts` with dynamic `import()` instead.
 
 ## TypeScript Decorator Support
 

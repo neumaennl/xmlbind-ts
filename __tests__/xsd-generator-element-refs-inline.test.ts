@@ -1,7 +1,7 @@
-import { withTmpDir } from './test-utils/temp-dir.ts';
+import { withTmpDir } from './test-utils/temp-dir.js';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { setupGeneratedRuntime } from './test-utils/generated-runtime.ts';
+import { setupGeneratedRuntime } from './test-utils/generated-runtime.js';
 
 /**
  * This test verifies that referenced top-level elements with anonymous inline types

@@ -1,7 +1,7 @@
-import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
+import { generateFromXsd } from "../src/xsd/TsGenerator.js";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
-import { withTmpDir, expectStringsOnConsecutiveLines } from "./test-utils/index.ts";
+import { withTmpDir, expectStringsOnConsecutiveLines } from "./test-utils/index.js";
 
 describe("XSD Generator - Groups", () => {
   test("generates classes with group references", () => {

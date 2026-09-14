@@ -1,6 +1,6 @@
 import { writeFileSync } from "fs";
 import { join } from "path";
-import type { GenUnit } from "./codegen.ts";
+import type { GenUnit } from "./codegen.js";
 
 /**
  * Writes all generated TypeScript class and enum files to the output directory.
@@ -40,7 +40,7 @@ export function writeGeneratedFiles(
   if (typeAliases.length > 0) {
     writeConsolidatedTypes(typeAliases, outDir);
     for (const [name] of typeAliases) {
-      allExports.push(`export type { ${name} } from './types.ts';`);
+      allExports.push(`export type { ${name} } from './types.js';`);
     }
   }
 
@@ -48,7 +48,7 @@ export function writeGeneratedFiles(
   if (enums.length > 0) {
     writeConsolidatedEnums(enums, outDir);
     for (const [name] of enums) {
-      allExports.push(`export { ${name} } from './enums.ts';`);
+      allExports.push(`export { ${name} } from './enums.js';`);
     }
   }
 
@@ -56,7 +56,7 @@ export function writeGeneratedFiles(
   for (const [name, unit] of generated.entries()) {
     const filename = resolveFilename(name, usedFilenames);
     writeClassFile(name, filename, unit, outDir, typeNames, enumNames);
-    allExports.push(`export { ${name} } from './${filename}.ts';`);
+    allExports.push(`export { ${name} } from './${filename}.js';`);
   }
 
   // Write barrel export file
@@ -163,17 +163,17 @@ function writeClassFile(
 
   // Import type aliases from types.ts
   if (typeDeps.length > 0) {
-    lines.push(`import type { ${typeDeps.sort().join(", ")} } from './types.ts';`);
+    lines.push(`import type { ${typeDeps.sort().join(", ")} } from './types.js';`);
   }
 
   // Import enums from enums.ts
   if (enumDeps.length > 0) {
-    lines.push(`import { ${enumDeps.sort().join(", ")} } from './enums.ts';`);
+    lines.push(`import { ${enumDeps.sort().join(", ")} } from './enums.js';`);
   }
 
   // Import classes from individual files
   for (const dep of classDeps) {
-    lines.push(`import { ${dep} } from './${dep}.ts';`);
+    lines.push(`import { ${dep} } from './${dep}.js';`);
   }
 
   lines.push(...usedLines);

@@ -1,6 +1,6 @@
-import { marshal, unmarshal } from "../src/marshalling/index.ts";
-import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.ts";
-import { expectStringsOnSameLine } from "./test-utils/index.ts";
+import { marshal, unmarshal } from "../src/marshalling/index.js";
+import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.js";
+import { expectStringsOnSameLine } from "./test-utils/index.js";
 
 afterEach(() => {
   // no-op, placeholder in case of future cleanup

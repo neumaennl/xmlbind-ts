@@ -1,9 +1,9 @@
-import { marshal, unmarshal } from "../src/marshalling/index.ts";
-import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.ts";
-import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
+import { marshal, unmarshal } from "../src/marshalling/index.js";
+import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.js";
+import { generateFromXsd } from "../src/xsd/TsGenerator.js";
 import { readFileSync } from "fs";
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir.ts";
+import { withTmpDir } from "./test-utils/temp-dir.js";
 
 @XmlRoot("Document", {
   namespace: "http://example.com/doc",

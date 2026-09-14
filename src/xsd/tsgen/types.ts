@@ -1,4 +1,4 @@
-import { localName } from "./utils.ts";
+import { localName } from "./utils.js";
 
 /**
  * TypeScript primitive type names that don't require lazy type references.

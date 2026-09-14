@@ -2,8 +2,8 @@
  * Utilities for preserving XML element order during unmarshal/marshal roundtrip
  */
 
-import type { FieldMeta } from "../types.ts";
-import type { ParsedXmlValue } from "./types.ts";
+import type { FieldMeta } from "../types.js";
+import type { ParsedXmlValue } from "./types.js";
 
 /**
  * Helper to extract local name from a potentially namespaced element name

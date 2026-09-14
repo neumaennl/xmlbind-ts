@@ -1,14 +1,14 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import tsParser from "@typescript-eslint/parser";
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
-import jestPlugin from "eslint-plugin-jest";
+import vitest from "@vitest/eslint-plugin";
 import globals from "globals";
 import js from "@eslint/js";
 
 export default defineConfig([
   js.configs.recommended,
   ...typescriptEslint.configs["flat/recommended"],
-  jestPlugin.configs["flat/recommended"],
+  vitest.configs.recommended,
   {
     files: ['**/*.ts', '**/*.mts', '**/*.cts'],
     languageOptions: {
@@ -18,7 +18,6 @@ export default defineConfig([
 
       globals: {
         ...globals.node,
-        ...globals.jest,
       },
     },
 
@@ -34,7 +33,7 @@ export default defineConfig([
 
       "@typescript-eslint/no-explicit-any": "off",
 
-      "jest/expect-expect": [
+      "vitest/expect-expect": [
         "warn",
         {
           assertFunctionNames: [

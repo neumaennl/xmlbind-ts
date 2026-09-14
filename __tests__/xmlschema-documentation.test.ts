@@ -1,15 +1,15 @@
 import { readFileSync } from "fs";
 import path from "path";
-import { withTmpDir } from "./test-utils/temp-dir.ts";
+import { withTmpDir } from "./test-utils/temp-dir.js";
 import {
   setupGeneratedRuntime,
   loadGeneratedClasses,
-} from "./test-utils/generated-runtime.ts";
-import { unmarshal } from "../src/marshalling/unmarshal.ts";
+} from "./test-utils/generated-runtime.js";
+import { unmarshal } from "../src/marshalling/unmarshal.js";
 
 describe("XMLSchema Documentation Unmarshalling", () => {
-  test("documentation text should be unmarshalled correctly", () => {
-    withTmpDir((tmpDir) => {
+  test("documentation text should be unmarshalled correctly", async () => {
+    await withTmpDir(async (tmpDir) => {
       // Load XMLSchema.xsd
       const xsdPath = path.join(__dirname, "test-resources", "XMLSchema.xsd");
       const xmlSchemaXsd = readFileSync(xsdPath, "utf-8");
@@ -19,7 +19,7 @@ describe("XMLSchema Documentation Unmarshalling", () => {
       setupGeneratedRuntime(tmpDir, [xmlSchemaXsd]);
 
       // Get the schema class
-      const { schema: Schema } = loadGeneratedClasses(tmpDir, ["schema"]);
+      const { schema: Schema } = await loadGeneratedClasses(tmpDir, ["schema"]);
 
       // Load the example.xsd file
       const exampleXsdPath = path.join(
@@ -81,8 +81,8 @@ describe("XMLSchema Documentation Unmarshalling", () => {
     });
   }, 30000);
 
-  test("documentation with attributes should be unmarshalled correctly", () => {
-    withTmpDir((tmpDir) => {
+  test("documentation with attributes should be unmarshalled correctly", async () => {
+    await withTmpDir(async (tmpDir) => {
       // Load XMLSchema.xsd
       const xsdPath = path.join(__dirname, "test-resources", "XMLSchema.xsd");
       const xmlSchemaXsd = readFileSync(xsdPath, "utf-8");
@@ -91,7 +91,7 @@ describe("XMLSchema Documentation Unmarshalling", () => {
       setupGeneratedRuntime(tmpDir, [xmlSchemaXsd]);
 
       // Get the schema class
-      const { schema: Schema } = loadGeneratedClasses(tmpDir, ["schema"]);
+      const { schema: Schema } = await loadGeneratedClasses(tmpDir, ["schema"]);
 
       // Test with documentation that has a source attribute
       const schemaWithAttributedDoc = `<?xml version="1.0" encoding="UTF-8"?>

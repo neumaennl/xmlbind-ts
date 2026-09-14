@@ -1,13 +1,13 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { DOMParser } from "@xmldom/xmldom";
-import { withTmpDir } from "./test-utils/temp-dir.ts";
+import { withTmpDir } from "./test-utils/temp-dir.js";
 import {
   setupGeneratedRuntime,
   loadGeneratedClasses,
-} from "./test-utils/generated-runtime.ts";
-import { unmarshal } from "../src/marshalling/unmarshal.ts";
-import { marshal } from "../src/marshalling/marshal.ts";
+} from "./test-utils/generated-runtime.js";
+import { unmarshal } from "../src/marshalling/unmarshal.js";
+import { marshal } from "../src/marshalling/marshal.js";
 
 /**
  * Removes DOCTYPE declaration from XML content.
@@ -109,8 +109,8 @@ function compareXmlDocuments(
 
 describe("Schema Roundtrip", () => {
   describe("example.xsd", () => {
-    test("should not lose data during unmarshal/marshal roundtrip", () => {
-      withTmpDir((tmpDir) => {
+    test("should not lose data during unmarshal/marshal roundtrip", async () => {
+      await withTmpDir(async (tmpDir) => {
         // Load XMLSchema.xsd to generate TypeScript classes
         const xmlSchemaPath = path.join(
           __dirname,
@@ -123,7 +123,7 @@ describe("Schema Roundtrip", () => {
         setupGeneratedRuntime(tmpDir, [xmlSchemaXsd]);
 
         // Get the schema class
-        const { schema: Schema } = loadGeneratedClasses(tmpDir, ["schema"]);
+        const { schema: Schema } = await loadGeneratedClasses(tmpDir, ["schema"]);
 
         // Load example.xsd
         const examplePath = path.join(
@@ -166,8 +166,8 @@ describe("Schema Roundtrip", () => {
   });
 
   describe("XMLSchema.xsd", () => {
-    test("should not lose data during unmarshal/marshal roundtrip", () => {
-      withTmpDir((tmpDir) => {
+    test("should not lose data during unmarshal/marshal roundtrip", async () => {
+      await withTmpDir(async (tmpDir) => {
         // Load XMLSchema.xsd
         const xmlSchemaPath = path.join(
           __dirname,
@@ -185,7 +185,7 @@ describe("Schema Roundtrip", () => {
         setupGeneratedRuntime(tmpDir, [originalXsd]);
 
         // Get the schema class
-        const { schema: Schema } = loadGeneratedClasses(tmpDir, ["schema"]);
+        const { schema: Schema } = await loadGeneratedClasses(tmpDir, ["schema"]);
 
         // Unmarshal the XMLSchema.xsd itself
         const schemaObj = unmarshal(Schema, originalXsd) as any;
@@ -318,8 +318,8 @@ describe("Schema Roundtrip", () => {
       });
     }, 30000);
 
-    test("should maintain consistent order across multiple roundtrips", () => {
-      withTmpDir((tmpDir) => {
+    test("should maintain consistent order across multiple roundtrips", async () => {
+      await withTmpDir(async (tmpDir) => {
         // Load XMLSchema.xsd
         const xmlSchemaPath = path.join(
           __dirname,
@@ -335,7 +335,7 @@ describe("Schema Roundtrip", () => {
         setupGeneratedRuntime(tmpDir, [originalXsd]);
 
         // Get the schema class
-        const { schema: Schema } = loadGeneratedClasses(tmpDir, ["schema"]);
+        const { schema: Schema } = await loadGeneratedClasses(tmpDir, ["schema"]);
 
         // First roundtrip
         const schemaObj = unmarshal(Schema, originalXsd) as any;

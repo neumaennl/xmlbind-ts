@@ -1,4 +1,4 @@
-import { XmlRoot, XmlElement, unmarshal } from "../src/index.ts";
+import { XmlRoot, XmlElement, unmarshal } from "../src/index.js";
 
 describe("Unmarshal with undefined element type", () => {
   test("should handle elements with no type specified", () => {

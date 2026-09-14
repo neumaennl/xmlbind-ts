@@ -1,1 +1,1 @@
-export * from "./MetadataRegistry.ts";
+export * from "./MetadataRegistry.js";

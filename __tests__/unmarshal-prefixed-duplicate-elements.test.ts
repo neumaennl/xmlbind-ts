@@ -4,8 +4,8 @@
  * See: https://github.com/neumaennl/xmlbind-ts/issues/216
  */
 
-import { unmarshal } from "../src/marshalling/index.ts";
-import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.ts";
+import { unmarshal } from "../src/marshalling/index.js";
+import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.js";
 
 const XS_NS = "http://www.w3.org/2001/XMLSchema";
 

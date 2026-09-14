@@ -36,10 +36,10 @@ jobs:
         run: npm run build
 
       - name: Run tests (coverage + JSON; JUnit via config)
-        # coverage/ and test-results/jest-results.json are created here; JUnit is configured in jest.config.mjs
+        # coverage/ and test-results/vitest-results.json are created here; JUnit is configured in vitest.config.mts
         run: |
           mkdir -p test-results
-          npm test -- --coverage --runInBand --json --outputFile=test-results/jest-results.json --coverageReporters=json-summary
+          npm test -- --coverage
 
       - name: Summarize coverage in job summary
         if: always()
@@ -64,7 +64,7 @@ jobs:
         id: junit-check
         shell: bash
         run: |
-          if [[ -f "test-results/jest-junit.xml" ]]; then
+          if [[ -f "test-results/vitest-junit.xml" ]]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -74,6 +74,6 @@ jobs:
         if: always() && steps.junit-check.outputs.exists == 'true'
         uses: dorny/test-reporter@v3
         with:
-          name: Jest
-          path: test-results/jest-junit.xml
+          name: Vitest
+          path: test-results/vitest-junit.xml
           reporter: jest-junit

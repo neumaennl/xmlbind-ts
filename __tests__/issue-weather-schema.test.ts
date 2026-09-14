@@ -1,8 +1,8 @@
 import { mkdtempSync, rmSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { generateFromXsd } from "../src/xsd/TsGenerator.ts";
-import { unmarshal, XmlRoot, XmlElement, XmlAttribute } from "../src/index.ts";
+import { generateFromXsd } from "../src/xsd/TsGenerator.js";
+import { unmarshal, XmlRoot, XmlElement, XmlAttribute } from "../src/index.js";
 
 describe("Issue: Weather Schema Unmarshalling", () => {
   test("unmarshals weather schema XML using classes that mimic XMLSchema.xsd structure", () => {

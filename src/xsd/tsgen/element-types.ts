@@ -4,17 +4,17 @@ import {
   getChildByLocalName,
   getChildrenByLocalName,
   formatTsDoc,
-} from "./utils.ts";
+} from "./utils.js";
 import {
   typeMapping,
   sanitizeTypeName,
   isPrimitiveTypeName,
   toDecoratorType,
-} from "./types.ts";
-import { toClassName, toPropertyName } from "./codegen.ts";
-import type { GeneratorState, GenUnit } from "./codegen.ts";
-import { extractEnumValues, generateEnumCode } from "./enum.ts";
-import { computeDecoratorType, needsAllowStringFallback } from "./decorator-type-helpers.ts";
+} from "./types.js";
+import { toClassName, toPropertyName } from "./codegen.js";
+import type { GeneratorState, GenUnit } from "./codegen.js";
+import { extractEnumValues, generateEnumCode } from "./enum.js";
+import { computeDecoratorType, needsAllowStringFallback } from "./decorator-type-helpers.js";
 
 /**
  * Resolves an XSD type reference for an element to a TypeScript type.

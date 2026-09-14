@@ -1,4 +1,4 @@
-import { parseXsd, getSchemaRoot, getXsdPrefix } from "../src/xsd/XsdParser.ts";
+import { parseXsd, getSchemaRoot, getXsdPrefix } from "../src/xsd/XsdParser.js";
 
 describe("XsdParser", () => {
   describe("parseXsd", () => {
@@ -173,7 +173,7 @@ describe("XsdParser", () => {
 
       if (schema) {
         const prefix = getXsdPrefix(schema);
-        // eslint-disable-next-line jest/no-conditional-expect -- Conditional expect needed because schema can be null from getSchemaRoot
+        // eslint-disable-next-line vitest/no-conditional-expect -- Conditional expect needed because schema can be null from getSchemaRoot
         expect(prefix).toBe("xsd");
       }
     });
