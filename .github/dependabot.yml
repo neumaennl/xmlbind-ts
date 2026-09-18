@@ -16,6 +16,15 @@ updates:
           - "eslint-*"
           - "@eslint-community/*"
           - "@typescript-eslint/*"
+      vite-dependencies:
+        patterns:
+          - "vite"
+          - "vite-*"
+          - "@vitejs/*"
+      vitest-dependencies:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
   - package-ecosystem: "github-actions"
     # Workflow files stored in the
     # default location of `.github/workflows`
