@@ -138,8 +138,8 @@ describe("packaged xsd2ts CLI", () => {
           compilerOptions: {
             target: "ES2022",
             module: "CommonJS",
-            moduleResolution: "Node",
             outDir: "compiled",
+            rootDir: "generated",
             experimentalDecorators: true,
             emitDecoratorMetadata: true,
             esModuleInterop: true,
