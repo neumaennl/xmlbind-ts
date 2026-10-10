@@ -7,7 +7,22 @@ import { XmlRoot } from "../src/decorators/XmlRoot.js";
 import { XmlText } from "../src/decorators/XmlText.js";
 import { getMeta } from "../src/metadata/MetadataRegistry.js";
 import { marshal, unmarshal } from "../src/marshalling/index.js";
-import { expectStringsOnConsecutiveLines } from "./test-utils/index.js";
+import {
+  emitsDecoratorMetadata,
+  expectStringsOnConsecutiveLines,
+} from "./test-utils/index.js";
+
+/**
+ * Returns the error that `fn` throws, or `undefined` if it does not throw.
+ */
+function thrownBy(fn: () => unknown): unknown {
+  try {
+    fn();
+    return undefined;
+  } catch (error) {
+    return error;
+  }
+}
 
 enum TestEnum {
   One = "one",
@@ -106,7 +121,7 @@ describe("Decorators", () => {
       expect((field as any)?.namespace).toBe("http://test.com");
     });
 
-    it("should unmarshal numeric attribute as number via reflect-metadata", () => {
+    it("should unmarshal numeric attribute as number via reflect-metadata, as string without emitDecoratorMetadata", () => {
       @XmlRoot("element")
       class Element {
         @XmlAttribute("minOccurs")
@@ -115,8 +130,7 @@ describe("Decorators", () => {
 
       const xml = `<element minOccurs="0"/>`;
       const result = unmarshal(Element, xml);
-      expect(typeof result.minOccurs).toBe("number");
-      expect(result.minOccurs).toBe(0);
+      expect(result.minOccurs).toBe(emitsDecoratorMetadata ? 0 : "0");
     });
 
     it("should unmarshal numeric maxOccurs as number for union-typed property (allNNI pattern)", () => {
@@ -139,7 +153,7 @@ describe("Decorators", () => {
       expect(unmarshal(Element, xmlUnbounded).maxOccurs).toBe("unbounded");
     });
 
-    it("should unmarshal boolean attribute as boolean via reflect-metadata", () => {
+    it("should unmarshal boolean attribute as boolean via reflect-metadata, as string without emitDecoratorMetadata", () => {
       @XmlRoot("element")
       class Element {
         @XmlAttribute("abstract")
@@ -148,8 +162,7 @@ describe("Decorators", () => {
 
       const xml = `<element abstract="true"/>`;
       const result = unmarshal(Element, xml);
-      expect(typeof result.abstract).toBe("boolean");
-      expect(result.abstract).toBe(true);
+      expect(result.abstract).toBe(emitsDecoratorMetadata ? true : "true");
     });
 
     it("should unmarshal string attribute as string without coercion", () => {
@@ -165,8 +178,8 @@ describe("Decorators", () => {
       expect(result.name).toBe("foo");
     });
 
-    it("should throw when explicit type option conflicts with declared TypeScript type", () => {
-      expect(() => {
+    it("should throw when explicit type option conflicts with declared TypeScript type, if emitDecoratorMetadata is used", () => {
+      const error = thrownBy(() => {
         @XmlRoot("element")
         class Element {
           // design:type is String, but { type: Number } is incompatible
@@ -174,7 +187,11 @@ describe("Decorators", () => {
           count?: string;
         }
         void Element; // suppress unused-variable warning
-      }).toThrow(TypeError);
+      });
+      // Without design:type there is nothing to compare the type option with.
+      expect((error as Error | undefined)?.constructor).toBe(
+        emitsDecoratorMetadata ? TypeError : undefined
+      );
     });
   });
 
@@ -230,7 +247,9 @@ describe("Decorators", () => {
       expectStringsOnConsecutiveLines(xml, ["<child>", "<name>test</name>"]);
     });
 
-    it("should unmarshal numeric element as number via reflect-metadata", () => {
+    // Without design:type, the XML parser converts element text that looks
+    // like a number or boolean.
+    it("should unmarshal numeric element as number", () => {
       @XmlRoot("element")
       class Element {
         @XmlElement("count")
@@ -239,11 +258,10 @@ describe("Decorators", () => {
 
       const xml = `<element><count>42</count></element>`;
       const result = unmarshal(Element, xml);
-      expect(typeof result.count).toBe("number");
       expect(result.count).toBe(42);
     });
 
-    it("should unmarshal boolean element as boolean via reflect-metadata", () => {
+    it("should unmarshal boolean element as boolean", () => {
       @XmlRoot("element")
       class Element {
         @XmlElement("active")
@@ -252,11 +270,10 @@ describe("Decorators", () => {
 
       const xml = `<element><active>true</active></element>`;
       const result = unmarshal(Element, xml);
-      expect(typeof result.active).toBe("boolean");
       expect(result.active).toBe(true);
     });
 
-    it("should unmarshal boolean element expressed as '1' via reflect-metadata", () => {
+    it("should unmarshal boolean element expressed as '1' as true via reflect-metadata, as number without emitDecoratorMetadata", () => {
       @XmlRoot("element")
       class Element {
         @XmlElement("flag")
@@ -266,12 +283,11 @@ describe("Decorators", () => {
       // XML Schema allows "1" for true and "0" for false
       const xml = `<element><flag>1</flag></element>`;
       const result = unmarshal(Element, xml);
-      expect(typeof result.flag).toBe("boolean");
-      expect(result.flag).toBe(true);
+      expect(result.flag).toBe(emitsDecoratorMetadata ? true : 1);
     });
 
-    it("should throw when explicit type option conflicts with declared element type", () => {
-      expect(() => {
+    it("should throw when explicit type option conflicts with declared element type, if emitDecoratorMetadata is used", () => {
+      const error = thrownBy(() => {
         @XmlRoot("element")
         class Element {
           // design:type is String, but { type: Number } is incompatible
@@ -279,7 +295,11 @@ describe("Decorators", () => {
           value?: string;
         }
         void Element;
-      }).toThrow(TypeError);
+      });
+      // Without design:type there is nothing to compare the type option with.
+      expect((error as Error | undefined)?.constructor).toBe(
+        emitsDecoratorMetadata ? TypeError : undefined
+      );
     });
 
     it("should handle element without options", () => {

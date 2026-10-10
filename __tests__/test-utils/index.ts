@@ -8,3 +8,9 @@ export {
   loadGeneratedClasses,
 } from "./generated-runtime.js";
 export { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./assertions.js";
+export {
+  decoratorMode,
+  emitsDecoratorMetadata,
+  detectDecoratorMode,
+} from "./decorator-mode.js";
+export type { DecoratorMode } from "./decorator-mode.js";

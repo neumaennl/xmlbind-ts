@@ -1,4 +1,4 @@
-import { ensureMeta } from "../metadata/MetadataRegistry.js";
+import { ensureMeta, registerStage3Field } from "../metadata/MetadataRegistry.js";
 
 /**
  * Decorator to mark a property as a wildcard element container (xs:any).
@@ -24,10 +24,8 @@ export function XmlAnyElement() {
     // Stage 3 decorators: contextOrTarget is undefined/value, propertyKeyOrContext is context object
     if (propertyKeyOrContext && typeof propertyKeyOrContext === "object" && "kind" in propertyKeyOrContext) {
       const context = propertyKeyOrContext;
-      context.addInitializer(function(this: any) {
-        const ctor = this.constructor;
-        const m = ensureMeta(ctor);
-        m.fields.push({
+      registerStage3Field(context, (fields) => {
+        fields.push({
           key: context.name.toString(),
           name: "*",
           kind: "anyElement",

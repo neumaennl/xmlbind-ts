@@ -1,4 +1,4 @@
-import { ensureMeta } from "../metadata/MetadataRegistry.js";
+import { ensureMeta, registerStage3Field } from "../metadata/MetadataRegistry.js";
 
 /**
  * Decorator to mark a property as containing an enum type for validation.
@@ -29,10 +29,8 @@ export function XmlEnum(enumType: any) {
     // Stage 3 decorators: contextOrTarget is undefined/value, propertyKeyOrContext is context object
     if (propertyKeyOrContext && typeof propertyKeyOrContext === "object" && "kind" in propertyKeyOrContext) {
       const context = propertyKeyOrContext;
-      context.addInitializer(function(this: any) {
-        const ctor = this.constructor;
-        const m = ensureMeta(ctor);
-        const existing = m.fields.find((f) => f.key === context.name.toString());
+      registerStage3Field(context, (fields) => {
+        const existing = fields.find((f) => f.key === context.name.toString());
         if (existing) {
           (existing as any).enumType = enumType;
         }

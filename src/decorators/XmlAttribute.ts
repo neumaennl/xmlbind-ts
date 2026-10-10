@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { ensureMeta } from "../metadata/MetadataRegistry.js";
+import { ensureMeta, registerStage3Field } from "../metadata/MetadataRegistry.js";
 
 /**
  * Resolves the type for an attribute field: the explicit `options.type` takes
@@ -77,10 +77,8 @@ export function XmlAttribute(name?: string, options?: { namespace?: string; type
     // Stage 3 decorators: contextOrTarget is undefined/value, propertyKeyOrContext is context object
     if (propertyKeyOrContext && typeof propertyKeyOrContext === "object" && "kind" in propertyKeyOrContext) {
       const context = propertyKeyOrContext;
-      context.addInitializer(function(this: any) {
-        const ctor = this.constructor;
-        const m = ensureMeta(ctor);
-        m.fields.push({
+      registerStage3Field(context, (fields) => {
+        fields.push({
           key: context.name.toString(),
           name: name ?? context.name.toString(),
           kind: "attribute",

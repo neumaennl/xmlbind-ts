@@ -33,7 +33,7 @@ enum NumericEnum {
 
 @XmlRoot("Task", { namespace: "http://example.com/task" })
 class Task {
-  @XmlAttribute("id")
+  @XmlAttribute("id", { type: Number })
   id?: number;
 
   @XmlElement("title", { type: String })

@@ -32,5 +32,12 @@
 
 export * from "./decorators/index.js";
 export * from "./marshalling/index.js";
-export * from "./metadata/MetadataRegistry.js";
+// Explicit list, so internal helpers of the registry stay private.
+export {
+  ensureMeta,
+  getMeta,
+  allMeta,
+  META,
+  getAllFields,
+} from "./metadata/MetadataRegistry.js";
 export * from "./xsd/TsGenerator.js";

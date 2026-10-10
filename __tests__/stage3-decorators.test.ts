@@ -1,9 +1,9 @@
 /**
  * Tests for Stage 3 decorator support (without experimentalDecorators flag)
  *
- * This test file verifies that decorators work correctly with both:
- * - Legacy decorators (with experimentalDecorators: true)
- * - Stage 3 decorators (without experimentalDecorators)
+ * Vitest runs this file in two projects (see vitest.config.mts):
+ * - legacy-decorators: compiled with experimentalDecorators and emitDecoratorMetadata
+ * - stage3-decorators: compiled with Stage 3 decorators
  */
 
 import {
@@ -15,9 +15,15 @@ import {
   XmlText,
   XmlEnum,
   marshal,
+  unmarshal,
   getMeta,
+  getAllFields,
 } from "../src/index.js";
-import { expectStringsOnSameLine } from "./test-utils/index.js";
+import {
+  decoratorMode,
+  detectDecoratorMode,
+  expectStringsOnSameLine,
+} from "./test-utils/index.js";
 
 enum TestEnum {
   Value1 = "value1",
@@ -25,6 +31,10 @@ enum TestEnum {
 }
 
 describe("Stage 3 Decorators Support", () => {
+  test("decorators are compiled in the mode of the Vitest project", () => {
+    expect(detectDecoratorMode()).toBe(decoratorMode);
+  });
+
   test("should work with all decorators in a complex class", () => {
     @XmlRoot("ComplexTest")
     class ComplexTest {
@@ -170,5 +180,124 @@ describe("Stage 3 Decorators Support", () => {
     const firstLine2 = xml2.split("\n")[0];
     expectStringsOnSameLine(firstLine2, ["<MultiInstance", 'id="2"']);
     expect(xml2).toContain("<value>second</value>");
+  });
+
+  test("should register fields when the class is defined", () => {
+    @XmlRoot("Defined")
+    class Defined {
+      @XmlAttribute("id")
+      id?: string;
+
+      @XmlElement("value")
+      value?: string;
+    }
+
+    expect(getMeta(Defined)?.fields.map((f) => f.key)).toEqual(["id", "value"]);
+  });
+
+  test("should not duplicate fields when the class is instantiated", () => {
+    @XmlRoot("Repeated")
+    class Repeated {
+      @XmlEnum(TestEnum)
+      @XmlElement("status")
+      status?: TestEnum;
+    }
+
+    for (let i = 0; i < 3; i++) new Repeated();
+
+    const fields = getMeta(Repeated)?.fields ?? [];
+    expect(fields).toHaveLength(1);
+    expect(fields[0]).toMatchObject({ key: "status", enumType: TestEnum });
+  });
+
+  test("should register fields of classes without @XmlRoot", () => {
+    class Child {
+      @XmlElement("name")
+      name?: string;
+    }
+
+    @XmlRoot("Parent")
+    class Parent {
+      @XmlElement("child", { type: Child })
+      child?: Child;
+    }
+
+    expect(getMeta(Child)?.fields.map((f) => f.key)).toEqual(["name"]);
+
+    const parent = unmarshal(
+      Parent,
+      "<Parent><child><name>Ann</name></child></Parent>"
+    );
+    expect(parent.child).toBeInstanceOf(Child);
+    expect(parent.child?.name).toBe("Ann");
+  });
+
+  test("should keep fields of base and derived classes apart", () => {
+    class Base {
+      @XmlAttribute("id")
+      id?: string;
+    }
+
+    @XmlRoot("Derived")
+    class Derived extends Base {
+      @XmlElement("value")
+      value?: string;
+    }
+
+    new Derived();
+
+    expect(getMeta(Base)?.fields.map((f) => f.key)).toEqual(["id"]);
+    expect(getMeta(Derived)?.fields.map((f) => f.key)).toEqual(["value"]);
+    expect(getAllFields(Derived).map((f) => f.key)).toEqual(["id", "value"]);
+
+    const obj = new Derived();
+    obj.id = "7";
+    obj.value = "derived";
+    const xml = marshal(obj);
+    expectStringsOnSameLine(xml.split("\n")[0], ["<Derived", 'id="7"']);
+    expect(xml).toContain("<value>derived</value>");
+  });
+
+  test("should convert values with an explicit type option", () => {
+    @XmlRoot("Typed")
+    class Typed {
+      @XmlAttribute("count", { type: Number })
+      count?: number;
+
+      @XmlElement("flag", { type: Boolean })
+      flag?: boolean;
+    }
+
+    const result = unmarshal(Typed, '<Typed count="3"><flag>1</flag></Typed>');
+    expect(result.count).toBe(3);
+    expect(result.flag).toBe(true);
+  });
+
+  test("should register fields once per class with addInitializer when context.metadata is missing", () => {
+    const initializers: Array<(this: unknown) => void> = [];
+    const context = (name: string) => ({
+      kind: "field",
+      name,
+      addInitializer: (initializer: (this: unknown) => void) => {
+        initializers.push(initializer);
+      },
+    });
+
+    class Manual {
+      status?: TestEnum;
+    }
+    XmlElement("status")(undefined, context("status"));
+    XmlEnum(TestEnum)(undefined, context("status"));
+
+    expect(getMeta(Manual)).toBeUndefined();
+
+    for (let i = 0; i < 3; i++) {
+      const instance = new Manual();
+      for (const initializer of initializers) initializer.call(instance);
+    }
+
+    const fields = getMeta(Manual)?.fields ?? [];
+    expect(fields).toHaveLength(1);
+    expect(fields[0]).toMatchObject({ key: "status", enumType: TestEnum });
   });
 });

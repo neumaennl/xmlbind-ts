@@ -45,14 +45,18 @@ Generated classes compiled as CommonJS import this package with `require()`. Thi
 
 ## TypeScript Decorator Support
 
-This library supports both **legacy decorators** (TypeScript's experimental decorators) and **Stage 3 decorators** (the TC39 standard):
+This library supports both **legacy decorators** (TypeScript's experimental decorators) and **Stage 3 decorators** (the TC39 decorators proposal). We recommend legacy decorators.
 
 - **Legacy decorators**: Used when `experimentalDecorators: true` is set in your `tsconfig.json`
 - **Stage 3 decorators**: Used when `experimentalDecorators` is not enabled (TypeScript 5.0+)
 
-Both decorator formats are fully supported and the library automatically detects which format is being used. You can use either configuration:
+The library detects automatically which format is used. All decorators (`@XmlRoot`, `@XmlElement`, `@XmlAttribute`, etc.) work with both formats, with these differences:
 
-### With Legacy Decorators (experimentalDecorators)
+- With legacy decorators and `emitDecoratorMetadata`, `@XmlElement` and `@XmlAttribute` take the type of a property from its TypeScript declaration, so `count?: number` is read as a number. Stage 3 decorators get no type information, so pass the type explicitly: `@XmlAttribute("count", { type: Number })`. Without it, attribute values stay strings, and element text that looks like a number or boolean is converted by the XML parser (so `<flag>1</flag>` becomes the number `1`, not `true`).
+- The TC39 decorators proposal went back to Stage 2.7 in May 2026. No JavaScript engine ships it, and it may still change.
+- Oxc, and with it Vite 8 and Vitest 5, does not lower Stage 3 decorators ([oxc-project/oxc#9170](https://github.com/oxc-project/oxc/issues/9170)). It lowers legacy decorators.
+
+### With Legacy Decorators (experimentalDecorators, recommended)
 
 ```json
 {
@@ -76,7 +80,7 @@ Both decorator formats are fully supported and the library automatically detects
 }
 ```
 
-Both configurations work seamlessly with all decorators (`@XmlRoot`, `@XmlElement`, `@XmlAttribute`, etc.).
+With Stage 3 decorators, the library defines `Symbol.metadata` if the JavaScript runtime does not provide it. TypeScript 5.2 and later then pass decorator metadata to the decorators, so the fields of a class are registered when the class is defined. With TypeScript 5.0 and 5.1, they are registered when the first instance of the class is created.
 
 ## Quick Start
 

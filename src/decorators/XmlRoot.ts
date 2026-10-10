@@ -1,4 +1,4 @@
-import { ensureMeta } from "../metadata/MetadataRegistry.js";
+import { ensureMeta, ensureStage3ClassMeta } from "../metadata/MetadataRegistry.js";
 
 /**
  * Decorator to mark a class as an XML root element.
@@ -28,7 +28,7 @@ export function XmlRoot(
     // Stage 3 decorators: ctorOrContext is the class, context is the decorator context
     if (context && typeof context === "object" && "kind" in context && context.kind === "class") {
       const ctor = ctorOrContext;
-      const m = ensureMeta(ctor);
+      const m = ensureStage3ClassMeta(ctor, context.metadata);
       m.rootName = name ?? ctor.name;
       m.namespace = options?.namespace ?? null;
       m.prefixes = options?.prefixes;
