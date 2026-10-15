@@ -1,6 +1,9 @@
 # Exclude development sources and artifacts from the published package
 src/
 __tests__/
+scripts/
+.nvmrc
+tsconfig.scripts.json
 test-resources/
 test-results/
 coverage/

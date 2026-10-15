@@ -8,22 +8,43 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    # Weekly, so that the end of life of a Node version is noticed without a push.
+    - cron: "0 6 * * 1"
 
 jobs:
-  build:
-    name: Install, build and test
+  node-versions:
+    name: Check Node versions
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [24.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js from .nvmrc
         uses: actions/setup-node@v7
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version-file: .nvmrc
+          # Use the latest release of the major version in .nvmrc, not an older one from the runner's cache.
+          check-latest: true
+
+      - name: Check engines.node, @types/node, .nvmrc and the end of life
+        # On the weekly run, a near end of life fails the job, so that GitHub sends a notification.
+        run: npm run node:check -- ${{ github.event_name == 'schedule' && '--strict' || '' }}
+
+  build:
+    name: Install, build and test
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Use Node.js from .nvmrc
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          # Use the latest release of the major version in .nvmrc, not an older one from the runner's cache.
+          check-latest: true
           cache: "npm"
 
       - name: Install dependencies

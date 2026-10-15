@@ -62,10 +62,11 @@ export default defineConfig({
           name: "stage3-decorators",
           provide: { decoratorMode: "stage3" },
           // Runs `npm pack`, which rebuilds dist/, and does not depend on how
-          // Vitest compiles decorators.
+          // Vitest compiles decorators. The scripts use no decorators.
           exclude: [
             ...configDefaults.exclude,
             "**/__tests__/cli-integration.test.ts",
+            "scripts/**",
           ],
         },
       },

@@ -25,13 +25,19 @@
   "bin": {
     "xsd2ts": "dist/xsd/cli.js"
   },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "pretest": "npm run build",
+    "typecheck": "tsc --project tsconfig.scripts.json",
+    "pretest": "npm run build && npm run typecheck",
     "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "node:check": "node scripts/node-version.ts check",
+    "node:update": "node scripts/node-version.ts update"
   },
   "dependencies": {
     "@xmldom/xmldom": "^0.9.12",
@@ -42,7 +48,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
-    "@types/node": "^26.4.0",
+    "@types/node": "^24.19.2",
     "@typescript-eslint/eslint-plugin": "^8.68.0",
     "@typescript-eslint/parser": "^8.56.0",
     "@vitest/coverage-v8": "^5.0.0",

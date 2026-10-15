@@ -19,6 +19,12 @@ JAXB-like XML binding for TypeScript.
 npm install @neumaennl/xmlbind-ts
 ```
 
+### Supported Node.js versions
+
+The library supports Node.js 24 and newer, as declared in `engines.node` of `package.json`. CI tests the latest Node.js 24 release.
+
+`engines.node` is a declaration, not a lock: Node.js itself ignores it, and npm and pnpm only warn about an unsupported version unless `engine-strict` is set.
+
 ## Module System
 
 This package is published as **ESM-only**.
@@ -41,7 +47,7 @@ async function main() {
 main().catch(console.error);
 ```
 
-Generated classes compiled as CommonJS import this package with `require()`. This works on modern Node.js versions that support synchronous `require()` of compatible ESM module graphs, including the Node.js versions covered by this project's tests. For portable CommonJS support across Node.js runtimes, load `xmlbind-ts` with dynamic `import()` instead.
+Generated classes compiled as CommonJS import this package with `require()`. This works on all [supported Node.js versions](#supported-nodejs-versions), which load ES modules with `require()` without a flag. For portable CommonJS support across other Node.js runtimes, load `xmlbind-ts` with dynamic `import()` instead.
 
 ## TypeScript Decorator Support
 
@@ -643,3 +649,21 @@ GPL-3.0-only
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Node.js version for development
+
+Develop with the Node.js major version in `.nvmrc`, for example with `nvm install`, which installs its latest release and switches to it. nvm-windows does not read `.nvmrc`; there, run `nvm install <version>` and `nvm use <version>` with the version from the file. CI uses the latest release of that major version as well.
+
+One Node.js major version is used everywhere, and `npm run node:check` checks that the values match:
+
+| Value | Rule |
+|---|---|
+| `engines.node` | `>=` and the major version, for example `>=24`. All runtime dependencies must accept every version it includes: its first release (for example 24.0.0) and the first release of every newer line before its end of life. |
+| `@types/node` | `^` and a version with the same major version, so that the types offer no API of a newer Node.js version. Dependabot ignores its major updates. |
+| `.nvmrc` | The major version, for example `24`. |
+
+`npm run node:check` also warns when the major version reaches its end of life within 90 days, and fails from the end of life on. CI runs it on every push and pull request, where a warning appears as an annotation of the run, and weekly with `--strict`, where a warning fails the run, so that GitHub sends a notification. GitHub pauses scheduled workflows of a public repository after 60 days without activity in it; re-enable the workflow in the Actions tab then.
+
+To change the major version, run `npm run node:update` with the Node.js version from `.nvmrc`; the script is TypeScript, which Node.js runs directly from 22.18 on. It lists the runtime dependencies and the Node.js versions they accept, and a table of the Node.js release lines with their status, whether all dependencies accept them, the matching `@types/node`, the latest release and the end of life. It asks for the major version (default: the newest LTS version), writes `package.json` and `.nvmrc`, and offers to install the latest release of that major version with nvm, nvm-windows or fnm and to run `npm install`, `npm run lint` and `npm test` with it. `npm run node:update -- <major>` skips the question. Then update the version in [Supported Node.js versions](#supported-nodejs-versions) and commit the changes together.
+
+The script reads the Node.js release schedule from GitHub, the list of Node.js releases from nodejs.org and the versions of `@types/node` from the npm registry.

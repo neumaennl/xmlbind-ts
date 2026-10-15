@@ -9,6 +9,12 @@ updates:
     directory: "/" # Location of package.json
     schedule:
       interval: "daily"
+    ignore:
+      # @types/node follows the supported Node major version in engines.node, so
+      # that the types offer no API of a newer Node version. Raise it with
+      # `npm run node:update`.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       eslint-dependencies:
         patterns:
