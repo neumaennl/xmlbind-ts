@@ -218,7 +218,9 @@ function initializeNsContext(meta: any, node: any, obj?: any): NsContext {
     | undefined;
 
   const ctx: NsContext = {
-    defaultNs: meta.namespace ?? undefined,
+    defaultNs: nsPrefixes !== undefined
+      ? nsPrefixes[""] || undefined
+      : meta.namespace ?? undefined,
     uriToPrefix: new Map<string, string>(),
     declared: new Set<string>(),
     rootNode: node,
@@ -227,9 +229,12 @@ function initializeNsContext(meta: any, node: any, obj?: any): NsContext {
   };
 
   if (nsPrefixes) {
-    // Use runtime namespace prefixes (prefix → URI), skipping the default namespace entry
+    // Use the source document's namespace declarations (prefix → URI).
     for (const [pfx, uri] of Object.entries(nsPrefixes)) {
-      if (!pfx) continue; // skip default namespace (handled by meta.namespace / "@_xmlns")
+      if (!pfx) {
+        node["@_xmlns"] = uri;
+        continue;
+      }
       ctx.uriToPrefix.set(uri, pfx);
       node[`@_xmlns:${pfx}`] = uri;
       ctx.declared.add(pfx);
@@ -474,7 +479,9 @@ export function marshal(obj: any): string {
   const xmlObj: any = {};
   const node: any = {};
 
-  if (meta.namespace) node["@_xmlns"] = meta.namespace;
+  if (meta.namespace && obj._namespacePrefixes === undefined) {
+    node["@_xmlns"] = meta.namespace;
+  }
 
   const ctx = initializeNsContext(meta, node, obj);
   const fields = getAllFields(ctor);
@@ -498,7 +505,13 @@ export function marshal(obj: any): string {
   // Process wildcard fields and text
   processRootWildcardsAndText(node, obj, fields);
 
-  xmlObj[rootName] = node;
+  const qualifiedRootName = qName(
+    rootName,
+    meta.namespace ?? undefined,
+    ctx,
+    false
+  );
+  xmlObj[qualifiedRootName] = node;
   const xml = builder.build(xmlObj);
 
   return postProcessXml(xml, obj);

@@ -15,11 +15,11 @@ export type NsContext = {
    * True when the marshalled object has `_namespacePrefixes` set (populated by
    * `unmarshal` or written directly by the caller). When true, that map is
    * treated as the authoritative set of namespace declarations for *known*
-   * namespaces, and helpers such as `mergeChildPrefixes` must not inject
-   * additional `xmlns:` declarations for those namespaces that would otherwise
-   * be captured by a subsequent `unmarshal` call and cause the two
-   * `_namespacePrefixes` values to differ. Note that marshalling may still
-   * introduce new `xmlns:` declarations for previously unseen namespaces.
+   * namespaces, including the default namespace under the empty prefix. Helpers
+   * such as `mergeChildPrefixes` must not inject additional declarations for
+   * those namespaces that would otherwise be captured by a subsequent `unmarshal`
+   * call and cause the two `_namespacePrefixes` values to differ. Marshalling may
+   * still introduce new `xmlns:` declarations for previously unseen namespaces.
    */
   hasExplicitPrefixes: boolean;
 };

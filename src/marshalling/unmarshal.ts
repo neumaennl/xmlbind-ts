@@ -482,12 +482,10 @@ function attachRootMetadata(
     (target as any)._hasXmlDeclaration = true;
   }
 
-  // Store named (prefixed) namespace declarations only.
-  // The default namespace (empty prefix) is already captured by meta.namespace on the class
-  // and is not meaningful for prefix-based lookups.
+  // Preserve the root namespace declarations, including the default namespace.
   const namedPrefixes: Record<string, string> = {};
   for (const [pfx, uri] of Object.entries(nsMap)) {
-    if (pfx) namedPrefixes[pfx] = uri;
+    namedPrefixes[pfx] = uri;
   }
   (target as any)._namespacePrefixes = namedPrefixes;
 }

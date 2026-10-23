@@ -32,8 +32,7 @@ describe("_namespacePrefixes on unmarshalled root object", () => {
 
     const doc = unmarshal(Document, xml) as any;
     expect(doc._namespacePrefixes).toBeDefined();
-    // Default namespace (empty prefix) is NOT included — it's captured by meta.namespace
-    expect(doc._namespacePrefixes[""]).toBeUndefined();
+    expect(doc._namespacePrefixes[""]).toBe("http://example.com/doc");
     expect(doc._namespacePrefixes["ext"]).toBe("http://example.com/ext");
   });
 

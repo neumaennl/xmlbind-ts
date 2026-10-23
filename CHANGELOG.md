@@ -12,6 +12,7 @@
 
 ### Changed
 
+- Fixed namespace round-tripping so unmarshalled documents preserve the root's default namespace and use available prefixes when marshalling element names. This prevents changes to the meaning of unprefixed QName values, such as XSD `type` references.
 - Declared Node.js 24 and newer as the supported runtime range.
 - Migrated the project to TypeScript 6 and run tests in both legacy and Stage 3 decorator modes.
 

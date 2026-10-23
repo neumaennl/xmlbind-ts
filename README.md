@@ -347,12 +347,12 @@ const xml = `<Catalog xmlns="http://example.com/catalog" xmlns:ext="http://examp
 
 const catalog = unmarshal(Catalog, xml);
 console.log(catalog._namespacePrefixes);
-// { ext: "http://example.com/ext" }
+// { "": "http://example.com/catalog", ext: "http://example.com/ext" }
 ```
 
-The default namespace (the URI behind `xmlns="..."`) is not included in `_namespacePrefixes`
-because it is already accessible via the `@XmlRoot` decorator's `namespace` option; only
-explicitly prefixed declarations appear in the map.
+The default namespace (the URI behind `xmlns="..."`) is stored under the empty-string key
+(`""`). This preserves the source document's default namespace even when it differs from the
+`@XmlRoot` decorator's `namespace` option.
 
 ### Modifying namespace prefixes before marshalling
 
@@ -361,7 +361,10 @@ the authoritative source for all `xmlns:prefix` declarations in the output XML.
 
 ```typescript
 // Rename the "ext" prefix to "e" before serialising
-catalog._namespacePrefixes = { e: "http://example.com/ext" };
+catalog._namespacePrefixes = {
+  "": "http://example.com/catalog",
+  e: "http://example.com/ext",
+};
 const output = marshal(catalog);
 // <Catalog xmlns="http://example.com/catalog" xmlns:e="http://example.com/ext">
 //   <e:item>Widget</e:item>
@@ -369,11 +372,12 @@ const output = marshal(catalog);
 ```
 
 When `_namespacePrefixes` is set (even if empty), it is the authoritative source for
-all `xmlns:prefix` declarations that were present when the document was last unmarshalled.
-If you add content that uses a namespace URI not already in the map, the marshaller will
-still auto-declare a generated prefix (e.g. `xmlns:ns1="..."`) for it.  When
-`_namespacePrefixes` is `undefined` (e.g. on a freshly constructed object), the `prefixes`
-option from the `@XmlRoot` decorator is used as the fallback.
+namespace declarations that were present when the document was last unmarshalled. The
+empty-string key represents the default namespace; omit it when the source document had no
+default namespace. If you add content that uses a namespace URI not already in the map, the
+marshaller will still auto-declare a generated prefix (e.g. `xmlns:ns1="..."`) for it. When
+`_namespacePrefixes` is `undefined` (e.g. on a freshly constructed object), the `namespace`
+and `prefixes` options from the `@XmlRoot` decorator are used as fallbacks.
 
 ### Namespace prefixes in generated code
 
