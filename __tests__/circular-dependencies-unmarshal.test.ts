@@ -290,16 +290,20 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     expect(loggingType.name).toBe("loggingType");
 
     // Verify nested structures are typed correctly
-    const attr = loggingType.attribute as any;
+    expect(Array.isArray(loggingType.attribute)).toBe(true);
+    const attr = (loggingType.attribute as any[])[0];
     expect(attr).toBeDefined();
     expect(attr.name).toBe("logLevel");
 
     // The simpleType inside attribute should be typed
     expect(attr.simpleType).toBeDefined();
-    expect(attr.simpleType.constructor.name).toBe("localSimpleType");
+    const simpleType = Array.isArray(attr.simpleType)
+      ? attr.simpleType[0]
+      : attr.simpleType;
+    expect(simpleType.constructor.name).toBe("localSimpleType");
 
     // The restriction inside simpleType should be typed (not raw JSON)
-    const restriction = attr.simpleType.restriction;
+    const restriction = simpleType.restriction;
     expect(restriction).toBeDefined();
     expect(restriction.constructor.name).toBe("restrictionType");
 
@@ -388,7 +392,9 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     const result = unmarshal(schema, exampleXsd) as any;
 
     // Get the root "example" element - this is a top-level element with anonymous complexType
-    const exampleElement = result.element;
+    const exampleElement = Array.isArray(result.element)
+      ? result.element[0]
+      : result.element;
     expect(exampleElement).toBeDefined();
     expect(exampleElement.name).toBe("example");
 

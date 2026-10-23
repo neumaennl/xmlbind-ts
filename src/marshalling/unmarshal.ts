@@ -86,6 +86,22 @@ function processPlainTextNode<T>(
 }
 
 /**
+ * Initializes declared array fields before binding parsed XML values.
+ * @param target - The object being populated
+ * @param fields - The object's field metadata
+ */
+function initializeArrayFields(
+  target: Record<string, unknown>,
+  fields: any[]
+): void {
+  for (const field of fields) {
+    if (field.kind === "element" && field.isArray) {
+      target[field.key] = [];
+    }
+  }
+}
+
+/**
  * Binds attribute and element fields to the target object.
  * @param target - The target object
  * @param node - The parsed XML node
@@ -120,7 +136,10 @@ function bindFieldsToTarget(
         f.namespace ?? undefined,
         hereNs
       );
-      if (keys.length === 0) continue;
+      if (keys.length === 0) {
+        if (f.isArray) target[f.key] = [];
+        continue;
+      }
       // Collect values from all namespace-equivalent keys
       const valuesByKey: Record<string, unknown> = {};
       let totalCount = 0;
@@ -130,9 +149,12 @@ function bindFieldsToTarget(
         valuesByKey[k] = raw;
         totalCount += Array.isArray(raw) ? raw.length : 1;
       }
-      if (totalCount === 0) continue;
+      if (totalCount === 0) {
+        if (f.isArray) target[f.key] = [];
+        continue;
+      }
       const resolvedType = resolveType(f.type);
-      if (totalCount > 1) {
+      if (f.isArray || totalCount > 1) {
         // Array case: rebuild in document order with per-item occurrence context
         const entries = (preserveOrderData && path)
           ? mergeElementsByDocumentOrder(keys, f.name || f.key, valuesByKey, preserveOrderData, path)
@@ -141,6 +163,7 @@ function bindFieldsToTarget(
               return raw === undefined ? [] : (Array.isArray(raw) ? raw : [raw]);
             }).map(v => ({ value: v as ParsedXmlValue, occurrence: undefined as unknown }));
         target[f.key] = entries.map(({ value: v, occurrence }) => {
+          if (isParsedXmlNode(v) && v["@_xsi:nil"] === "true") return null;
           const itemPreserveOrder = occurrence ? [{ _item: occurrence }] : undefined;
           return xmlValueToObject(v, resolvedType, hereNs, itemPreserveOrder, ["_item"], f.allowStringFallback);
         });
@@ -238,14 +261,15 @@ function xmlValueToObject<T>(
 
   const inst = new cls();
   ensureMeta(cls);
+  const fields = getAllFields(cls);
+  const target = inst as Record<string, unknown>;
+  initializeArrayFields(target, fields);
 
   if (!isParsedXmlNode(node)) {
     return processPlainTextNode(node, inst, cls);
   }
 
-  const target = inst as Record<string, unknown>;
   const hereNs = collectNs(node, nsMap);
-  const fields = getAllFields(cls);
 
   // Bind attributes and elements
   bindFieldsToTarget(target, node, fields, hereNs, preserveOrderData, path);
@@ -312,10 +336,12 @@ function findRootNode(
  */
 function handleSimpleTextRoot<T>(node: ParsedXmlValue, cls: new () => T): T {
   const inst = new cls();
+  const target = inst as Record<string, unknown>;
   const fields = getAllFields(cls);
+  initializeArrayFields(target, fields);
   const textField = fields.find((f) => f.kind === "text");
   if (textField) {
-    (inst as any)[textField.key] = castValue(node, resolveType(textField.type));
+    target[textField.key] = castValue(node, resolveType(textField.type));
   }
   return inst;
 }
@@ -362,7 +388,10 @@ function bindRootElements(
 ): void {
   for (const f of fields.filter((f) => f.kind === "element")) {
     const keys = matchAllElementKeys(node, f.name, f.namespace ?? undefined, nsMap);
-    if (keys.length === 0) continue;
+    if (keys.length === 0) {
+      if (f.isArray) target[f.key] = [];
+      continue;
+    }
     // Collect raw values per key
     const valuesByKey: Record<string, unknown> = {};
     let totalCount = 0;
@@ -372,20 +401,19 @@ function bindRootElements(
       valuesByKey[k] = raw;
       totalCount += Array.isArray(raw) ? raw.length : 1;
     }
-    if (totalCount === 0) continue;
+    if (totalCount === 0) {
+      if (f.isArray) target[f.key] = [];
+      continue;
+    }
     const resolvedType = resolveType(f.type);
-    // Enter array path only when the actual parsed data has multiple values
-    // (totalCount > 1), mirroring the original Array.isArray(val) check.
-    // f.isArray is intentionally NOT used here: when only one XML occurrence
-    // is present, fast-xml-parser returns a single object (not an array), and
-    // we preserve that single-item behavior regardless of the decorator setting.
-    const isArray = totalCount > 1;
+    const isArray = f.isArray || totalCount > 1;
     if (isArray) {
       // Rebuild in document order with per-item occurrence context
       const entries = mergeElementsByDocumentOrder(
         keys, f.name || f.key, valuesByKey, parsedWithComments, [rootName]
       );
       target[f.key] = entries.map(({ value: v, occurrence }) => {
+        if (isParsedXmlNode(v) && v["@_xsi:nil"] === "true") return null;
         const itemPreserveOrder = occurrence ? [{ _item: occurrence }] : undefined;
         return xmlValueToObject(v, resolvedType, nsMap, itemPreserveOrder, ["_item"], f.allowStringFallback);
       });
@@ -499,6 +527,7 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
   const target = inst as Record<string, unknown>;
   const nsMap = collectNs(node, undefined);
   const fields = getAllFields(cls);
+  initializeArrayFields(target, fields);
 
   // Bind attributes and elements
   bindRootAttributes(target, node, fields, nsMap);

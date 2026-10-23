@@ -237,6 +237,23 @@ export function buildXmlElementDecorator(
 }
 
 /**
+ * Builds the TypeScript property type for an XML element.
+ * @param tsType - The element value type
+ * @param isArray - Whether the element may occur multiple times
+ * @param nillable - Whether an occurrence may be nil
+ * @returns The property type, including nullable items where needed
+ */
+export function buildXmlElementPropertyType(
+  tsType: string,
+  isArray: boolean,
+  nillable: boolean
+): string {
+  if (nillable && isArray) return `(${tsType} | null)[]`;
+  if (nillable) return `${tsType} | null`;
+  return isArray ? `${tsType}[]` : tsType;
+}
+
+/**
  * Emits the @XmlElement decorator and property declaration for an element.
  * Handles decorator options (type, array, nillable, namespace) and property optionality.
  *
@@ -263,13 +280,14 @@ export function emitElementDecorator(
   doc?: string
 ): void {
   const propName = toPropertyName(en, state.reservedWords);
+  const propertyType = buildXmlElementPropertyType(tsType, isArray, nillable);
   // Emit documentation comment if present
   if (doc) {
     lines.push(...formatTsDoc(doc, "  "));
   }
   lines.push(buildXmlElementDecorator(en, tsType, isArray, nillable, ens, state));
   lines.push(
-    `  ${propName}${makeRequired ? "!" : "?"}: ${tsType}${isArray ? "[]" : ""};`
+    `  ${propName}${makeRequired ? "!" : "?"}: ${propertyType};`
   );
   lines.push("");
 }

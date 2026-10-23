@@ -11,7 +11,11 @@ import {
 } from "./types.js";
 import { toPropertyName, toClassName } from "./codegen.js";
 import type { GeneratorState, GenUnit } from "./codegen.js";
-import { handleInlineType, buildXmlElementDecorator } from "./element-types.js";
+import {
+  handleInlineType,
+  buildXmlElementDecorator,
+  buildXmlElementPropertyType,
+} from "./element-types.js";
 
 /**
  * Resolves the namespace URI for a qualified name in the context of an element.
@@ -237,9 +241,11 @@ export function emitElementRef(
 
     lines.push(buildXmlElementDecorator(refLocalName, tsType, isArray, nillable, refNs, state));
     lines.push(
-      `  ${propName}${makeRequired ? "!" : "?"}: ${tsType}${
-        isArray ? "[]" : ""
-      };`
+      `  ${propName}${makeRequired ? "!" : "?"}: ${buildXmlElementPropertyType(
+        tsType,
+        isArray,
+        nillable
+      )};`
     );
     lines.push("");
   }

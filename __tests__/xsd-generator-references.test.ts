@@ -123,6 +123,34 @@ describe("XSD Generator - Element and Attribute References", () => {
         );
 
         expect(content).toContain("nillable: true");
+        expect(content).toMatch(/NullableField[!?]?:\s*number \| null/);
+      });
+    });
+
+    test("includes null in the item type of nillable array references", () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:element name="NullableField" type="xsd:int"/>
+
+  <xsd:complexType name="NullableContainer">
+    <xsd:sequence>
+      <xsd:element ref="NullableField" nillable="true" maxOccurs="unbounded"/>
+      <xsd:element name="nullableDirect" type="xsd:int" nillable="true" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:element name="NullableContainer" type="NullableContainer"/>
+</xsd:schema>`;
+
+      withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(
+          path.join(tmp, "NullableContainer.ts"),
+          "utf8"
+        );
+
+        expect(content).toMatch(/NullableField[!?]?:\s*\(number \| null\)\[\]/);
+        expect(content).toMatch(/nullableDirect[!?]?:\s*\(number \| null\)\[\]/);
       });
     });
 

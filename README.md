@@ -177,9 +177,9 @@ Maps a class property to an XML element.
 
 - `name` (optional): The XML element name. Defaults to the property name.
 - `options.type` (optional): The type constructor (String, Number, Boolean, or a custom class/enum).
-- `options.array` (optional): If true, the property represents an array of elements.
+- `options.array` (optional): If true, the property represents an array of elements. Unmarshalling returns an array even when the XML contains only one occurrence; if the element is absent, the property is an empty array. An `xsi:nil="true"` occurrence in an array is represented as `null` within the array.
 - `options.namespace` (optional): The XML namespace for this element.
-- `options.nillable` (optional): If true, allows null/nil values.
+- `options.nillable` (optional): If true, allows `xsi:nil="true"` values. For generated classes, the property type includes `null` (or nullable items for arrays); manually declared properties should include `null` in the corresponding type as well.
 
 **Example:**
 

@@ -7,6 +7,15 @@ import {
 } from "./test-utils/generated-runtime.js";
 import { unmarshal } from "../src/marshalling/unmarshal.js";
 
+/**
+ * Returns the first value from an array, or the value itself when it is singular.
+ * @param value - A value that may be represented as an array
+ * @returns The first item or the original value
+ */
+function firstOrSelf<T>(value: T | T[] | undefined): T | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 describe("XMLSchema Documentation Unmarshalling", () => {
   test("documentation text should be unmarshalled correctly", async () => {
     await withTmpDir(async (tmpDir) => {
@@ -37,15 +46,16 @@ describe("XMLSchema Documentation Unmarshalling", () => {
       expect(result.element).toBeDefined();
 
       // Verify the example element has an annotation with documentation
-      expect(result.element.annotation).toBeDefined();
-      expect(result.element.annotation.documentation).toBeDefined();
+      const exampleElement = firstOrSelf(result.element);
+      const annotation = firstOrSelf(exampleElement?.annotation);
+      const documentation = firstOrSelf(annotation?.documentation);
+      expect(annotation).toBeDefined();
+      expect(documentation).toBeDefined();
 
       // Verify the documentation text was correctly unmarshalled
       // The documentation element should have a 'value' property containing the text
-      expect(result.element.annotation.documentation).toHaveProperty("value");
-      expect(result.element.annotation.documentation.value).toBe(
-        "root element"
-      );
+      expect(documentation).toHaveProperty("value");
+      expect(documentation.value).toBe("root element");
 
       // Also check the complexType annotations
       expect(result.complexType).toBeDefined();
@@ -55,29 +65,30 @@ describe("XMLSchema Documentation Unmarshalling", () => {
         (ct: any) => ct.name === "choiceType"
       );
       expect(choiceType).toBeDefined();
-      expect(choiceType.annotation).toBeDefined();
-      expect(choiceType.annotation.documentation).toBeDefined();
-      expect(choiceType.annotation.documentation.value).toBe(
-        "complexType showing a choice"
-      );
+      const choiceAnnotation = firstOrSelf(choiceType.annotation);
+      const choiceDocumentation = firstOrSelf(choiceAnnotation?.documentation);
+      expect(choiceAnnotation).toBeDefined();
+      expect(choiceDocumentation).toBeDefined();
+      expect(choiceDocumentation.value).toBe("complexType showing a choice");
 
       const loggingType = result.complexType.find(
         (ct: any) => ct.name === "loggingType"
       );
       expect(loggingType).toBeDefined();
-      expect(loggingType.annotation).toBeDefined();
-      expect(loggingType.annotation.documentation).toBeDefined();
-      expect(loggingType.annotation.documentation.value).toBe(
-        "complexType secribing a log entry"
-      );
+      const loggingAnnotation = firstOrSelf(loggingType.annotation);
+      const loggingDocumentation = firstOrSelf(loggingAnnotation?.documentation);
+      expect(loggingAnnotation).toBeDefined();
+      expect(loggingDocumentation).toBeDefined();
+      expect(loggingDocumentation.value).toBe("complexType secribing a log entry");
 
       // Check simpleType annotation
       expect(result.simpleType).toBeDefined();
-      expect(result.simpleType.annotation).toBeDefined();
-      expect(result.simpleType.annotation.documentation).toBeDefined();
-      expect(result.simpleType.annotation.documentation.value).toBe(
-        "a simple string with a max length"
-      );
+      const simpleType = firstOrSelf(result.simpleType);
+      const simpleAnnotation = firstOrSelf(simpleType?.annotation);
+      const simpleDocumentation = firstOrSelf(simpleAnnotation?.documentation);
+      expect(simpleAnnotation).toBeDefined();
+      expect(simpleDocumentation).toBeDefined();
+      expect(simpleDocumentation.value).toBe("a simple string with a max length");
     });
   }, 30000);
 
@@ -106,13 +117,12 @@ describe("XMLSchema Documentation Unmarshalling", () => {
       const result = unmarshal(Schema, schemaWithAttributedDoc) as any;
 
       // Verify the documentation text and attribute were both unmarshalled
-      expect(result.element.annotation.documentation).toBeDefined();
-      expect(result.element.annotation.documentation.value).toBe(
-        "documentation with source attribute"
-      );
-      expect(result.element.annotation.documentation.source).toBe(
-        "http://example.com"
-      );
+      const exampleElement = firstOrSelf(result.element);
+      const annotation = firstOrSelf(exampleElement?.annotation);
+      const documentation = firstOrSelf(annotation?.documentation);
+      expect(documentation).toBeDefined();
+      expect(documentation.value).toBe("documentation with source attribute");
+      expect(documentation.source).toBe("http://example.com");
     });
   }, 30000);
 });
