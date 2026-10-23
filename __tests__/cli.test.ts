@@ -87,7 +87,7 @@ describe("CLI module (unit tests)", () => {
     expect(mockCleanupGeneratedFiles).not.toHaveBeenCalled();
 
     // Verify generateFromXsd was called with correct arguments
-    expect(mockGenerateFromXsd).toHaveBeenCalledWith(SAMPLE_XSD, outDir);
+    expect(mockGenerateFromXsd).toHaveBeenCalledWith(SAMPLE_XSD, outDir, true);
   });
 
   test("calls cleanupGeneratedFiles with force=true when --force is used", async () => {
@@ -104,7 +104,7 @@ describe("CLI module (unit tests)", () => {
     expect(mockCleanupGeneratedFiles).toHaveBeenCalledWith(outDir, true);
 
     // Verify generateFromXsd was called
-    expect(mockGenerateFromXsd).toHaveBeenCalledWith(SAMPLE_XSD, outDir);
+    expect(mockGenerateFromXsd).toHaveBeenCalledWith(SAMPLE_XSD, outDir, true);
   });
 
   test("calls cleanupGeneratedFiles with force=false when neither flag is used", async () => {
@@ -120,7 +120,7 @@ describe("CLI module (unit tests)", () => {
     expect(mockCleanupGeneratedFiles).toHaveBeenCalledWith(outDir, false);
 
     // Verify generateFromXsd was called
-    expect(mockGenerateFromXsd).toHaveBeenCalledWith(SAMPLE_XSD, outDir);
+    expect(mockGenerateFromXsd).toHaveBeenCalledWith(SAMPLE_XSD, outDir, true);
   });
 
   test("exits when user cancels cleanup (cleanupGeneratedFiles returns false)", async () => {
@@ -158,7 +158,7 @@ describe("CLI module (unit tests)", () => {
     await cliAction(opts);
 
     // Verify generateFromXsd was called with the custom XSD content
-    expect(mockGenerateFromXsd).toHaveBeenCalledWith(customXsd, outDir);
+    expect(mockGenerateFromXsd).toHaveBeenCalledWith(customXsd, outDir, true);
   });
 
   test("handles both --force and --no-delete (--no-delete takes precedence)", async () => {
@@ -175,6 +175,16 @@ describe("CLI module (unit tests)", () => {
     expect(mockCleanupGeneratedFiles).not.toHaveBeenCalled();
 
     // Verify generateFromXsd was called
-    expect(mockGenerateFromXsd).toHaveBeenCalledWith(SAMPLE_XSD, outDir);
+    expect(mockGenerateFromXsd).toHaveBeenCalledWith(SAMPLE_XSD, outDir, true);
+  });
+
+  test("passes importExtensions=false when --no-import-extensions is used", async () => {
+    await cliAction({
+      input: xsdFile,
+      out: outDir,
+      delete: false,
+      importExtensions: false,
+    });
+    expect(mockGenerateFromXsd).toHaveBeenCalledWith(SAMPLE_XSD, outDir, false);
   });
 });
