@@ -88,9 +88,14 @@ function getReservedWords(): Set<string> {
  *
  * @param xsdText - The XSD schema content as a string
  * @param outDir - The output directory path where generated TypeScript files will be written
+ * @param importExtensions - Whether relative imports/re-exports end in `.js` (default: true)
  * @throws {Error} If the XSD schema is invalid or missing a schema root element
  */
-export function generateFromXsd(xsdText: string, outDir: string): void {
+export function generateFromXsd(
+  xsdText: string,
+  outDir: string,
+  importExtensions = true
+): void {
   const doc = parseXsd(xsdText);
   const schema = getSchemaRoot(doc);
   if (!schema) throw new Error("No schema");
@@ -148,5 +153,5 @@ export function generateFromXsd(xsdText: string, outDir: string): void {
   processTopLevelElements(schemaContext.topLevelElements, referencedTopLevels, state, ensureClass);
 
   // Write all generated files
-  writeGeneratedFiles(generated, generatedSimpleTypes, outDir);
+  writeGeneratedFiles(generated, generatedSimpleTypes, outDir, importExtensions);
 }

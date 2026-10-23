@@ -451,8 +451,10 @@ The library includes a command-line tool to generate TypeScript classes from XSD
 ### CLI Usage
 
 ```bash
-xsd2ts input.xsd output-directory
+xsd2ts -i input.xsd -o output-directory [--force] [--no-delete] [--no-import-extensions]
 ```
+
+By default, all relative imports and re-exports in the generated files (including the barrel `index.ts`) use `.js` extensions (e.g. `from './Person.js'`), as required by native ES modules (`"type": "module"` with `nodenext`). **Breaking change:** previously extension-less imports were written. Pass `--no-import-extensions` to get extension-less imports for projects using the older style. Programmatically, pass `false` as the third argument of `generateFromXsd`.
 
 ### Programmatic Usage
 

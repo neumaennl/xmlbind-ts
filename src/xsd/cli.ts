@@ -13,6 +13,7 @@ export interface CliOptions {
   out: string;
   force?: boolean;
   delete: boolean; // Note: --no-delete sets this to false
+  importExtensions?: boolean; // Note: --no-import-extensions sets this to false
 }
 
 /**
@@ -39,7 +40,7 @@ export async function cliAction(opts: CliOptions): Promise<void> {
     }
   }
 
-  generateFromXsd(txt, opts.out);
+  generateFromXsd(txt, opts.out, opts.importExtensions !== false);
 }
 
 /**
@@ -48,7 +49,7 @@ export async function cliAction(opts: CliOptions): Promise<void> {
  * Converts an XSD schema file to TypeScript class definitions.
  * Generates TypeScript files with decorators for XML marshalling/unmarshalling.
  *
- * Usage: xsd2ts -i <<input.xsd> -o <output-directory> [--force] [--no-delete]
+ * Usage: xsd2ts -i <<input.xsd> -o <output-directory> [--force] [--no-delete] [--no-import-extensions]
  */
 program
   .description("Generate TypeScript classes from XSD schema")
@@ -61,6 +62,10 @@ program
   .option(
     "--no-delete",
     "Skip deletion of existing *.ts files in output directory"
+  )
+  .option(
+    "--no-import-extensions",
+    "Omit .js extensions in relative imports and exports (for older module styles)"
   )
   .action(cliAction);
 
