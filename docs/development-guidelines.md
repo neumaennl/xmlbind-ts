@@ -4,8 +4,8 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: stable
-generated: { by: human:neumaennl, at: 2026-10-30T09:14:29Z }
-verified: { by: human:neumaennl, at: 2026-10-30T09:19:49Z }
+generated: { by: human:neumaennl, at: 2026-11-06T14:23:45Z }
+verified: { by: human:neumaennl, at: 2026-11-06T14:23:45Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -28,13 +28,15 @@ sources:
 
 These rules apply to everyone who changes the library, the `xsd2ts` generator or the scripts, people and AI coding agents alike. Agents get them through `AGENTS.md`, which adds only what is specific to agents: their role, how they work with the maintainer, and a few rules for their own work.[^agents]
 
+Topics that have their own document are only linked here: the structure of the code in [Architecture](architecture.md), tests in [Testing](testing.md), and building, ESLint and CI in [Build and release](build-and-release.md).
+
 # Code size
 
 - A TypeScript file has at most 500 lines. When it grows beyond that, move related code into a module of its own with a clear name.
 - A function has at most 120 lines. Split longer functions into smaller helpers with one responsibility each.
 - For now, test files are exempt from both limits.
 
-ESLint should check the limits with the rules `max-lines` and `max-lines-per-function`, but does not do so yet.[^eslint]
+ESLint should check the limits with the rules `max-lines` and `max-lines-per-function`, but does not do so yet, and some code exceeds them (see [ESLint does not check the size limits](known-issues.md#eslint-does-not-check-the-size-limits)).[^eslint]
 
 # Code quality
 
@@ -50,11 +52,11 @@ ESLint should check the limits with the rules `max-lines` and `max-lines-per-fun
 - Define interfaces or types for data structures.
 - Names: PascalCase for classes, interfaces, types and decorators; camelCase for functions, methods and variables; UPPER_CASE for module-level constants. Names say what something is or does.
 - Length of names: clarity comes first, but keep them short. Aim for less than 15 characters; 25 to 30 is the upper limit. `createElement` is better than `createElementWithChildren`; `createElementNodeWithProcessingOfAnonymousTypes` is too long, `cen` too cryptic.
-- Avoid `any` where possible; use a specific type or `unknown` instead. ESLint does not report `any`.[^eslint]
+- Avoid `any` where possible; use a specific type or `unknown` instead. ESLint does not report `any` (see [`any` is used widely](known-issues.md#any-is-used-widely)).[^eslint]
 
 # Node version
 
-One Node.js major version is used for `engines.node`, `@types/node` and `.nvmrc`. Change it only with `npm run node:update`, not by hand; `README.md` describes how (section "Node.js version for development").[^manifest]
+One Node.js major version is used for `engines.node`, `@types/node` and `.nvmrc`. Change it only with `npm run node:update`, not by hand; [Build and release](build-and-release.md#nodejs-version) describes how.[^manifest]
 
 # TSDoc
 
@@ -74,22 +76,22 @@ Every function has an up-to-date TSDoc comment: what it does, each parameter wit
 # Tests
 
 - New and changed code is tested.
-- Test cases use `test()`, not `it()`.
+- Test cases use `test()`, not `it()` (see [Test files use both `test()` and `it()`](known-issues.md#test-files-use-both-test-and-it)).
 - A test file tests one feature. Tests for the same feature are not scattered over several test files.
 - Two tests do not test exactly the same thing.
 - Bigger XML or XSD snippets go into `__tests__/test-resources` and are reused where possible.
 
 # Documentation
 
-The documentation of the library and the generator is the knowledge bundle in `docs/`, in the Open Knowledge Format; its index is `docs/index.md`.[^okf]
+The documentation of the library and the generator is the knowledge bundle in `docs/`, in the Open Knowledge Format; [the index](index.md) lists its documents.[^okf]
 
-- **Keep it current.** When a change affects what a document describes, update the document in the same change. Then set its `generated` to the person responsible for the content (`by: human:<GitHub user>`, also when an agent wrote the text) and the current time (UTC), set `status: draft` and remove `verified`, and add an entry to the log `docs/log.md`, newest date first. When the maintainer has approved the document, set `status: stable` and add `verified` with `by: human:<GitHub user>` and the time.
-- **Known issues.** Record problems you find outside the current task in `docs/known-issues.md`, sorted by severity and effort, and remove them when they are fixed. A change to the known issues is a change like any other.
+- **Keep it current.** When a change affects what a document describes, update the document in the same change. Then set its `generated` to the person responsible for the content (`by: human:<GitHub user>`, also when an agent wrote the text) and the current time (UTC), set `status: draft` and remove `verified`, and add an entry to [the log](log.md), newest date first. When the maintainer has approved the document, set `status: stable` and add `verified` with `by: human:<GitHub user>` and the time.
+- **Known issues.** Record problems you find outside the current task in [Known issues](known-issues.md), sorted by severity and effort, and remove them when they are fixed. A change to the known issues is a change like any other.
 - **New documents** get front matter (`type`, `title`, a one-sentence `description`, `tags`, `status`, `generated`, `sources`), an entry in the index with the same description, and a log entry.
 - **Sources.** Each source has an `id`, a relative `resource` and a `title`. Important statements get a footnote `[^id]` whose text is the title of the source. Separate the footnote definitions with blank lines.
 - **Format.** Files use LF line endings, which `.gitattributes` (`* text=auto`) makes Git store for every text file. Links are relative; code and file paths are formatted as code, without line numbers. A document describes the current state and decided future work, not its own history; the history goes into the log. No volatile numbers such as test counts or durations.
 - **Diagrams.** Mermaid diagrams use one arrow with a combined label for both directions, so that labels do not overlap. Check that a diagram renders with `npx -y @mermaid-js/mermaid-cli -i diagram.mmd -o diagram.png`.
-- **README, contributing and changelog.** `README.md` is written for users and describes the state of the branch it is on; information for contributors goes into `CONTRIBUTING.md`. `CHANGELOG.md` records the functional changes of the package under "Unreleased"; changes of the documentation only go into the log of the bundle.
+- **README, contributing and changelog.** `README.md` is written for users and describes the state of the branch it is on; information for contributors goes into [`CONTRIBUTING.md`](../CONTRIBUTING.md). `CHANGELOG.md` records the functional changes of the package under "Unreleased"; changes of the documentation only go into [the log](log.md).
 
 # Before committing
 
