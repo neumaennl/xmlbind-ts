@@ -27,7 +27,7 @@ jobs:
           # Use the latest release of the major version in .nvmrc, not an older one from the runner's cache.
           check-latest: true
 
-      - name: Check engines.node, @types/node, .nvmrc and the end of life
+      - name: Check engines.node, @types/node, .nvmrc, the ECMAScript edition and the end of life
         # On the weekly run, a near end of life fails the job, so that GitHub sends a notification.
         run: npm run node:check -- ${{ github.event_name == 'schedule' && '--strict' || '' }}
 

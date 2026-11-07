@@ -15,6 +15,7 @@ import {
 } from "fs";
 import os from "os";
 import path from "path";
+import { compilerTarget } from "./test-utils/compiler-target.js";
 
 const SAMPLE_XSD = `<?xml version="1.0" encoding="utf-8"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/library" elementFormDefault="qualified">
@@ -103,7 +104,7 @@ describe("packaged xsd2ts CLI", () => {
       JSON.stringify(
         {
           compilerOptions: {
-            target: "ES2022",
+            ...compilerTarget(),
             module: "NodeNext",
             moduleResolution: "NodeNext",
             noEmit: true,
@@ -136,7 +137,7 @@ describe("packaged xsd2ts CLI", () => {
       JSON.stringify(
         {
           compilerOptions: {
-            target: "ES2022",
+            ...compilerTarget(),
             module: "CommonJS",
             outDir: "compiled",
             rootDir: "generated",

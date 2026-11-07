@@ -13,7 +13,8 @@ export function stubFetch(bodies: Record<string, object>): Mock {
     if (!(url in bodies)) {
       return Promise.resolve({ ok: false, status: 404 });
     }
-    return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(bodies[url]) });
+    const body = bodies[url];
+    return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body), text: () => Promise.resolve(JSON.stringify(body)) });
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
@@ -24,7 +25,28 @@ export const URLS = {
   schedule: "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json",
   index: "https://nodejs.org/dist/index.json",
   typesNode: "https://registry.npmjs.org/@types%2fnode",
+  base: (major: number): string => `https://raw.githubusercontent.com/tsconfig/bases/main/bases/node${major}.json`,
 };
+
+/**
+ * The target and libraries of the @tsconfig/bases configurations, per Node major
+ * version. The scripts take only the target; the libraries show that the rest is ignored.
+ */
+export const BASE_OPTIONS = {
+  22: { target: "es2022", lib: ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"] },
+  24: { target: "es2024", lib: ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Error", "ESNext.Iterator", "ESNext.Promise"] },
+  26: { target: "es2025", lib: ["es2025", "ESNext.Collection", "ESNext.Temporal"] },
+};
+
+/**
+ * Builds a @tsconfig/bases configuration.
+ *
+ * @param major - The major version of Node, one of the keys of `BASE_OPTIONS`
+ * @returns The configuration
+ */
+export function base(major: keyof typeof BASE_OPTIONS): object {
+  return { display: `Node ${major}`, compilerOptions: { ...BASE_OPTIONS[major], module: "nodenext" } };
+}
 
 /** A Node release schedule as of 2026. */
 export const SCHEDULE = {
@@ -42,11 +64,19 @@ export const RELEASES = ["20.19.0", "20.20.2", "22.11.0", "22.12.0", "22.23.3", 
 /** Published versions of `@types/node`. */
 export const TYPES_NODE = ["20.19.1", "22.10.10", "22.12.0", "22.13.17", "24.0.4", "24.12.0", "25.5.0", "26.0.1"];
 
-/** Answers the lookups of the scripts with the data above. */
-export function stubNodeData(): void {
-  stubFetch({
+/**
+ * Answers the lookups of the scripts with the data above.
+ *
+ * @param missing - URLs to answer with HTTP 404 instead
+ */
+export function stubNodeData(missing: string[] = []): void {
+  const bodies: Record<string, object> = {
     [URLS.schedule]: SCHEDULE,
     [URLS.index]: [...RELEASES].reverse().map((v) => ({ version: `v${v}` })),
     [URLS.typesNode]: { versions: Object.fromEntries(TYPES_NODE.map((v) => [v, {}])) },
-  });
+    [URLS.base(22)]: base(22),
+    [URLS.base(24)]: base(24),
+    [URLS.base(26)]: base(26),
+  };
+  stubFetch(Object.fromEntries(Object.entries(bodies).filter(([url]) => !missing.includes(url))));
 }

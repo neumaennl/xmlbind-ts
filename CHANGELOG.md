@@ -2,6 +2,10 @@
 
 ## Unreleased (since 2.3.0)
 
+### Changed
+
+- The package is compiled for ES2024 instead of ES2022, the edition that Node.js 24, the oldest supported version, fully supports. The compiler target now follows the supported Node.js version.
+
 ## 2.3.0 (2026-10-23)
 
 ### Added

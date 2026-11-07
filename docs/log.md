@@ -1,5 +1,10 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-07
+* **Update**: [Build and release](build-and-release.md): `tsconfig.target.json` holds only the ECMAScript edition of the supported Node.js version, as `target` and `lib`, without the `ESNext.*` libraries of `@tsconfig/bases`, and `npm run node:check` runs without the dependencies, as in CI.
+* **Update**: [Build and release](build-and-release.md) describes `tsconfig.target.json`, which holds the compiler target of the supported Node.js version from `@tsconfig/bases`, and how `npm run node:update` and `npm run node:check` keep it in line ([#283](https://github.com/neumaennl/xmlbind-ts/issues/283)).
+* **Update**: [Testing](testing.md) describes that the Vitest plugin and the tests that compile projects take the target from `tsconfig.target.json`, and the helper `compilerTarget()`. The [development guidelines](development-guidelines.md) and `CONTRIBUTING.md` say that the Node.js version decides the compiler target.
+
 ## 2026-11-06
 * **Update**: [Development guidelines](development-guidelines.md) link the index, the log, the known issues and `CONTRIBUTING.md`, which they named as paths before, link the documents of their topics and the known issues of their rules, and point to [Build and release](build-and-release.md#nodejs-version) instead of the removed README section for the Node.js version. `AGENTS.md` links `CONTRIBUTING.md`, the index and the known issues, and asks agents to look at the open GitHub issues when they plan fixes.
 * **Update**: Created `CONTRIBUTING.md` for contributors: setup, everyday commands, the Node.js version, the rules, how pull requests are checked, and the documentation. It takes over the sections "Contributing" and "Node.js version for development" of the former `README.md`.

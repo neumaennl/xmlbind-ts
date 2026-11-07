@@ -4,8 +4,8 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-06T14:23:45Z }
-verified: { by: human:neumaennl, at: 2026-11-06T14:23:45Z }
+generated: { by: human:neumaennl, at: 2026-11-07T17:30:17Z }
+verified: { by: human:neumaennl, at: 2026-11-07T20:29:03Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -56,7 +56,7 @@ ESLint should check the limits with the rules `max-lines` and `max-lines-per-fun
 
 # Node version
 
-One Node.js major version is used for `engines.node`, `@types/node` and `.nvmrc`. Change it only with `npm run node:update`, not by hand; [Build and release](build-and-release.md#nodejs-version) describes how.[^manifest]
+One Node.js major version is used for `engines.node`, `@types/node` and `.nvmrc`, and decides the compiler target in `tsconfig.target.json`. Change it only with `npm run node:update`, not by hand; [Build and release](build-and-release.md#nodejs-version) describes how.[^manifest]
 
 # TSDoc
 

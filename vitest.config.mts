@@ -1,7 +1,23 @@
 import { configDefaults, defineConfig, type Plugin } from "vitest/config";
 import ts from "typescript";
+import { compilerTarget } from "./__tests__/test-utils/compiler-target.ts";
 
 type DecoratorMode = "legacy" | "stage3";
+
+/**
+ * Converts the target of `tsconfig.target.json` to the value that
+ * `ts.transpileModule` expects, so that the tests are compiled with the same
+ * target as the build.
+ */
+function scriptTarget(): ts.ScriptTarget {
+  const { options, errors } = ts.convertCompilerOptionsFromJson({ target: compilerTarget().target }, ".");
+  if (errors.length > 0 || options.target === undefined) {
+    throw new Error("tsconfig.target.json must set a valid target.");
+  }
+  return options.target;
+}
+
+const target = scriptTarget();
 
 /**
  * Compiles TypeScript with `ts.transpileModule`, because Oxc (Vite 8,
@@ -17,7 +33,7 @@ function typescriptTranspile(decoratorMode: DecoratorMode): Plugin {
       if (id.endsWith(".ts") || id.endsWith(".tsx") || id.endsWith(".mts")) {
         const result = ts.transpileModule(code, {
           compilerOptions: {
-            target: ts.ScriptTarget.ES2022,
+            target,
             module: ts.ModuleKind.ESNext,
             experimentalDecorators: legacy,
             emitDecoratorMetadata: legacy,

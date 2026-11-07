@@ -4,8 +4,8 @@ title: Testing
 description: How the library and the generator are tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-05T04:48:41Z }
-verified: { by: human:neumaennl, at: 2026-11-05T04:48:41Z }
+generated: { by: human:neumaennl, at: 2026-11-07T17:30:17Z }
+verified: { by: human:neumaennl, at: 2026-11-07T20:29:03Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -22,6 +22,9 @@ sources:
   - id: generated-runtime
     resource: ../__tests__/test-utils/generated-runtime.ts
     title: Helpers for tests of generated classes
+  - id: compiler-target
+    resource: ../__tests__/test-utils/compiler-target.ts
+    title: Compiler target of the tests
   - id: decorator-mode
     resource: ../__tests__/test-utils/decorator-mode.ts
     title: Decorator mode of a test run
@@ -68,7 +71,7 @@ The configuration defines two projects, which run the same test files:[^vitest-c
 
 Every behavior of the decorators and the marshalling is therefore tested in both modes (see [Decorators](decorators.md#legacy-and-stage-3-decorators)). The `stage3-decorators` project leaves out the tests of the scripts, which use no decorators, and `cli-integration.test.ts`, which runs `npm pack` and does not depend on how Vitest compiles decorators.
 
-Both projects compile TypeScript with their own plugin, which calls `ts.transpileModule` for each file with target ES2022 and the decorator options of the project. Vite's own compiler, Oxc, is switched off (`oxc: false`), because it does not lower Stage 3 decorators. The plugin only removes types; it does not type-check.
+Both projects compile TypeScript with their own plugin, which calls `ts.transpileModule` for each file with the target of `tsconfig.target.json` (see [Build and release](build-and-release.md#typescript-configurations)) and the decorator options of the project.[^compiler-target] Vite's own compiler, Oxc, is switched off (`oxc: false`), because it does not lower Stage 3 decorators. The plugin only removes types; it does not type-check.
 
 Further settings:
 
@@ -89,6 +92,7 @@ Further settings:
 | `withTmpDir(callback)` | runs the callback with a new temporary folder and deletes it afterwards |
 | `setupGeneratedRuntime(outDir, xsds)` | generates classes from XSD texts into a folder and adds a stub package `@neumaennl/xmlbind-ts` there that re-exports `src/index.ts` |
 | `loadGeneratedClasses(outDir, names)` | imports generated classes by name |
+| `compilerTarget()` | returns `target` and `lib` of `tsconfig.target.json`, for the projects that tests compile with `tsc` |
 | `expectStringsOnSameLine(line, strings)` | checks that strings occur on one line in this order |
 | `expectStringsOnConsecutiveLines(text, strings)` | checks that strings occur on successive lines in this order |
 | `decoratorMode`, `emitsDecoratorMetadata`, `detectDecoratorMode()` | see [Two Vitest projects](#two-vitest-projects) |
@@ -136,6 +140,8 @@ CI runs the tests with coverage on every push to `main` and every pull request i
 [^test-utils]: Test utilities
 
 [^generated-runtime]: Helpers for tests of generated classes
+
+[^compiler-target]: Compiler target of the tests
 
 [^decorator-mode]: Decorator mode of a test run
 

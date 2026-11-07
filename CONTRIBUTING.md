@@ -23,7 +23,7 @@ No token is needed: all dependencies come from the npm registry.
 
 ## Node.js version
 
-One Node.js major version is used everywhere: in `engines.node`, `@types/node` and `.nvmrc`. `npm run node:check` checks that they agree; change the version only with `npm run node:update`, not by hand. [Build and release](docs/build-and-release.md#nodejs-version) describes both scripts.
+One Node.js major version is used everywhere: in `engines.node`, `@types/node` and `.nvmrc`, and it decides the compiler target in `tsconfig.target.json`. `npm run node:check` checks that they agree; change the version only with `npm run node:update`, not by hand. [Build and release](docs/build-and-release.md#nodejs-version) describes both scripts.
 
 ## Rules
 

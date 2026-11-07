@@ -4,6 +4,7 @@ import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir.js";
 import { execSync } from "child_process";
 import { setupGeneratedRuntime } from "./test-utils/generated-runtime.js";
+import { compilerTarget } from "./test-utils/compiler-target.js";
 
 describe("XSD Generator - XML Schema XSD", () => {
   test("generates TypeScript classes from XML Schema XSD and verifies compilation", () => {
@@ -61,11 +62,10 @@ describe("XSD Generator - XML Schema XSD", () => {
       // Create a tsconfig.json for compilation
       const tsConfig = {
         compilerOptions: {
-          target: "ES2020",
+          ...compilerTarget(),
           module: "NodeNext",
           moduleResolution: "NodeNext",
           rewriteRelativeImportExtensions: true,
-          lib: ["ES2020"],
           declaration: true,
           outDir: path.join(tmpDir, "dist"),
           strict: true,

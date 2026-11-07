@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { installNode, runWith } from "../lib/node-setup.ts";
 import { check, formatTable, main, rejectMajor, update, writeValues } from "../node-version.ts";
-import { RELEASES, SCHEDULE, stubFetch, stubNodeData, TYPES_NODE, URLS } from "./testHelpers.ts";
+import { base, RELEASES, SCHEDULE, stubFetch, stubNodeData, TYPES_NODE, URLS } from "./testHelpers.ts";
 
 const asker = { question: vi.fn<(query: string) => Promise<string>>(), close: vi.fn() };
 
@@ -13,6 +13,9 @@ vi.mock("../lib/node-setup.ts", () => ({ installNode: vi.fn(), runWith: vi.fn() 
 const TODAY = "2026-10-14";
 const DATA = { schedule: SCHEDULE, releases: RELEASES, typesNode: TYPES_NODE };
 const CONSTRAINTS = [{ name: "commander 15.0.0", range: ">=22.12.0" }];
+const EDITIONS = new Map([[22, "ES2022"], [24, "ES2024"], [26, "ES2025"]]);
+const ES2022 = { target: "ES2022", lib: ["ES2022"] };
+const ES2024 = { target: "ES2024", lib: ["ES2024"] };
 
 const PACKAGE_JSON = {
   name: "fixture",
@@ -33,19 +36,29 @@ const realIsTTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY") ?? { v
 let dir: string;
 
 /**
- * Writes `package.json`, `package-lock.json` and `.nvmrc` into the test folder.
+ * Writes `package.json`, `package-lock.json`, `.nvmrc` and `tsconfig.target.json` into the test folder.
  *
  * @param options - What to change in the files
  * @param options.pkg - Replaces fields of `package.json`
  * @param options.nvmrc - The content of `.nvmrc`, or null for no file
  * @param options.eol - The line endings
  * @param options.lock - The `package-lock.json`
+ * @param options.target - The content of `tsconfig.target.json`, or null for no file
  */
-function writeProject({ pkg = {}, nvmrc = "24" as string | null, eol = "\n", lock = PACKAGE_LOCK as object } = {}): void {
+function writeProject({
+  pkg = {},
+  nvmrc = "24" as string | null,
+  eol = "\n",
+  lock = PACKAGE_LOCK as object,
+  target = ES2024 as object | null,
+} = {}): void {
   writeFileSync(join(dir, "package.json"), `${JSON.stringify({ ...PACKAGE_JSON, ...pkg }, null, 2)}\n`.replace(/\n/g, eol));
   writeFileSync(join(dir, "package-lock.json"), JSON.stringify(lock));
   if (nvmrc !== null) {
     writeFileSync(join(dir, ".nvmrc"), `${nvmrc}${eol}`);
+  }
+  if (target !== null) {
+    writeFileSync(join(dir, "tsconfig.target.json"), JSON.stringify({ compilerOptions: target }));
   }
 }
 
@@ -98,13 +111,13 @@ describe("node-version", () => {
   describe("check", () => {
     it("should return 0 if everything matches and the end of life is far away", async () => {
       writeProject();
-      const fetchMock = stubFetch({ [URLS.schedule]: SCHEDULE });
+      const fetchMock = stubFetch({ [URLS.schedule]: SCHEDULE, [URLS.base(24)]: base(24) });
 
       await expect(check(dir, TODAY)).resolves.toBe(0);
       expect(console.log).toHaveBeenCalledWith(
-        "engines.node, @types/node, .nvmrc and the runtime dependencies match; Node 24 does not end within 90 days.",
+        "engines.node, @types/node, .nvmrc, the ECMAScript edition and the runtime dependencies match; Node 24 does not end within 90 days.",
       );
-      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
     it("should return 1 if engines.node is missing or not of the form >=N", async () => {
@@ -122,6 +135,23 @@ describe("node-version", () => {
       expect(console.error).toHaveBeenCalledWith('@types/node: is "^26.4.0", expected "^24.x.y".');
       expect(console.error).toHaveBeenCalledWith('.nvmrc: is "24.21.0", expected "24".');
       expect(console.error).toHaveBeenCalledWith("Run `npm run node:update` to fix this.");
+    });
+
+    it("should return 1 and name target and lib if tsconfig.target.json names another edition", async () => {
+      writeProject({ target: ES2022 });
+      stubNodeData();
+
+      await expect(check(dir, TODAY)).resolves.toBe(1);
+      expect(console.error).toHaveBeenCalledWith("tsconfig.target.json: target is ES2022, expected ES2024");
+      expect(console.error).toHaveBeenCalledWith("tsconfig.target.json: lib is ES2022, expected ES2024");
+    });
+
+    it("should return 1 if there is no @tsconfig/bases configuration for the major version", async () => {
+      writeProject();
+      stubNodeData([URLS.base(24)]);
+
+      await expect(check(dir, TODAY)).resolves.toBe(1);
+      expect(console.error).toHaveBeenCalledWith("There is no @tsconfig/bases configuration for Node 24.");
     });
 
     it("should return 1 if .nvmrc is missing", async () => {
@@ -197,11 +227,15 @@ describe("node-version", () => {
       [25, "Node 25 has reached its end of life or is not in the Node release schedule."],
       [22, ">=22 would include versions that runtime dependencies exclude: Node 22.0.0 by commander 15.0.0 (>=22.12.0)."],
     ])("should for %s return %s", (major, expected) => {
-      expect(rejectMajor(major, DATA, CONSTRAINTS, TODAY)).toBe(expected);
+      expect(rejectMajor(major, DATA, CONSTRAINTS, TODAY, EDITIONS)).toBe(expected);
     });
 
     it("should reject a major version without @types/node", () => {
-      expect(rejectMajor(24, { ...DATA, typesNode: [] }, CONSTRAINTS, TODAY)).toBe("There is no @types/node 24.x.");
+      expect(rejectMajor(24, { ...DATA, typesNode: [] }, CONSTRAINTS, TODAY, EDITIONS)).toBe("There is no @types/node 24.x.");
+    });
+
+    it("should reject a major version without an ECMAScript edition", () => {
+      expect(rejectMajor(24, DATA, CONSTRAINTS, TODAY, new Map())).toBe("There is no @tsconfig/bases configuration for Node 24.");
     });
   });
 
@@ -209,7 +243,7 @@ describe("node-version", () => {
     it("should write the values and keep the other fields and the CRLF line endings", () => {
       const pkg = { devDependencies: { "@types/node": "^26.4.0", typescript: "^6.0.3" } };
 
-      writeValues({ pkg, crlf: true }, { major: 24, typesNode: "^24.12.0" }, dir);
+      writeValues({ pkg, crlf: true }, { major: 24, typesNode: "^24.12.0", edition: "ES2024" }, dir);
 
       expect(JSON.parse(read("package.json"))).toEqual({
         devDependencies: { "@types/node": "^24.12.0", typescript: "^6.0.3" },
@@ -217,6 +251,8 @@ describe("node-version", () => {
       });
       expect(read("package.json")).toContain("\r\n");
       expect(read(".nvmrc")).toBe("24\r\n");
+      expect(JSON.parse(read("tsconfig.target.json"))).toEqual({ compilerOptions: ES2024 });
+      expect(read("tsconfig.target.json")).toContain("\r\n");
     });
   });
 
@@ -226,7 +262,7 @@ describe("node-version", () => {
     });
 
     it("should write the given major version and print the steps without a terminal", async () => {
-      writeProject({ pkg: { engines: {}, devDependencies: { "@types/node": "^26.4.0" } }, nvmrc: null });
+      writeProject({ pkg: { engines: {}, devDependencies: { "@types/node": "^26.4.0" } }, nvmrc: null, target: null });
       stubNodeData();
 
       await expect(update("24", dir, TODAY)).resolves.toBe(0);
@@ -236,6 +272,10 @@ describe("node-version", () => {
         devDependencies: { "@types/node": "^24.12.0" },
       });
       expect(read(".nvmrc")).toBe("24\n");
+      expect(JSON.parse(read("tsconfig.target.json"))).toEqual({ compilerOptions: ES2024 });
+      expect(console.log).toHaveBeenCalledWith(
+        "Set engines.node >=24, @types/node ^24.12.0, .nvmrc 24 and the ECMAScript edition ES2024.",
+      );
       expect(console.log).toHaveBeenCalledWith("Install and use Node 24.21.0, then run:\n  npm install\n  npm run lint\n  npm test");
       expect(installNode).not.toHaveBeenCalled();
     });
@@ -251,6 +291,14 @@ describe("node-version", () => {
       expect(read(".nvmrc")).toBe("24\n");
     });
 
+    it("should reject a version without a @tsconfig/bases configuration and write nothing", async () => {
+      writeProject({ target: ES2022 });
+      stubNodeData([URLS.base(24)]);
+
+      await expect(update("24", dir, TODAY)).rejects.toThrow("There is no @tsconfig/bases configuration for Node 24.");
+      expect(JSON.parse(read("tsconfig.target.json"))).toEqual({ compilerOptions: ES2022 });
+    });
+
     it("should warn when the chosen version ends within 90 days", async () => {
       writeProject();
       stubNodeData();
@@ -261,7 +309,7 @@ describe("node-version", () => {
 
     it("should show the release lines, ask until the answer is accepted, and run the steps with the latest release", async () => {
       stubTerminal(true);
-      writeProject({ pkg: { engines: { node: ">=22" } }, nvmrc: "22" });
+      writeProject({ pkg: { engines: { node: ">=22" } }, nvmrc: "22", target: ES2022 });
       stubNodeData();
       asker.question.mockResolvedValueOnce("22").mockResolvedValueOnce("x").mockResolvedValueOnce("").mockResolvedValueOnce("y");
       vi.mocked(installNode).mockReturnValue("/node/24.21.0/bin");
@@ -270,13 +318,15 @@ describe("node-version", () => {
       await expect(update(undefined, dir, TODAY)).resolves.toBe(0);
 
       const output = vi.mocked(console.log).mock.calls.map((args) => String(args[0])).join("\n");
-      expect(output).toMatch(/^22 +Maintenance LTS +no: 22\.0\.0 by commander 15\.0\.0, require\(\) of ES modules +\^22\.13\.17 +22\.23\.3 +2027-04-30$/m);
-      expect(output).toMatch(/^24 +Active LTS +yes +\^24\.12\.0 +24\.21\.0 +2028-04-30$/m);
+      expect(output).toMatch(/^22 +Maintenance LTS +no: 22\.0\.0 by commander 15\.0\.0, require\(\) of ES modules +\^22\.13\.17 +ES2022 +22\.23\.3 +2027-04-30$/m);
+      expect(output).toMatch(/^24 +Active LTS +yes +\^24\.12\.0 +ES2024 +24\.21\.0 +2028-04-30$/m);
+      expect(output).toContain("Currently: engines.node >=22, @types/node ^24.12.0, .nvmrc 22.");
       expect(output).toContain("Node 22.0.0 by commander 15.0.0 (>=22.12.0), require() of ES modules");
       expect(output).toContain("Enter a major version, for example 24.");
       expect(asker.question).toHaveBeenCalledWith("Node major version [24]: ");
       expect(JSON.parse(read("package.json")).engines.node).toBe(">=24");
       expect(read(".nvmrc")).toBe("24\n");
+      expect(JSON.parse(read("tsconfig.target.json"))).toEqual({ compilerOptions: ES2024 });
       expect(installNode).toHaveBeenCalledWith("24.21.0");
       expect(runWith).toHaveBeenCalledWith("/node/24.21.0/bin", ["npm install", "npm run lint", "npm test"]);
     });

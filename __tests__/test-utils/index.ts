@@ -3,6 +3,8 @@
  */
 
 export { withTmpDir } from "./temp-dir.js";
+export { compilerTarget } from "./compiler-target.js";
+export type { CompilerTarget } from "./compiler-target.js";
 export {
   setupGeneratedRuntime,
   loadGeneratedClasses,

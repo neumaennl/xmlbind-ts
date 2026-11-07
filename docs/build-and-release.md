@@ -4,8 +4,8 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-05T05:16:44Z }
-verified: { by: human:neumaennl, at: 2026-11-05T05:16:44Z }
+generated: { by: human:neumaennl, at: 2026-11-07T20:43:24Z }
+verified: { by: human:neumaennl, at: 2026-11-07T20:58:12Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -19,6 +19,9 @@ sources:
   - id: tsconfig-scripts
     resource: ../tsconfig.scripts.json
     title: TypeScript configuration of the scripts
+  - id: tsconfig-target
+    resource: ../tsconfig.target.json
+    title: ECMAScript edition
   - id: npmignore
     resource: ../.npmignore
     title: Files left out of the package
@@ -31,6 +34,9 @@ sources:
   - id: node-releases
     resource: ../scripts/lib/node-releases.ts
     title: Node.js release data
+  - id: compiler-target
+    resource: ../scripts/lib/compiler-target.ts
+    title: ECMAScript edition per Node.js version
   - id: eslint
     resource: ../eslint.config.mjs
     title: ESLint configuration
@@ -64,14 +70,15 @@ This document describes how the package is built, checked, packaged and publishe
 
 | File | Covers | Purpose |
 |---|---|---|
-| `tsconfig.build.json` | `src/` | the build: ES2022, `NodeNext` modules, `strict`, declarations, output in `dist/` |
+| `tsconfig.target.json` | — | the ECMAScript edition of the supported Node.js version as `target` and `lib`; the build and the scripts extend it |
+| `tsconfig.build.json` | `src/` | the build: `NodeNext` modules, `strict`, declarations, output in `dist/` |
 | `tsconfig.test.json` | `src/`, `__tests__/` | type-checking the tests in an editor; extends the build configuration and emits nothing |
 | `tsconfig.scripts.json` | `scripts/` | type-checking the scripts, which Node.js runs directly as TypeScript; only erasable syntax is allowed |
-| `tsconfig.json` | — | references the three, for editors and `tsc --build` |
+| `tsconfig.json` | — | references the build, test and scripts configurations, for editors and `tsc --build` |
 
 The build configuration enables `experimentalDecorators` and `emitDecoratorMetadata`, but the library itself declares no decorated classes, so these options do not affect the output.[^tsconfig-build] Which decorators an application uses depends on its own configuration (see [Decorators](decorators.md#legacy-and-stage-3-decorators)). No script or CI step uses `tsconfig.test.json` (see [Tests are not type-checked](known-issues.md#tests-are-not-type-checked)).[^tsconfig-test]
 
-The target is ES2022 in the build, the scripts, the Vitest plugin and the integration tests, independent of the supported Node.js version; how it should follow that version is open ([#283](https://github.com/neumaennl/xmlbind-ts/issues/283)).
+`tsconfig.target.json` contains only `target` and `lib`, both set to the ECMAScript edition of the supported Node.js version, for example `ES2024` for Node.js 24.[^tsconfig-target] The edition is the `target` of the [`@tsconfig/bases`](https://github.com/tsconfig/bases) configuration for that version. Its `ESNext.*` libraries are left out, because their content changes with every TypeScript release, and so are its other options, such as `module` and `strict`, because they change between Node.js versions and the project sets its own. The build and the scripts extend the file, the Vitest plugin compiles the tests with its target (see [Testing](testing.md#two-vitest-projects)), and the tests that compile generated classes use its target and libraries. The code therefore uses only syntax and library features that the oldest supported Node.js version has, and `dist/` needs no newer runtime than `engines.node` declares. `npm run node:update` writes the file and `npm run node:check` checks it (see [Node.js version](#nodejs-version)).
 
 The scripts are TypeScript that Node.js runs without compiling, which it can from 22.18 on; `tsconfig.scripts.json` therefore allows only syntax that can be erased (`erasableSyntaxOnly`) and relative imports with `.ts` extensions.[^tsconfig-scripts]
 
@@ -83,7 +90,7 @@ The package `@neumaennl/xmlbind-ts` is an ES module only (`"type": "module"`):[^
 - `bin` registers `xsd2ts` as `dist/xsd/cli.js`, which starts with `#!/usr/bin/env node`.
 - CommonJS code can load it with `import()`, or with `require()` on Node.js versions that support `require()` of ES modules, which all supported versions do.
 
-What goes into the package is decided by `.npmignore`, a list of exclusions: everything that is not listed is packed.[^npmignore] Besides `dist/`, the package therefore also contains the documentation in `docs/`, `AGENTS.md`, `.github/`, `.gitattributes`, `tsconfig.build.json`, `tsconfig.test.json`, `vitest.setup.ts` and the TypeScript build information files, and any untracked files that happen to lie in the checkout (see [The package contents are defined by a list of exclusions](known-issues.md#the-package-contents-are-defined-by-a-list-of-exclusions)). `npm pack --dry-run` lists the files.
+What goes into the package is decided by `.npmignore`, a list of exclusions: everything that is not listed is packed.[^npmignore] Besides `dist/`, the package therefore also contains the documentation in `docs/`, `AGENTS.md`, `.github/`, `.gitattributes`, `tsconfig.build.json`, `tsconfig.target.json`, `tsconfig.test.json`, `vitest.setup.ts` and the TypeScript build information files, and any untracked files that happen to lie in the checkout (see [The package contents are defined by a list of exclusions](known-issues.md#the-package-contents-are-defined-by-a-list-of-exclusions)). `npm pack --dry-run` lists the files.
 
 # Publishing
 
@@ -95,21 +102,22 @@ Installing the package needs a token as well, even though the repository is publ
 
 # Node.js version
 
-The package supports one Node.js major version and all newer ones, declared in `engines.node`. Three values must agree, and `npm run node:check` checks that they do:[^node-version]
+The package supports one Node.js major version and all newer ones, declared in `engines.node`. Four values must agree, and `npm run node:check` checks that they do:[^node-version]
 
 | Value | Rule |
 |---|---|
 | `engines.node` | `>=` and the major version, for example `>=24`. All runtime dependencies must accept every version it includes: its first release, such as 24.0.0, and the first release of every newer line before its end of life. |
 | `@types/node` | `^` and a version with the same major version, so that the types offer no API of a newer Node.js version. Dependabot ignores its major updates. |
 | `.nvmrc` | the major version, for example `24`. Development and CI use the latest release of that major version. |
+| `tsconfig.target.json` | `target` and the only entry of `lib` are the edition of the `@tsconfig/bases` configuration for the major version, for example `ES2024` from `node24.json`; the case does not matter.[^compiler-target] |
 
 `engines.node` is a declaration, not a lock: Node.js itself ignores it, and npm and pnpm only warn about an unsupported version unless `engine-strict` is set. Besides the runtime dependencies, `node:check` checks the range in which Node.js can `require()` ES modules, because generated classes compiled as CommonJS load the package that way.[^node-releases]
 
-`npm run node:check` fails if the values do not agree, if a runtime dependency excludes a version that `engines.node` includes, or if the major version has reached its end of life. It warns in the 90 days before the end of life; with `--strict`, the warning fails as well.
+`npm run node:check` fails if the values do not agree, if a runtime dependency excludes a version that `engines.node` includes, if there is no `@tsconfig/bases` configuration for the major version, or if the major version has reached its end of life. It warns in the 90 days before the end of life; with `--strict`, the warning fails as well. If `@tsconfig/bases` changes the edition for a major version, the weekly CI run fails until `npm run node:update` has taken it over. The scripts use only Node.js itself, so CI runs the check without installing the dependencies.
 
-`npm run node:update` changes the major version. It lists the runtime dependencies and the Node.js versions they accept, and a table of the release lines with their status, whether all dependencies accept them, the matching `@types/node`, the latest release and the end of life. It asks for the major version, with the newest LTS version as the default, writes `package.json` and `.nvmrc`, and offers to install the latest release of that version with nvm, nvm-windows or fnm and to run `npm install`, `npm run lint` and `npm test` with it. `npm run node:update -- <major>` skips the question. The supported version in `README.md` is then updated by hand, and everything is committed together.
+`npm run node:update` changes the major version. It lists the runtime dependencies and the Node.js versions they accept, and a table of the release lines with their status, whether all dependencies accept them, the matching `@types/node`, the ECMAScript edition, the latest release and the end of life. It asks for the major version, with the newest LTS version as the default, and refuses one without a `@tsconfig/bases` configuration. It writes `package.json`, `.nvmrc` and `tsconfig.target.json`, and offers to install the latest release of that version with nvm, nvm-windows or fnm and to run `npm install`, `npm run lint` and `npm test` with it. `npm run node:update -- <major>` skips the question. The supported version in `README.md` is then updated by hand, and everything is committed together.
 
-The scripts read the release schedule from the Node.js release repository on GitHub, the releases from nodejs.org and the versions of `@types/node` from the npm registry.[^node-releases]
+The scripts read the release schedule from the Node.js release repository on GitHub, the releases from nodejs.org and the versions of `@types/node` from the npm registry.[^node-releases] They read the `@tsconfig/bases` configurations from its repository on GitHub, from which the packages `@tsconfig/node<major>` are published.[^compiler-target]
 
 # Lint
 
@@ -152,6 +160,8 @@ Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot
 
 [^tsconfig-scripts]: TypeScript configuration of the scripts
 
+[^tsconfig-target]: ECMAScript edition
+
 [^npmignore]: Files left out of the package
 
 [^npmrc]: npm configuration of the repository
@@ -159,6 +169,8 @@ Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot
 [^node-version]: Node.js version script
 
 [^node-releases]: Node.js release data
+
+[^compiler-target]: ECMAScript edition per Node.js version
 
 [^eslint]: ESLint configuration
 

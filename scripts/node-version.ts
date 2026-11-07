@@ -1,23 +1,25 @@
 // Keeps the supported Node major version in line in `engines.node`,
-// `@types/node` and `.nvmrc`, with the runtime dependencies, and with the Node
-// release schedule. Development and CI use the latest release of that major
-// version.
+// `@types/node`, `.nvmrc` and the ECMAScript edition in `tsconfig.target.json`,
+// with the runtime dependencies, and with the Node release schedule. Development
+// and CI use the latest release of that major version.
 //
 //   node scripts/node-version.ts update [major]
 //     Shows the Node release lines with their status, whether the runtime
-//     dependencies accept them, the matching @types/node and their end of life,
-//     asks for the major version (unless given), updates `package.json` and
-//     `.nvmrc`, and then installs the latest release of that major version (with
-//     nvm, nvm-windows or fnm) and runs npm install, lint and the tests with it.
+//     dependencies accept them, the matching @types/node, the ECMAScript edition
+//     and their end of life, asks for the major version (unless given), updates
+//     `package.json`, `.nvmrc` and `tsconfig.target.json`, and then installs the
+//     latest release of that major version (with nvm, nvm-windows or fnm) and runs
+//     npm install, lint and the tests with it.
 //   node scripts/node-version.ts check [--strict]
-//     Fails if @types/node or .nvmrc don't match engines.node, if a runtime
-//     dependency excludes a version that engines.node includes, or if the Node
-//     version has reached its end of life; warns in the 90 days before. With
-//     --strict, a warning fails as well.
+//     Fails if @types/node, .nvmrc or the edition in tsconfig.target.json don't
+//     match engines.node, if a runtime dependency excludes a version that
+//     engines.node includes, or if the Node version has reached its end of life;
+//     warns in the 90 days before. With --strict, a warning fails as well.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface, type Interface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
+import { editionProblems, loadEdition, loadEditions, missingEdition, writeEdition } from "./lib/compiler-target.ts";
 import { installNode, runWith } from "./lib/node-setup.ts";
 import {
   describeExclusions,
@@ -30,6 +32,7 @@ import {
   loadSchedule,
   newestLts,
   runtimeConstraints,
+  supportedLines,
   typesNodeMajor,
   typesNodeRange,
   WARN_DAYS,
@@ -39,6 +42,9 @@ import {
   type PackageLock,
   type Schedule,
 } from "./lib/node-releases.ts";
+
+/** The ECMAScript edition per Node major version, undefined for those without a @tsconfig/bases configuration. */
+type Editions = Map<number, string | undefined>;
 
 /** The terminal interface; only `question()` is used. */
 type Asker = Pick<Interface, "question">;
@@ -59,6 +65,8 @@ export interface Manifest {
 export interface Values {
   major: number;
   typesNode: string;
+  /** The ECMAScript edition, for example `ES2024`. */
+  edition: string;
 }
 
 /** The current state of the project. */
@@ -165,11 +173,12 @@ function report(level: "warning" | "error", text: string): void {
 }
 
 /**
- * Checks that `@types/node` and `.nvmrc` match `engines.node`, that the runtime
+ * Checks that `@types/node`, `.nvmrc` and the ECMAScript edition match
+ * `engines.node`, that the runtime
  * dependencies accept the versions that `engines.node` includes, and that the
  * Node version has not reached its end of life.
  *
- * @param dir - The folder with `package.json`, `package-lock.json` and `.nvmrc`
+ * @param dir - The folder with `package.json`, `package-lock.json`, `.nvmrc` and `tsconfig.target.json`
  * @param today - The day as `YYYY-MM-DD`
  * @param strict - Whether a near end of life fails the check, too
  * @returns The exit code: 0 if everything matches, 1 otherwise
@@ -190,7 +199,8 @@ export async function check(dir = ".", today = todayUtc(), strict = false): Prom
   if (current.nvmrc !== String(major)) {
     problems.push(`.nvmrc: is "${current.nvmrc ?? ""}", expected "${major}".`);
   }
-  const schedule = await loadSchedule();
+  const [schedule, edition] = await Promise.all([loadSchedule(), loadEdition(major)]);
+  problems.push(...editionProblems(dir, major, edition));
   const excluded = exclusions(major, schedule, current.constraints, today);
   if (excluded.length > 0) {
     problems.push(`engines.node >=${major} includes versions that runtime dependencies exclude: ${describeExclusions(excluded)}.`);
@@ -213,7 +223,7 @@ export async function check(dir = ".", today = todayUtc(), strict = false): Prom
   if (warnings.length > 0) {
     console.log("Raise the Node version with `npm run node:update` before the end of life.");
   } else {
-    console.log(`engines.node, @types/node, .nvmrc and the runtime dependencies match; Node ${major} does not end within ${WARN_DAYS} days.`);
+    console.log(`engines.node, @types/node, .nvmrc, the ECMAScript edition and the runtime dependencies match; Node ${major} does not end within ${WARN_DAYS} days.`);
   }
   return 0;
 }
@@ -225,9 +235,10 @@ export async function check(dir = ".", today = todayUtc(), strict = false): Prom
  * @param data - The lookup data
  * @param constraints - The constraints of the runtime dependencies
  * @param today - The day as `YYYY-MM-DD`
+ * @param editions - The ECMAScript edition per major version
  * @returns Why it cannot, or undefined if it can
  */
-export function rejectMajor(major: number, data: NodeData, constraints: Constraint[], today: string): string | undefined {
+export function rejectMajor(major: number, data: NodeData, constraints: Constraint[], today: string, editions: Editions): string | undefined {
   if (!latestOfMajor(data.releases, major)) {
     return `Node ${major} has no release.`;
   }
@@ -241,7 +252,7 @@ export function rejectMajor(major: number, data: NodeData, constraints: Constrai
   if (!typesNodeRange(major, data.typesNode)) {
     return `There is no @types/node ${major}.x.`;
   }
-  return undefined;
+  return editions.get(major) ? undefined : missingEdition(major);
 }
 
 /**
@@ -260,11 +271,12 @@ function parseMajor(text: string): number | undefined {
  *
  * @param rows - The release lines
  * @param current - The current state
+ * @param editions - The ECMAScript edition per major version
  */
-function printOverview(rows: LineRow[], current: Current): void {
+function printOverview(rows: LineRow[], current: Current, editions: Editions): void {
   console.log("\nThe runtime dependencies accept these Node versions:");
   console.log(current.constraints.map((c) => `  ${c.name}: ${c.range}`).join("\n"));
-  const header = ["Node", "Status", "Accepted by dependencies", "@types/node", "Latest", "End of life"];
+  const header = ["Node", "Status", "Accepted by dependencies", "@types/node", "ECMAScript", "Latest", "End of life"];
   const cells = rows.map((r) => [
     String(r.major),
     r.status,
@@ -272,12 +284,14 @@ function printOverview(rows: LineRow[], current: Current): void {
       ? "yes"
       : `no: ${r.exclusions.map((e) => `${e.version} by ${e.excludedBy.map((c) => c.name).join(", ")}`).join("; ")}`,
     r.typesNode ?? "-",
+    editions.get(r.major) ?? "-",
     r.latest,
     r.end,
   ]);
   console.log(`\n${formatTable(header, cells)}\n`);
   console.log("Accepted by dependencies tells whether all of the above accept every version that >=x includes:");
   console.log("the first version of the line (x.0.0) and of every newer line before its end of life.");
+  console.log("ECMAScript shows the target of the @tsconfig/bases configuration for the line.");
   console.log(`Currently: engines.node ${current.engines ?? "-"}, @types/node ${current.typesNode ?? "-"}, .nvmrc ${current.nvmrc ?? "-"}.\n`);
 }
 
@@ -287,16 +301,17 @@ function printOverview(rows: LineRow[], current: Current): void {
  * @param data - The lookup data
  * @param current - The current state
  * @param today - The day as `YYYY-MM-DD`
+ * @param editions - The ECMAScript edition per major version
  * @param rl - The terminal interface
  * @returns The major version
  */
-export async function choose(data: NodeData, current: Current, today: string, rl: Asker): Promise<number> {
+export async function choose(data: NodeData, current: Current, today: string, editions: Editions, rl: Asker): Promise<number> {
   const suggested = newestLts(data, today);
   const prompt = `Node major version${suggested === undefined ? "" : ` [${suggested}]`}: `;
   for (;;) {
     const answer = (await rl.question(prompt)).trim();
     const major = answer ? parseMajor(answer) : suggested;
-    const error = major === undefined ? "Enter a major version, for example 24." : rejectMajor(major, data, current.constraints, today);
+    const error = major === undefined ? "Enter a major version, for example 24." : rejectMajor(major, data, current.constraints, today, editions);
     if (major !== undefined && !error) {
       return major;
     }
@@ -305,12 +320,13 @@ export async function choose(data: NodeData, current: Current, today: string, rl
 }
 
 /**
- * Writes the values into `package.json` and `.nvmrc`, keeping the line endings of
- * `package.json` (Git may check files out with CRLF on Windows).
+ * Writes the values into `package.json`, `.nvmrc` and `tsconfig.target.json`,
+ * keeping the line endings of `package.json` (Git may check files out with CRLF
+ * on Windows).
  *
  * @param manifest - The parsed `package.json` and its line endings
  * @param values - The values to write
- * @param dir - The folder with `package.json` and `.nvmrc`
+ * @param dir - The folder with `package.json`, `.nvmrc` and `tsconfig.target.json`
  */
 export function writeValues({ pkg, crlf }: Manifest, values: Values, dir = "."): void {
   const eol = crlf ? "\r\n" : "\n";
@@ -318,6 +334,7 @@ export function writeValues({ pkg, crlf }: Manifest, values: Values, dir = "."):
   pkg.devDependencies["@types/node"] = values.typesNode;
   writeFileSync(join(dir, "package.json"), `${JSON.stringify(pkg, null, 2)}\n`.replace(/\n/g, eol));
   writeFileSync(join(dir, ".nvmrc"), `${values.major}${eol}`);
+  writeEdition(dir, values.edition, crlf);
 }
 
 /**
@@ -363,7 +380,8 @@ function runSteps(version: string): number {
 }
 
 /**
- * Updates the supported Node major version in `engines.node`, `@types/node` and `.nvmrc`.
+ * Updates the supported Node major version in `engines.node`, `@types/node`,
+ * `.nvmrc` and `tsconfig.target.json`.
  *
  * @param requested - The major version, or undefined to ask
  * @param dir - The folder with `package.json`, `package-lock.json` and `.nvmrc`
@@ -377,23 +395,28 @@ export async function update(requested: string | undefined, dir = ".", today = t
   }
   const current = readCurrent(dir);
   const data = await loadData();
+  const editions = await loadEditions(supportedLines(data.schedule, today));
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
     let major: number;
     if (requested) {
       const parsed = parseMajor(requested);
-      const error = parsed === undefined ? `Not a major version: "${requested}"` : rejectMajor(parsed, data, current.constraints, today);
+      const error = parsed === undefined ? `Not a major version: "${requested}"` : rejectMajor(parsed, data, current.constraints, today, editions);
       if (parsed === undefined || error) {
         throw new Error(error);
       }
       major = parsed;
     } else {
-      printOverview(listLines(data, current.constraints, today), current);
-      major = await choose(data, current, today, rl);
+      printOverview(listLines(data, current.constraints, today), current, editions);
+      major = await choose(data, current, today, editions, rl);
     }
-    const values: Values = { major, typesNode: typesNodeRange(major, data.typesNode) ?? "" };
+    const edition = editions.get(major);
+    if (!edition) {
+      throw new Error(missingEdition(major));
+    }
+    const values: Values = { major, typesNode: typesNodeRange(major, data.typesNode) ?? "", edition };
     writeValues(current, values, dir);
-    console.log(`Set engines.node >=${major}, @types/node ${values.typesNode} and .nvmrc ${major}.`);
+    console.log(`Set engines.node >=${major}, @types/node ${values.typesNode}, .nvmrc ${major} and the ECMAScript edition ${edition}.`);
     const message = endOfLifeMessage(major, data.schedule, today);
     if (message) {
       report(message.level, message.text);
