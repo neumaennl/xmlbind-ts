@@ -4,7 +4,7 @@ okf_version: "0.2"
 
 # Overview
 
-* [Architecture](architecture.md) - How the package is divided into the runtime library and the xsd2ts generator - their modules, the public API of the entry point, the runtime dependencies, and the principles the code follows.
+* [Architecture](architecture.md) - What xmlbind-ts is responsible for and what belongs to the application, how the package is divided into the runtime library and the xsd2ts generator - their modules, the public API of the entry point, the runtime dependencies, and the principles the code follows.
 
 # Working on the library
 

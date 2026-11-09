@@ -1,6 +1,7 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-07
+* **Update**: [Architecture](architecture.md#scope) has a new section "Scope": a table of what xmlbind-ts is responsible for and what belongs to the application, and the rule of thumb that decides between them.
 * **Update**: [Build and release](build-and-release.md): `tsconfig.target.json` holds only the ECMAScript edition of the supported Node.js version, as `target` and `lib`, without the `ESNext.*` libraries of `@tsconfig/bases`, and `npm run node:check` runs without the dependencies, as in CI.
 * **Update**: [Build and release](build-and-release.md) describes `tsconfig.target.json`, which holds the compiler target of the supported Node.js version from `@tsconfig/bases`, and how `npm run node:update` and `npm run node:check` keep it in line ([#283](https://github.com/neumaennl/xmlbind-ts/issues/283)).
 * **Update**: [Testing](testing.md) describes that the Vitest plugin and the tests that compile projects take the target from `tsconfig.target.json`, and the helper `compilerTarget()`. The [development guidelines](development-guidelines.md) and `CONTRIBUTING.md` say that the Node.js version decides the compiler target.
