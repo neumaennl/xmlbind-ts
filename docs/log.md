@@ -1,6 +1,7 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-09
+* **Update**: The [index](index.md#agent-instructions) explains the new folder `agent-instructions/`, which holds instructions for agents, starting with [how they use the project board](agent-instructions/project-board.md); `AGENTS.md` links it.
 * **Update**: [Known issues](known-issues.md): "Character references are not decoded" links [#287](https://github.com/neumaennl/xmlbind-ts/issues/287), and "The attributes of the XML declaration are not kept" links [#288](https://github.com/neumaennl/xmlbind-ts/issues/288).
 
 ## 2026-11-07
