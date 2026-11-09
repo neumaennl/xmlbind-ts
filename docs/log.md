@@ -1,5 +1,8 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-09
+* **Update**: [Known issues](known-issues.md): "Character references are not decoded" links [#287](https://github.com/neumaennl/xmlbind-ts/issues/287), and "The attributes of the XML declaration are not kept" links [#288](https://github.com/neumaennl/xmlbind-ts/issues/288).
+
 ## 2026-11-07
 * **Update**: [Architecture](architecture.md#scope) has a new section "Scope": a table of what xmlbind-ts is responsible for and what belongs to the application, and the rule of thumb that decides between them.
 * **Update**: [Build and release](build-and-release.md): `tsconfig.target.json` holds only the ECMAScript edition of the supported Node.js version, as `target` and `lib`, without the `ESNext.*` libraries of `@tsconfig/bases`, and `npm run node:check` runs without the dependencies, as in CI.

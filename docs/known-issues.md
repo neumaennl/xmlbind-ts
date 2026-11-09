@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-05T05:16:44Z }
-verified: { by: human:neumaennl, at: 2026-11-05T05:16:44Z }
+generated: { by: human:neumaennl, at: 2026-11-09T13:19:15Z }
+verified: { by: human:neumaennl, at: 2026-11-09T13:22:13Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -123,7 +123,7 @@ Effort:
 - **Severity:** High
 - **Effort:** S
 - **Description:** The parser decodes only the five predefined entities (`&lt;`, `&gt;`, `&amp;`, `&quot;`, `&apos;`). A character reference such as `&#65;` or `&#x41;` stays the literal text `&#65;` in attribute values and element text, instead of `A`, and `marshal()` writes it back as `&amp;#65;`, which changes the document.[^unmarshal] `fast-xml-parser` decodes character references with the option `htmlEntities: true`; whether that option also decodes HTML entities that XML does not define needs to be checked.
-- **GitHub issue:** none
+- **GitHub issue:** [#287](https://github.com/neumaennl/xmlbind-ts/issues/287)
 
 ## Leading and trailing whitespace of element text is removed
 
@@ -283,7 +283,7 @@ Effort:
 - **Severity:** Medium
 - **Effort:** S
 - **Description:** `unmarshal()` only records whether the source starts with `<?xml`, and `marshal()` then always writes `<?xml version="1.0" encoding="UTF-8"?>`. A source with `version="1.1"` is written as XML 1.0, `standalone` is dropped, and another `encoding` is replaced by `UTF-8`, although `marshal()` returns a string that the caller may write in the source's encoding.[^marshal]
-- **GitHub issue:** none
+- **GitHub issue:** [#288](https://github.com/neumaennl/xmlbind-ts/issues/288)
 
 ## Infinities are not converted to and from `INF`
 
