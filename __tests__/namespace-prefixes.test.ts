@@ -1,6 +1,6 @@
 import { marshal, unmarshal } from "../src/marshalling/index.js";
 import { XmlRoot, XmlElement, XmlAttribute } from "../src/decorators/index.js";
-import { expectStringsOnSameLine } from "./test-utils/index.js";
+import { expectStringsOnSameLine, firstLine } from "./test-utils/index.js";
 
 afterEach(() => {
   // no-op, placeholder in case of future cleanup
@@ -37,8 +37,8 @@ describe("namespace prefixes honoring schema-defined names", () => {
 
     const xml = marshal(r);
     // Verify that namespace attributes appear on the same line as the opening tag
-    const firstLine = xml.split("\n")[0];
-    expectStringsOnSameLine(firstLine, [
+    const rootLine = firstLine(xml);
+    expectStringsOnSameLine(rootLine, [
       '<Root xmlns="http://a.example/ns"',
       'xmlns:b="http://b.example/ns"',
     ]);

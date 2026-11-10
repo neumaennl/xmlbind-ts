@@ -10,6 +10,7 @@ export {
   loadGeneratedClasses,
 } from "./generated-runtime.js";
 export { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./assertions.js";
+export { firstLine } from "./lines.js";
 export {
   decoratorMode,
   emitsDecoratorMetadata,

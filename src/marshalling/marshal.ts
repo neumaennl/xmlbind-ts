@@ -1,210 +1,198 @@
-import XMLBuilder from "fast-xml-builder";
 import { getMeta, getAllFields } from "../metadata/MetadataRegistry.js";
+import type { ClassMeta, FieldMeta } from "../types.js";
 import { serializePrimitive } from "../util/valueCasting.js";
 import { resolveType } from "../util/typeResolution.js";
 import { isNamespaceDeclaration } from "../util/namespaceUtils.js";
 import { isPrimitiveCtor } from "./types.js";
 import { hasPositionedComments, groupCommentsByPosition } from "./commentUtils.js";
 import { sortFieldsByElementOrder } from "./elementOrderUtils.js";
+import { qName, type NsContext } from "./marshalContext.js";
 import {
-  qName,
-  writeAnyElements,
-  postProcessComments,
-  type NsContext,
-} from "./marshalContext.js";
-import { escapeValue } from "./escaping.js";
+  comment,
+  declaration,
+  element,
+  fromKeyed,
+  text,
+  writeXml,
+  type XmlAttributes,
+  type XmlEntry,
+} from "./xmlTree.js";
 
-const builder = new XMLBuilder({
-  ignoreAttributes: false,
-  attributeNamePrefix: "@_",
-  textNodeName: "#text",
-  format: true,
-  indentBy: "  ",
-  suppressBooleanAttributes: false, // Preserve boolean attribute values like mixed="true"
-  suppressEmptyNode: true, // Use self-closing tags for empty elements
-  processEntities: false, // The value processors escape instead
-  tagValueProcessor: escapeValue,
-  attributeValueProcessor: escapeValue,
-});
+/** The attributes and child entries of an element. */
+interface ElementContent {
+  attributes: XmlAttributes;
+  children: XmlEntry[];
+}
 
 /**
- * Processes attributes for a nested object.
- * @param nestedNode - The XML node
- * @param val - The source value
- * @param nestedFields - Fields metadata
+ * Writes the attribute fields of an object.
+ * @param attributes - The attributes to add to
+ * @param obj - The source object
+ * @param fields - All fields of the object's type
  * @param ctx - Namespace context
  */
-function processNestedAttributes(
-  nestedNode: any,
-  val: any,
-  nestedFields: any[],
+function writeAttributes(
+  attributes: XmlAttributes,
+  obj: any,
+  fields: FieldMeta[],
   ctx: NsContext
 ): void {
-  for (const nf of nestedFields.filter((ff: any) => ff.kind === "attribute")) {
-    const v = val[nf.key];
-    if (v !== undefined && v !== null)
-      nestedNode[`@_${qName(nf.name, nf.namespace ?? undefined, ctx, true)}`] =
-        serializePrimitive(v, resolveType(nf.type));
+  for (const f of fields.filter((f) => f.kind === "attribute")) {
+    const val = obj[f.key];
+    if (val === undefined || val === null) continue;
+    const name = qName(f.name, f.namespace ?? undefined, ctx, true);
+    attributes[name] = serializePrimitive(val, resolveType(f.type));
   }
 }
 
 /**
- * Adds element fields with positioned comments to node.
- * @param nestedNode - The XML node
- * @param val - The source value
- * @param elementFields - Element fields metadata
- * @param commentsData - Comments data
+ * Creates the entries of one occurrence of an element.
+ * @param name - The qualified name of the element
+ * @param val - The value: a primitive, an object of a class with metadata, or content in the parser's keyed format
+ * @param type - The resolved type of the field
  * @param ctx - Namespace context
+ * @returns The element entries
  */
-function addElementsWithComments(
-  nestedNode: any,
-  val: any,
-  elementFields: any[],
-  commentsData: any,
+function valueEntries(
+  name: string,
+  val: unknown,
+  type: any,
   ctx: NsContext
+): XmlEntry[] {
+  if (val === null || val === undefined) return [element(name)];
+  if (isPrimitiveCtor(type) || typeof val !== "object")
+    return [element(name, [text(serializePrimitive(val, type))])];
+  if (!getMeta(type)) return fromKeyed(name, val);
+  const content = objectContent(val, type, ctx, false);
+  return [element(name, content.children, content.attributes)];
+}
+
+/**
+ * Creates the entries of an element field: one element per array item,
+ * and an element with `xsi:nil="true"` for `null`.
+ * @param f - The field
+ * @param val - The field's value, not `undefined`
+ * @param ctx - Namespace context
+ * @param isRoot - Whether the field belongs to the root object
+ * @returns The element entries
+ */
+function fieldEntries(
+  f: FieldMeta,
+  val: unknown,
+  ctx: NsContext,
+  isRoot: boolean
+): XmlEntry[] {
+  const name = qName(f.name, f.namespace ?? undefined, ctx, false);
+  if (val === null) return [element(name, [], { "xsi:nil": "true" })];
+  const type = resolveType(f.type);
+  if (f.isArray && Array.isArray(val))
+    return val.flatMap((item) => valueEntries(name, item, type, ctx));
+  const entries = valueEntries(name, val, type, ctx);
+  if (isRoot) mergeChildPrefixes(ctx, type);
+  return entries;
+}
+
+/**
+ * Writes the element fields of an object in the order of `_elementOrder`,
+ * with the comments of `_comments`: comments with a position between the
+ * fields, plain comment texts after them.
+ * @param children - The child entries to add to
+ * @param obj - The source object
+ * @param fields - All fields of the object's type
+ * @param ctx - Namespace context
+ * @param isRoot - Whether the object is the root object
+ * @throws {Error} If a comment contains `--` or ends with `-`
+ */
+function writeElements(
+  children: XmlEntry[],
+  obj: any,
+  fields: FieldMeta[],
+  ctx: NsContext,
+  isRoot: boolean
 ): void {
-  const commentsByPosition = groupCommentsByPosition(commentsData);
-  let commentCounter = 0;
+  const elementFields = sortFieldsByElementOrder(
+    fields.filter((f) => f.kind === "element"),
+    obj._elementOrder
+  );
+  const commentsData = obj._comments;
+  const positioned = hasPositionedComments(commentsData);
+  const commentsByPosition = positioned
+    ? groupCommentsByPosition(commentsData)
+    : new Map<number, string[]>();
 
   for (let i = 0; i <= elementFields.length; i++) {
-    const commentsAtPos = commentsByPosition.get(i) || [];
-    for (const commentText of commentsAtPos) {
-      nestedNode[`#comment${commentCounter}`] = commentText;
-      commentCounter++;
-    }
+    for (const c of commentsByPosition.get(i) ?? []) children.push(comment(String(c)));
+    if (i === elementFields.length) break;
+    const f = elementFields[i];
+    const val = obj[f.key];
+    if (val !== undefined) children.push(...fieldEntries(f, val, ctx, isRoot));
+  }
 
-    if (i < elementFields.length) {
-      const nf = elementFields[i];
-      const v = val[nf.key];
-      if (v !== undefined) {
-        const key = qName(nf.name, nf.namespace ?? undefined, ctx, false);
-        const resolvedNfType = resolveType(nf.type);
-        if (v === null) {
-          nestedNode[key] = { "@_xsi:nil": "true" };
-        } else if (nf.isArray && Array.isArray(v)) {
-          nestedNode[key] = v.map((el: any) =>
-            elementToXmlValue(el, resolvedNfType, ctx)
-          );
-        } else {
-          nestedNode[key] = elementToXmlValue(v, resolvedNfType, ctx);
-        }
-      }
-    }
+  if (!positioned && Array.isArray(commentsData)) {
+    for (const c of commentsData) children.push(comment(String(c)));
   }
 }
 
 /**
- * Adds element fields without positioned comments to node.
- * @param nestedNode - The XML node
- * @param val - The source value
- * @param elementFields - Element fields metadata
- * @param commentsData - Comments data (legacy format)
+ * Writes the wildcard attributes and elements of an object, and its text.
+ * @param content - The element content to add to
+ * @param obj - The source object
+ * @param fields - All fields of the object's type
+ * @throws {Error} If a wildcard element is named with a key that starts with `@_` or is `#text`
+ */
+function writeWildcardsAndText(
+  content: ElementContent,
+  obj: any,
+  fields: FieldMeta[]
+): void {
+  const anyAttrField = fields.find((f) => f.kind === "anyAttribute");
+  const map = anyAttrField && obj[anyAttrField.key];
+  if (map && typeof map === "object") {
+    for (const [k, v] of Object.entries(map)) {
+      if (!isNamespaceDeclaration(k)) content.attributes[k] = String(v);
+    }
+  }
+
+  const anyElemField = fields.find((f) => f.kind === "anyElement");
+  const items = anyElemField && obj[anyElemField.key];
+  if (Array.isArray(items)) {
+    for (const item of items) {
+      if (item === null || typeof item !== "object" || Array.isArray(item)) continue;
+      for (const [k, v] of Object.entries(item)) content.children.push(...fromKeyed(k, v));
+    }
+  }
+
+  const textField = fields.find((f) => f.kind === "text");
+  const tv = textField && obj[textField.key];
+  if (tv !== undefined && tv !== null) content.children.push(text(String(tv)));
+}
+
+/**
+ * Creates the attributes and child entries of an object of a class with
+ * metadata: attributes, then elements with comments, wildcards and text.
+ * @param obj - The source object
+ * @param type - The class of the object
  * @param ctx - Namespace context
+ * @param isRoot - Whether the object is the root object, whose attributes are those of the namespace context
+ * @returns The element content
+ * @throws {Error} If a comment contains `--` or ends with `-`
+ * @throws {Error} If a wildcard element is named with a key that starts with `@_` or is `#text`
  */
-function addElementsWithoutComments(
-  nestedNode: any,
-  val: any,
-  elementFields: any[],
-  commentsData: any,
-  ctx: NsContext
-): void {
-  for (const nf of elementFields) {
-    const v = val[nf.key];
-    if (v === undefined) continue;
-    const key = qName(nf.name, nf.namespace ?? undefined, ctx, false);
-    const resolvedNfType = resolveType(nf.type);
-    if (v === null) nestedNode[key] = { "@_xsi:nil": "true" };
-    else if (nf.isArray && Array.isArray(v))
-      nestedNode[key] = v.map((el: any) =>
-        elementToXmlValue(el, resolvedNfType, ctx)
-      );
-    else nestedNode[key] = elementToXmlValue(v, resolvedNfType, ctx);
-  }
-
-  if (commentsData && Array.isArray(commentsData) && commentsData.length > 0) {
-    nestedNode["#comment"] = commentsData;
-  }
-}
-
-/**
- * Processes wildcard fields for a nested object.
- * @param nestedNode - The XML node
- * @param val - The source value
- * @param nestedFields - Fields metadata
- */
-function processNestedWildcards(
-  nestedNode: any,
-  val: any,
-  nestedFields: any[]
-): void {
-  const anyAttrF = nestedFields.find((ff: any) => ff.kind === "anyAttribute");
-  if (anyAttrF) {
-    const map = val[anyAttrF.key];
-    if (map && typeof map === "object") {
-      for (const [k, v] of Object.entries(map)) {
-        if (isNamespaceDeclaration(k)) continue;
-        nestedNode[`@_${k}`] = String(v as any);
-      }
-    }
-  }
-
-  const anyElemF = nestedFields.find((ff: any) => ff.kind === "anyElement");
-  if (anyElemF) {
-    const arr = val[anyElemF.key];
-    if (arr) writeAnyElements(nestedNode, arr);
-  }
-}
-
-/**
- * Converts a JavaScript value to its XML representation.
- * Handles primitives, complex objects with metadata, and nested structures.
- *
- * @param val - The value to convert
- * @param type - The type constructor (String, Number, custom class, etc.)
- * @param ctx - The namespace context
- * @returns The XML representation of the value
- */
-function elementToXmlValue(val: any, type: any, ctx: NsContext) {
-  if (val === null || val === undefined) return null;
-  if (isPrimitiveCtor(type) || typeof val !== "object")
-    return serializePrimitive(val, type);
-  const nestedMeta = getMeta(type);
-  if (!nestedMeta) return val;
-
-  const nestedNode: any = {};
-  const nestedFields = getAllFields(type);
-
-  // Process attributes
-  processNestedAttributes(nestedNode, val, nestedFields, ctx);
-
-  // Get element fields and sort by element order
-  const commentsData = val._comments;
-  const hasPositioned = hasPositionedComments(commentsData);
-  let elementFields = nestedFields.filter((ff: any) => ff.kind === "element");
-  elementFields = sortFieldsByElementOrder(elementFields, val._elementOrder);
-
-  // Add elements with or without positioned comments
-  if (hasPositioned) {
-    addElementsWithComments(nestedNode, val, elementFields, commentsData, ctx);
-  } else {
-    addElementsWithoutComments(
-      nestedNode,
-      val,
-      elementFields,
-      commentsData,
-      ctx
-    );
-  }
-
-  // Process wildcard fields
-  processNestedWildcards(nestedNode, val, nestedFields);
-
-  // Add text field
-  const textF = nestedFields.find((ff: any) => ff.kind === "text");
-  if (textF && val[textF.key] !== undefined && val[textF.key] !== null)
-    nestedNode["#text"] = String(val[textF.key]);
-
-  return nestedNode;
+function objectContent(
+  obj: any,
+  type: any,
+  ctx: NsContext,
+  isRoot: boolean
+): ElementContent {
+  const content: ElementContent = {
+    attributes: isRoot ? ctx.rootAttributes : {},
+    children: [],
+  };
+  const fields = getAllFields(type);
+  writeAttributes(content.attributes, obj, fields, ctx);
+  writeElements(content.children, obj, fields, ctx, isRoot);
+  writeWildcardsAndText(content, obj, fields);
+  return content;
 }
 
 /**
@@ -212,14 +200,14 @@ function elementToXmlValue(val: any, type: any, ctx: NsContext) {
  * Uses `obj._namespacePrefixes` (prefix → URI) if set on the object; otherwise falls back
  * to `meta.prefixes` (URI → prefix) from the decorator.
  * @param meta - The root metadata
- * @param node - The root XML node
  * @param obj - The source object (may have `_namespacePrefixes`)
  * @returns The initialized namespace context
  */
-function initializeNsContext(meta: any, node: any, obj?: any): NsContext {
-  const nsPrefixes = obj?._namespacePrefixes as
+function initializeNsContext(meta: ClassMeta, obj: any): NsContext {
+  const nsPrefixes = obj._namespacePrefixes as
     | Record<string, string>
     | undefined;
+  const rootAttributes: XmlAttributes = {};
 
   const ctx: NsContext = {
     defaultNs: nsPrefixes !== undefined
@@ -227,7 +215,7 @@ function initializeNsContext(meta: any, node: any, obj?: any): NsContext {
       : meta.namespace ?? undefined,
     uriToPrefix: new Map<string, string>(),
     declared: new Set<string>(),
-    rootNode: node,
+    rootAttributes,
     counter: 0,
     hasExplicitPrefixes: nsPrefixes !== undefined,
   };
@@ -236,44 +224,26 @@ function initializeNsContext(meta: any, node: any, obj?: any): NsContext {
     // Use the source document's namespace declarations (prefix → URI).
     for (const [pfx, uri] of Object.entries(nsPrefixes)) {
       if (!pfx) {
-        node["@_xmlns"] = uri;
+        rootAttributes["xmlns"] = uri;
         continue;
       }
       ctx.uriToPrefix.set(uri, pfx);
-      node[`@_xmlns:${pfx}`] = uri;
+      rootAttributes[`xmlns:${pfx}`] = uri;
       ctx.declared.add(pfx);
     }
-  } else if (meta.prefixes) {
+    return ctx;
+  }
+
+  if (meta.namespace) rootAttributes["xmlns"] = meta.namespace;
+  if (meta.prefixes) {
     // Fall back to decorator-defined prefixes (URI → prefix)
     for (const [uri, pfx] of Object.entries(meta.prefixes)) {
       ctx.uriToPrefix.set(uri, String(pfx));
-      node[`@_xmlns:${pfx}`] = uri;
+      rootAttributes[`xmlns:${pfx}`] = uri;
       ctx.declared.add(String(pfx));
     }
   }
-
   return ctx;
-}
-
-/**
- * Processes root-level attributes.
- * @param node - The root XML node
- * @param obj - The source object
- * @param fields - All fields
- * @param ctx - Namespace context
- */
-function processRootAttributes(
-  node: any,
-  obj: any,
-  fields: any[],
-  ctx: NsContext
-): void {
-  for (const f of fields.filter((f: any) => f.kind === "attribute")) {
-    const val = obj[f.key];
-    if (val === undefined || val === null) continue;
-    const key = qName(f.name, f.namespace ?? undefined, ctx, true);
-    node[`@_${key}`] = serializePrimitive(val, resolveType(f.type));
-  }
 }
 
 /**
@@ -282,184 +252,37 @@ function processRootAttributes(
  * that case the caller controls exactly which namespace declarations appear in the
  * output and adding extras would make roundtrips inconsistent.
  * @param ctx - Namespace context
- * @param node - Root XML node
  * @param resolvedFType - Resolved field type
  */
-function mergeChildPrefixes(
-  ctx: NsContext,
-  node: any,
-  resolvedFType: any
-): void {
-  if (ctx.hasExplicitPrefixes) return;
-  if (resolvedFType) {
-    const childMeta = getMeta(resolvedFType);
-    if (childMeta?.prefixes) {
-      for (const [uri, pfx] of Object.entries(childMeta.prefixes)) {
-        const prefix = String(pfx);
-        if (!ctx.uriToPrefix.has(uri)) {
-          ctx.uriToPrefix.set(uri, prefix);
-          if (!ctx.declared.has(prefix)) {
-            node[`@_xmlns:${prefix}`] = uri;
-            ctx.declared.add(prefix);
-          }
-        }
-      }
+function mergeChildPrefixes(ctx: NsContext, resolvedFType: any): void {
+  if (ctx.hasExplicitPrefixes || !resolvedFType) return;
+  const childMeta = getMeta(resolvedFType);
+  if (!childMeta?.prefixes) return;
+  for (const [uri, pfx] of Object.entries(childMeta.prefixes)) {
+    const prefix = String(pfx);
+    if (ctx.uriToPrefix.has(uri)) continue;
+    ctx.uriToPrefix.set(uri, prefix);
+    if (!ctx.declared.has(prefix)) {
+      ctx.rootAttributes[`xmlns:${prefix}`] = uri;
+      ctx.declared.add(prefix);
     }
   }
 }
 
 /**
- * Adds root-level elements with positioned comments.
- * @param node - The root XML node
- * @param obj - The source object
- * @param elementFields - Element fields
- * @param commentsData - Comments data
- * @param ctx - Namespace context
+ * Creates the entries before the root element: the XML declaration, if the
+ * source had one, and the comments before the root element.
+ * @param obj - The root object
+ * @returns The entries
+ * @throws {Error} If a comment contains `--` or ends with `-`
  */
-function addRootElementsWithComments(
-  node: any,
-  obj: any,
-  elementFields: any[],
-  commentsData: any,
-  ctx: NsContext
-): void {
-  const commentsByPosition = groupCommentsByPosition(commentsData);
-  let commentCounter = 0;
-
-  for (let i = 0; i <= elementFields.length; i++) {
-    const commentsAtPos = commentsByPosition.get(i) || [];
-    for (const commentText of commentsAtPos) {
-      node[`#comment${commentCounter}`] = commentText;
-      commentCounter++;
-    }
-
-    if (i < elementFields.length) {
-      const f = elementFields[i];
-      const val = obj[f.key];
-      if (val !== undefined) {
-        const key = qName(f.name, f.namespace ?? undefined, ctx, false);
-        const resolvedFType = resolveType(f.type);
-        if (val === null) {
-          node[key] = { "@_xsi:nil": "true" };
-        } else if (f.isArray && Array.isArray(val)) {
-          node[key] = val.map((el: any) =>
-            elementToXmlValue(el, resolvedFType, ctx)
-          );
-        } else {
-          node[key] = elementToXmlValue(val, resolvedFType, ctx);
-          mergeChildPrefixes(ctx, node, resolvedFType);
-        }
-      }
-    }
+function prologEntries(obj: any): XmlEntry[] {
+  const entries: XmlEntry[] = [];
+  if (obj._hasXmlDeclaration) entries.push(declaration());
+  if (Array.isArray(obj._documentComments)) {
+    for (const c of obj._documentComments) entries.push(comment(String(c)));
   }
-}
-
-/**
- * Adds root-level elements without positioned comments.
- * @param node - The root XML node
- * @param obj - The source object
- * @param elementFields - Element fields
- * @param commentsData - Comments data
- * @param ctx - Namespace context
- */
-function addRootElementsWithoutComments(
-  node: any,
-  obj: any,
-  elementFields: any[],
-  commentsData: any,
-  ctx: NsContext
-): void {
-  for (const f of elementFields) {
-    const val = obj[f.key];
-    if (val === undefined) continue;
-    const key = qName(f.name, f.namespace ?? undefined, ctx, false);
-    const resolvedFType = resolveType(f.type);
-    if (val === null) {
-      node[key] = { "@_xsi:nil": "true" };
-      continue;
-    }
-    if (f.isArray && Array.isArray(val))
-      node[key] = val.map((el: any) =>
-        elementToXmlValue(el, resolvedFType, ctx)
-      );
-    else {
-      node[key] = elementToXmlValue(val, resolvedFType, ctx);
-      mergeChildPrefixes(ctx, node, resolvedFType);
-    }
-  }
-
-  if (commentsData && Array.isArray(commentsData) && commentsData.length > 0) {
-    node["#comment"] = commentsData;
-  }
-}
-
-/**
- * Processes root-level wildcard fields and text.
- * @param node - The root XML node
- * @param obj - The source object
- * @param fields - All fields
- */
-function processRootWildcardsAndText(node: any, obj: any, fields: any[]): void {
-  const anyAttrField = fields.find((f: any) => f.kind === "anyAttribute");
-  if (anyAttrField) {
-    const map = obj[anyAttrField.key];
-    if (map && typeof map === "object") {
-      for (const [k, v] of Object.entries(map)) {
-        if (isNamespaceDeclaration(k)) continue;
-        node[`@_${k}`] = String(v as any);
-      }
-    }
-  }
-
-  const anyElemField = fields.find((f: any) => f.kind === "anyElement");
-  if (anyElemField) {
-    const arr = obj[anyElemField.key];
-    if (arr) writeAnyElements(node, arr);
-  }
-
-  const textField = fields.find((f: any) => f.kind === "text");
-  if (textField) {
-    const tv = obj[textField.key];
-    if (tv !== undefined && tv !== null) node["#text"] = tv.toString();
-  }
-}
-
-/**
- * Post-processes the XML string to add declarations and document comments.
- * @param xml - The base XML string
- * @param obj - The source object
- * @returns The final XML string
- */
-function postProcessXml(xml: string, obj: any): string {
-  xml = postProcessComments(xml);
-
-  if (obj._hasXmlDeclaration) {
-    xml = `<?xml version="1.0" encoding="UTF-8"?>\n` + xml;
-  }
-
-  const documentComments = obj._documentComments;
-  if (
-    documentComments &&
-    Array.isArray(documentComments) &&
-    documentComments.length > 0
-  ) {
-    const xmlDeclEnd = xml.indexOf("?>");
-    if (xmlDeclEnd >= 0) {
-      const beforeDecl = xml.substring(0, xmlDeclEnd + 2);
-      const afterDecl = xml.substring(xmlDeclEnd + 2);
-      const commentLines = documentComments
-        .map((c: string) => `<!--${c}-->`)
-        .join("\n");
-      xml = beforeDecl + "\n" + commentLines + afterDecl;
-    } else {
-      const commentLines = documentComments
-        .map((c: string) => `<!--${c}-->`)
-        .join("\n");
-      xml = commentLines + "\n" + xml;
-    }
-  }
-
-  return xml;
+  return entries;
 }
 
 /**
@@ -467,11 +290,14 @@ function postProcessXml(xml: string, obj: any): string {
  *
  * The object must have @XmlRoot metadata defined. All decorated properties
  * (@XmlElement, @XmlAttribute, @XmlText, etc.) will be serialized to XML.
- * Handles namespaces, prefixes, arrays, nested objects, and wildcard elements/attributes.
+ * Handles namespaces, prefixes, arrays, nested objects, wildcard elements/attributes
+ * and the comments and order stored by `unmarshal()`.
  *
  * @param obj - The object to marshal (must have @XmlRoot decorator)
  * @returns The XML string representation
  * @throws {Error} If the object has no XmlRoot metadata
+ * @throws {Error} If a comment contains `--` or ends with `-`, which XML cannot represent
+ * @throws {Error} If a wildcard element is named with a key that starts with `@_` or is `#text`
  */
 export function marshal(obj: any): string {
   if (!obj) return "";
@@ -479,44 +305,16 @@ export function marshal(obj: any): string {
   const meta = getMeta(ctor);
   if (!meta) throw new Error("No XmlRoot metadata for " + ctor.name);
 
-  const rootName = meta.rootName ?? ctor.name;
-  const xmlObj: any = {};
-  const node: any = {};
-
-  if (meta.namespace && obj._namespacePrefixes === undefined) {
-    node["@_xmlns"] = meta.namespace;
-  }
-
-  const ctx = initializeNsContext(meta, node, obj);
-  const fields = getAllFields(ctor);
-
-  // Process attributes
-  processRootAttributes(node, obj, fields, ctx);
-
-  // Get element fields and sort by element order
-  const commentsData = obj._comments;
-  const hasPositioned = hasPositionedComments(commentsData);
-  let elementFields = fields.filter((f: any) => f.kind === "element");
-  elementFields = sortFieldsByElementOrder(elementFields, obj._elementOrder);
-
-  // Add elements with or without positioned comments
-  if (hasPositioned) {
-    addRootElementsWithComments(node, obj, elementFields, commentsData, ctx);
-  } else {
-    addRootElementsWithoutComments(node, obj, elementFields, commentsData, ctx);
-  }
-
-  // Process wildcard fields and text
-  processRootWildcardsAndText(node, obj, fields);
-
-  const qualifiedRootName = qName(
-    rootName,
+  const ctx = initializeNsContext(meta, obj);
+  const content = objectContent(obj, ctor, ctx, true);
+  const rootName = qName(
+    meta.rootName ?? ctor.name,
     meta.namespace ?? undefined,
     ctx,
     false
   );
-  xmlObj[qualifiedRootName] = node;
-  const xml = builder.build(xmlObj);
-
-  return postProcessXml(xml, obj);
+  return writeXml([
+    ...prologEntries(obj),
+    element(rootName, content.children, content.attributes),
+  ]);
 }

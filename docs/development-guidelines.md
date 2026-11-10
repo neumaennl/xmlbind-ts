@@ -3,9 +3,8 @@ type: Guideline
 title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
-status: stable
-generated: { by: human:neumaennl, at: 2026-11-07T17:30:17Z }
-verified: { by: human:neumaennl, at: 2026-11-07T20:29:03Z }
+status: draft
+generated: { by: human:neumaennl, at: 2026-11-10T19:40:48Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -50,6 +49,7 @@ ESLint should check the limits with the rules `max-lines` and `max-lines-per-fun
 - Follow the established best practices for TypeScript.
 - The TypeScript configuration is `strict`.[^tsconfig]
 - Define interfaces or types for data structures.
+- Define a type in the module that owns the data it describes. Put types that several modules share in a `types.ts` of their folder; `src/types.ts` holds the metadata types.
 - Names: PascalCase for classes, interfaces, types and decorators; camelCase for functions, methods and variables; UPPER_CASE for module-level constants. Names say what something is or does.
 - Length of names: clarity comes first, but keep them short. Aim for less than 15 characters; 25 to 30 is the upper limit. `createElement` is better than `createElementWithChildren`; `createElementNodeWithProcessingOfAnonymousTypes` is too long, `cen` too cryptic.
 - Avoid `any` where possible; use a specific type or `unknown` instead. ESLint does not report `any` (see [`any` is used widely](known-issues.md#any-is-used-widely)).[^eslint]
@@ -87,6 +87,7 @@ The documentation of the library and the generator is the knowledge bundle in `d
 
 - **Keep it current.** When a change affects what a document describes, update the document in the same change. Then set its `generated` to the person responsible for the content (`by: human:<GitHub user>`, also when an agent wrote the text) and the current time (UTC), set `status: draft` and remove `verified`, and add an entry to [the log](log.md), newest date first. When the maintainer has approved the document, set `status: stable` and add `verified` with `by: human:<GitHub user>` and the time.
 - **Known issues.** Record problems you find outside the current task in [Known issues](known-issues.md), sorted by severity and effort, and remove them when they are fixed. A change to the known issues is a change like any other.
+- **Workarounds for dependencies.** A workaround for a problem in a dependency gets a known issue that links the upstream issue and lists what to remove, a test in `__tests__/upstream-behavior.test.ts` that fails when the dependency fixes the problem (see [Testing](testing.md#kinds-of-tests)), and a comment `Upstream: <repo>#<number>` at the code it affects.
 - **New documents** get front matter (`type`, `title`, a one-sentence `description`, `tags`, `status`, `generated`, `sources`), an entry in the index with the same description, and a log entry.
 - **Sources.** Each source has an `id`, a relative `resource` and a `title`. Important statements get a footnote `[^id]` whose text is the title of the source. Separate the footnote definitions with blank lines.
 - **Format.** Files use LF line endings, which `.gitattributes` (`* text=auto`) makes Git store for every text file. Links are relative; code and file paths are formatted as code, without line numbers. A document describes the current state and decided future work, not its own history; the history goes into the log. No volatile numbers such as test counts or durations.
@@ -99,7 +100,7 @@ The documentation of the library and the generator is the knowledge bundle in `d
 2. `npm test` passes; it first builds the library and type-checks the scripts (`pretest`).[^manifest]
 3. The changes follow these guidelines.
 4. The documentation is updated, and `CHANGELOG.md` for functional changes.
-5. Copilot code review has checked the changed files.
+5. Copilot code review has checked the changed files; agents without it review them as described in [`AGENTS.md`](../AGENTS.md#essentials).
 
 # Commits
 

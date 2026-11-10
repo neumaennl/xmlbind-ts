@@ -3,9 +3,8 @@ type: Known Issues
 title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
-status: stable
-generated: { by: human:neumaennl, at: 2026-11-10T14:14:59Z }
-verified: { by: human:neumaennl, at: 2026-11-10T15:31:36Z }
+status: draft
+generated: { by: human:neumaennl, at: 2026-11-10T19:40:48Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -28,6 +27,12 @@ sources:
   - id: marshal-context
     resource: ../src/marshalling/marshalContext.ts
     title: Namespace context of marshalling
+  - id: xml-tree
+    resource: ../src/marshalling/xmlTree.ts
+    title: Ordered tree of marshalling
+  - id: upstream-tests
+    resource: ../__tests__/upstream-behavior.test.ts
+    title: Tests of upstream behavior
   - id: element-order
     resource: ../src/marshalling/elementOrderUtils.ts
     title: Element order
@@ -131,12 +136,12 @@ Effort:
 - **Description:** The parser runs with its default `trimValues: true`, so `<b>  two  spaces  </b>` becomes `"two  spaces"`. For element text with significant whitespace, such as an `xs:string`, the value changes, and `marshal()` writes the changed value.[^unmarshal] Parsing with `trimValues: false` keeps the whitespace, but then the indentation between child elements arrives as text, which the binding of `@XmlText()` fields and mixed content would have to handle.
 - **GitHub issue:** none
 
-## `null` entries of arrays are written as empty elements at the front
+## `null` entries of arrays are written as empty elements
 
-- **Location:** `src/marshalling/marshal.ts` (`addRootElementsWithoutComments()`, `addElementsWithoutComments()` and their variants with comments)
+- **Location:** `src/marshalling/marshal.ts` (`valueEntries()`)
 - **Severity:** High
 - **Effort:** S
-- **Description:** `unmarshal()` reads an occurrence with `xsi:nil="true"` in an array field as `null`, but `marshal()` does not write `null` entries of arrays as `xsi:nil="true"`. It passes `null` to `fast-xml-builder`, which writes an empty element before all other occurrences: `["x", null, "y"]` becomes `<arr/><arr>x</arr><arr>y</arr>`. A round trip of `<arr>x</arr><arr xsi:nil="true"/><arr>y</arr>` thus gives `["", "x", "y"]`: the value and the order change.[^marshal]
+- **Description:** `unmarshal()` reads an occurrence with `xsi:nil="true"` in an array field as `null`, but `marshal()` does not write `null` entries of arrays as `xsi:nil="true"`. It writes them as empty elements in their place: `["x", null, "y"]` becomes `<arr>x</arr><arr/><arr>y</arr>`. A round trip of `<arr>x</arr><arr xsi:nil="true"/><arr>y</arr>` thus gives `["x", "", "y"]`: the value changes.[^marshal]
 - **GitHub issue:** none
 
 ## Names with hyphens produce code that does not compile
@@ -153,6 +158,14 @@ Effort:
 - **Severity:** High
 - **Effort:** S
 - **Description:** The generator maps `xs:time`, `xs:duration`, `xs:gYear`, `xs:gYearMonth`, `xs:gMonth`, `xs:gMonthDay` and `xs:gDay` to `Date`, like `xs:date` and `xs:dateTime`. `new Date()` cannot read most of their values: `10:00:00`, `P1D` and `---15` become an invalid date, which `marshal()` cannot write (`RangeError: Invalid time value`); others, such as `2026` or `--05`, become a full date and are written back as one.[^gen-types] These types need a string or a dedicated type.
+- **GitHub issue:** none
+
+## Plain comment texts are dropped when mixed with comments that have a position
+
+- **Location:** `src/marshalling/commentUtils.ts` (`hasPositionedComments()`), `src/marshalling/marshal.ts` (`writeElements()`)
+- **Severity:** High
+- **Effort:** S
+- **Description:** `_comments` holds either comments with a position (`{ text, position }`) or plain comment texts, which `marshal()` writes after the elements. `hasPositionedComments()` looks only at the first entry, so in an array that mixes both, the plain texts are grouped by their position, which is `undefined`, and dropped without an error: `[{ text: "a", position: 0 }, "b"]` writes only `<!--a-->`.[^marshal] `unmarshal()` never mixes them; an application that adds a plain comment to an unmarshalled object loses it.
 - **GitHub issue:** none
 
 ## Element text that looks like a number is converted
@@ -219,6 +232,14 @@ Effort:
 - **Description:** When the anonymous type of a referenced top-level element gets a suffix because its name `<element>Type` is taken, properties that refer to the element with `ref` are typed with the class that has the original name. With `XMLSchema.xsd`, `simpleType.restriction` is typed `restrictionType` instead of `restrictionType_1`, and the `any` properties of the group types are typed `anyType`, the class of `xs:anyType`, instead of `anyType_1`. The decorator `type` is wrong as well, so `unmarshal()` creates objects of the wrong class.[^toplevel]
 - **GitHub issue:** [#278](https://github.com/neumaennl/xmlbind-ts/issues/278)
 
+## Comments between and after repeated elements move or are lost
+
+- **Location:** `src/marshalling/commentUtils.ts`, `src/marshalling/marshal.ts` (`writeElements()`)
+- **Severity:** High
+- **Effort:** M
+- **Description:** `unmarshal()` records the position of a comment as the number of child elements before it, but `marshal()` inserts comments between fields. When a field has several occurrences, the positions no longer match: in `<a>1</a><!--c1--><a>2</a><b>x</b><!--c2--><c>y</c>`, `c1` moves behind the second `a` and `c2` behind `c`. A comment whose position is larger than the number of element fields is lost: in `<R><a>1</a><a>2</a><!--c--></R>`, `c` has the position 2, but `R` has one element field, so `marshal()` drops it.[^comments] The fix belongs together with [Elements are reordered when occurrences are not contiguous](#elements-are-reordered-when-occurrences-are-not-contiguous).
+- **GitHub issue:** none
+
 ## Elements are reordered when occurrences are not contiguous
 
 - **Location:** `src/marshalling/elementOrderUtils.ts` (`sortFieldsByElementOrder()`), `src/marshalling/marshal.ts`
@@ -242,14 +263,6 @@ Effort:
 - **Effort:** L
 - **Description:** `generateFromXsd()` takes the text of one schema. `xs:import` only adds a prefix for the imported namespace; `xs:include`, `xs:redefine` and `xs:override` are ignored. A property whose type comes from an imported schema imports a file that is never generated, such as `import { thing } from './thing.js'`, which does not compile, and a top-level element of such a type gets no class. Types are also looked up by their local name only, so types with the same name in different namespaces cannot be told apart.[^gen-schema] `README.md` describes imports as having basic support.
 - **GitHub issue:** none
-
-## Comments are escaped and not checked
-
-- **Location:** `src/marshalling/marshal.ts`, `src/marshalling/marshalContext.ts` (`postProcessComments()`)
-- **Severity:** High
-- **Effort:** L
-- **Description:** `marshal()` passes the comments among the child elements to `fast-xml-builder` as elements named `#comment` or `#comment0`, `#comment1` and so on, and turns them into comments afterwards with a regular expression, because the builder's keyed-object mode can hold only one comment key per element. Their text is therefore escaped like element text: `<!-- a & <b> -->` is written back as `<!-- a &amp; &lt;b&gt; -->`, and a carriage return becomes `&#13;`.[^marshal] The comments before the root element are added to the output string without any check, so a comment that an application sets with `--` or `-->` in it gives a document that is not well-formed or contains injected markup. The fix is to build the tree in the builder's ordered mode (`preserveOrder: true`), with comments, the XML declaration and the comments before the root as entries of their own, and to throw an error for a comment that contains `--` or ends with `-`, because XML cannot represent it.
-- **GitHub issue:** [#292](https://github.com/neumaennl/xmlbind-ts/issues/292)
 
 ## `allMeta()` always returns an empty array
 
@@ -285,7 +298,7 @@ Effort:
 
 ## The attributes of the XML declaration are not kept
 
-- **Location:** `src/marshalling/unmarshal.ts` (`unmarshal()`), `src/marshalling/marshal.ts` (`postProcessXml()`)
+- **Location:** `src/marshalling/unmarshal.ts` (`unmarshal()`), `src/marshalling/marshal.ts` (`prologEntries()`), `src/marshalling/xmlTree.ts` (`declaration()`)
 - **Severity:** Medium
 - **Effort:** S
 - **Description:** `unmarshal()` only records whether the source starts with `<?xml`, and `marshal()` then always writes `<?xml version="1.0" encoding="UTF-8"?>`. A source with `version="1.1"` is written as XML 1.0, `standalone` is dropped, and another `encoding` is replaced by `UTF-8`, although `marshal()` returns a string that the caller may write in the source's encoding.[^marshal]
@@ -353,6 +366,14 @@ Effort:
 - **Severity:** Medium
 - **Effort:** M
 - **Description:** `xs:long`, `xs:integer`, `xs:unsignedLong`, `xs:decimal` and the other integer types are mapped to `number`. Integers beyond 2^53 and decimals with more significant digits than a double holds change when they are read and written back, without notice.[^gen-types] JAXB maps them to `BigInteger` and `BigDecimal`; a string or `bigint` would keep the values.
+- **GitHub issue:** none
+
+## Characters that XML does not allow are written
+
+- **Location:** `src/marshalling/xmlTree.ts`, `src/marshalling/escaping.ts`
+- **Severity:** Medium
+- **Effort:** M
+- **Description:** XML 1.0 does not allow most control characters, such as U+0000 or U+0001, nor lone surrogates, not even as character references. `marshal()` writes them as they are in element text, attribute values and comments, because `fast-xml-builder` does not check them ([NaturalIntelligence/fast-xml-parser#902](https://github.com/NaturalIntelligence/fast-xml-parser/issues/902)), so a value that an application sets with such a character gives a document that is not well-formed.[^upstream-tests] A fix either waits for the builder or checks the values in `xmlTree.ts`. When the builder changes, the test in `__tests__/upstream-behavior.test.ts` fails; then decide whether `marshal()` needs its own check and remove the test.
 - **GitHub issue:** none
 
 ## Line feeds and tabs in attribute values are not normalized
@@ -435,6 +456,22 @@ Effort:
 - **Description:** A top-level element without `type` and without an anonymous type has the type `xs:anyType`, but the generator writes no class for it, so documents with that root element cannot be unmarshalled with the generated classes.[^toplevel]
 - **GitHub issue:** none
 
+## The output of `marshal()` starts with a line break
+
+- **Location:** `src/marshalling/xmlTree.ts` (`writeXml()`)
+- **Severity:** Low
+- **Effort:** S
+- **Description:** In its ordered mode, `fast-xml-builder` starts the output with a line break, unless it starts with the XML declaration, and does not end it with one, while its keyed mode does the opposite ([NaturalIntelligence/fast-xml-builder#30](https://github.com/NaturalIntelligence/fast-xml-builder/issues/30)). `marshal()` returns this output as it is.[^xml-tree] When the builder changes, the first test in `__tests__/upstream-behavior.test.ts` fails; then update the exact expectations in `__tests__/xml-tree.test.ts` and `__tests__/issue-261-array-single-occurrence.test.ts`, decide whether `firstLine()` in `__tests__/test-utils/lines.ts` is still needed, and update [Marshalling](marshalling.md#output-format) and the TSDoc of `writeXml()`.
+- **GitHub issue:** none
+
+## Mixed content gets a line with only spaces
+
+- **Location:** `src/marshalling/xmlTree.ts` (`writeXml()`)
+- **Severity:** Low
+- **Effort:** S
+- **Description:** When an element's first child is an element and text follows, `fast-xml-builder` writes a line that contains only the indentation, which adds text to the element: `<M><i>a</i>b</M>` is written as `<M>\n  \n  <i>a</i>\n  b\n</M>` ([NaturalIntelligence/fast-xml-builder#31](https://github.com/NaturalIntelligence/fast-xml-builder/issues/31), fixed by [NaturalIntelligence/fast-xml-builder#32](https://github.com/NaturalIntelligence/fast-xml-builder/pull/32)). `unmarshal()` removes the whitespace again (see [Leading and trailing whitespace of element text is removed](#leading-and-trailing-whitespace-of-element-text-is-removed)).[^upstream-tests] When the builder changes, the second test in `__tests__/upstream-behavior.test.ts` fails; then remove it and update [Marshalling](marshalling.md#output-format) and the TSDoc of `writeXml()`.
+- **GitHub issue:** none
+
 ## Importing the package also loads the generator
 
 - **Location:** `src/index.ts`, `src/xsd/TsGenerator.ts`, `package.json` (`dependencies`, `exports`)
@@ -459,20 +496,12 @@ Effort:
 - **Description:** Each of the seven decorators repeats the same three branches: one for Stage 3 decorators, one for legacy decorators, and a fallback that returns another decorator function. The legacy and fallback branches build the same field entry twice. The fallback cannot be reached through decorator syntax; only tests that call the decorator functions directly reach it.[^decorators] A shared helper that detects the kind of decorator and registers a field entry would remove the duplication.
 - **GitHub issue:** none
 
-## Comments between repeated elements move
+## Unmarshalling duplicates code for the root and nested elements
 
-- **Location:** `src/marshalling/commentUtils.ts`, `src/marshalling/marshal.ts`
+- **Location:** `src/marshalling/unmarshal.ts`, `src/marshalling/elementOrderUtils.ts`, `src/marshalling/commentUtils.ts`, `src/marshalling/marshal.ts`
 - **Severity:** Low
 - **Effort:** M
-- **Description:** `unmarshal()` records the position of a comment as the number of child elements before it, but `marshal()` inserts comments between fields. When a field has several occurrences, the positions no longer match: in `<a>1</a><!--c1--><a>2</a><b>x</b><!--c2--><c>y</c>`, `c1` moves behind the second `a` and `c2` behind `c`.[^comments] The fix belongs together with [Elements are reordered when occurrences are not contiguous](#elements-are-reordered-when-occurrences-are-not-contiguous).
-- **GitHub issue:** none
-
-## Marshalling duplicates code for the root and nested elements
-
-- **Location:** `src/marshalling/marshal.ts`, `src/marshalling/unmarshal.ts`, `src/marshalling/elementOrderUtils.ts`, `src/marshalling/commentUtils.ts`
-- **Severity:** Low
-- **Effort:** M
-- **Description:** `marshal()` has separate functions for the root and for nested elements that do the same (`addRootElementsWithComments()` and `addElementsWithComments()`, and their counterparts without comments); `unmarshal()` binds elements twice (`bindRootElements()` and `bindFieldsToTarget()`), and the walk through the document-order tree is written out five times. Some differences between the copies are accidental, such as `mergeChildPrefixes()`, which only runs for the root's fields.[^marshal]
+- **Description:** `unmarshal()` binds elements twice (`bindRootElements()` and `bindFieldsToTarget()`), and the walk through the document-order tree is written out five times. `marshal()` uses one code path for the root and nested elements, but `mergeChildPrefixes()` still runs only for the root's single-valued fields, which is probably accidental, and `valueEntries()` looks up the metadata of a class again for every occurrence of an element.[^unmarshal]
 - **GitHub issue:** none
 
 ## Default and fixed values are ignored
@@ -543,7 +572,7 @@ Effort:
 
 ## Source files are longer than 500 lines
 
-- **Location:** `src/marshalling/unmarshal.ts`, `src/marshalling/marshal.ts`, `scripts/lib/node-releases.ts`
+- **Location:** `src/marshalling/unmarshal.ts`, `scripts/lib/node-releases.ts`
 - **Severity:** Low
 - **Effort:** M
 - **Description:** These files have more than the 500 lines that the [development guidelines](development-guidelines.md#code-size) allow.
@@ -612,6 +641,10 @@ Effort:
 [^type-resolution]: Resolution of lazy type references
 
 [^marshal-context]: Namespace context of marshalling
+
+[^xml-tree]: Ordered tree of marshalling
+
+[^upstream-tests]: Tests of upstream behavior
 
 [^element-order]: Element order
 

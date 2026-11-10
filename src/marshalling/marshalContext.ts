@@ -1,6 +1,7 @@
 /**
  * Namespace context and helper functions for marshalling
  */
+import type { XmlAttributes } from "./xmlTree.js";
 
 export type NsContext = {
   defaultNs?: string;
@@ -8,8 +9,8 @@ export type NsContext = {
   uriToPrefix: Map<string, string>;
   // Set of prefixes already declared on root
   declared: Set<string>;
-  // Root node to which xmlns declarations are attached
-  rootNode: any;
+  // Attributes of the root element, to which xmlns declarations are added
+  rootAttributes: XmlAttributes;
   counter: number;
   /**
    * True when the marshalled object has `_namespacePrefixes` set (populated by
@@ -39,7 +40,7 @@ export function ensurePrefix(ns: string, ctx: NsContext): string {
   ctx.uriToPrefix.set(ns, p);
   // declare on root if not already
   if (!ctx.declared.has(p)) {
-    ctx.rootNode[`@_xmlns:${p}`] = ns;
+    ctx.rootAttributes[`xmlns:${p}`] = ns;
     ctx.declared.add(p);
   }
   return p;
@@ -68,57 +69,4 @@ export function qName(
   }
   const prefix = ensurePrefix(ns, ctx);
   return `${prefix}:${local}`;
-}
-
-/**
- * Adds a child element to a node, handling multiple elements with the same name.
- * If a child with the same key already exists, converts it to an array.
- *
- * @param node - The parent node
- * @param key - The element key/name
- * @param value - The value to add
- */
-export function addChild(node: any, key: string, value: any): void {
-  const existing = node[key];
-  if (existing === undefined) {
-    node[key] = value;
-  } else if (Array.isArray(existing)) {
-    existing.push(value);
-  } else {
-    node[key] = [existing, value];
-  }
-}
-
-/**
- * Writes wildcard elements (xs:any) to a node.
- * Merges object properties as child elements directly into the parent node.
- *
- * @param node - The parent node to add elements to
- * @param anyArr - Array of wildcard elements (objects or primitives)
- */
-export function writeAnyElements(node: any, anyArr: unknown[]): void {
-  if (!Array.isArray(anyArr)) return;
-  for (const item of anyArr) {
-    if (item == null) continue;
-    if (typeof item === "object" && !Array.isArray(item)) {
-      const obj = item as Record<string, any>;
-      for (const k of Object.keys(obj)) {
-        addChild(node, k, obj[k]);
-      }
-    }
-  }
-}
-
-/**
- * Post-processes XML to convert <#comment>...</#comment> and <#comment0>...</#comment0> tags to <!-- ... --> comments.
- * This is required because XMLBuilder without commentPropName outputs comment nodes as elements.
- *
- * @param xml - The XML string with <#comment> or <#commentN> tags
- * @returns The XML string with proper <!-- --> comment syntax
- */
-export function postProcessComments(xml: string): string {
-  return xml.replace(
-    /<#comment\d*>([^<]*(?:<(?!\/#comment\d*>)[^<]*)*)<\/#comment\d*>/g,
-    "<!--$1-->"
-  );
 }

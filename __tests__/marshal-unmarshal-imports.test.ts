@@ -7,6 +7,7 @@ import {
   loadGeneratedClasses,
   expectStringsOnConsecutiveLines,
   expectStringsOnSameLine,
+  firstLine,
 } from "./test-utils/index.js";
 
 const ADDRESS_XSD = `<?xml version="1.0"?>
@@ -157,8 +158,8 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
       const xml = marshal(person);
 
       // Verify that attributes appear on the same line as the opening tag
-      const firstLine = xml.split('\n')[0];
-      expectStringsOnSameLine(firstLine, [
+      const rootLine = firstLine(xml);
+      expectStringsOnSameLine(rootLine, [
         "<Person",
         'xmlns="http://example.com/person"',
         'id="P456"',
@@ -263,8 +264,8 @@ describe("Marshal and Unmarshal with imported schemas - generated code", () => {
       const xml = marshal(company);
 
       // Verify that namespace attribute appears on the same line as the opening tag
-      const firstLine = xml.split('\n')[0];
-      expectStringsOnSameLine(firstLine, [
+      const rootLine = firstLine(xml);
+      expectStringsOnSameLine(rootLine, [
         "<Company",
         'xmlns="http://example.com/company"',
       ]);

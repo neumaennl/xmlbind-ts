@@ -23,6 +23,7 @@ import {
   decoratorMode,
   detectDecoratorMode,
   expectStringsOnSameLine,
+  firstLine,
 } from "./test-utils/index.js";
 
 enum TestEnum {
@@ -125,8 +126,8 @@ describe("Stage 3 Decorators Support", () => {
 
     const xml = marshal(obj);
     // Verify that attributes appear on the same line as the opening tag
-    const firstLine = xml.split("\n")[0];
-    expectStringsOnSameLine(firstLine, [
+    const rootLine = firstLine(xml);
+    expectStringsOnSameLine(rootLine, [
       "<MarshalTest",
       'id="123"',
       'custom1="a"',
@@ -173,12 +174,12 @@ describe("Stage 3 Decorators Support", () => {
     const xml2 = marshal(instance2);
 
     // Verify attributes are on the opening tag line
-    const firstLine1 = xml1.split("\n")[0];
-    expectStringsOnSameLine(firstLine1, ["<MultiInstance", 'id="1"']);
+    const rootLine1 = firstLine(xml1);
+    expectStringsOnSameLine(rootLine1, ["<MultiInstance", 'id="1"']);
     expect(xml1).toContain("<value>first</value>");
 
-    const firstLine2 = xml2.split("\n")[0];
-    expectStringsOnSameLine(firstLine2, ["<MultiInstance", 'id="2"']);
+    const rootLine2 = firstLine(xml2);
+    expectStringsOnSameLine(rootLine2, ["<MultiInstance", 'id="2"']);
     expect(xml2).toContain("<value>second</value>");
   });
 
@@ -254,7 +255,7 @@ describe("Stage 3 Decorators Support", () => {
     obj.id = "7";
     obj.value = "derived";
     const xml = marshal(obj);
-    expectStringsOnSameLine(xml.split("\n")[0], ["<Derived", 'id="7"']);
+    expectStringsOnSameLine(firstLine(xml), ["<Derived", 'id="7"']);
     expect(xml).toContain("<value>derived</value>");
   });
 

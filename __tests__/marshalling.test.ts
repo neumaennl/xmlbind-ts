@@ -7,7 +7,7 @@ import {
   marshal,
   unmarshal,
 } from "../src/index.js";
-import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils/index.js";
+import { expectStringsOnConsecutiveLines, expectStringsOnSameLine, firstLine } from "./test-utils/index.js";
 
 @XmlRoot("Person", { namespace: "http://example.com/ns" })
 class Person {
@@ -22,6 +22,18 @@ class Person {
 
   @XmlElement("alias", { type: String, array: true })
   alias?: string[];
+}
+
+@XmlRoot("Pair")
+class Pair {
+  @XmlElement("a", { type: String })
+  a?: string;
+
+  @XmlElement("b", { type: String })
+  b?: string;
+
+  @XmlAnyElement()
+  _any?: unknown[];
 }
 
 @XmlRoot("Doc")
@@ -90,9 +102,8 @@ describe("Marshalling", () => {
 
       const xml = marshal(obj);
       // Verify that attributes appear on the same line as the opening tag
-      const lines = xml.split('\n');
-      const firstLine = lines[0];
-      expectStringsOnSameLine(firstLine, [
+      const rootLine = firstLine(xml);
+      expectStringsOnSameLine(rootLine, [
         "<Doc",
         'id="123"',
         'customAttr="x"',
@@ -104,8 +115,38 @@ describe("Marshalling", () => {
         "<extra2",
       ]);
       // Find the line with extra2 and verify it has attr="y"
-      const extra2Line = lines.find((line: string) => line.includes("<extra2"));
+      const extra2Line = xml.split("\n").find((line: string) => line.includes("<extra2"));
       expect(extra2Line).toContain('attr="y"');
+    });
+  });
+
+  describe("Marshal wildcards with special names", () => {
+    test("writes a wildcard element with the name of a mapped element after the mapped elements", () => {
+      const pair = Object.assign(new Pair(), { a: "x", b: "y", _any: [{ a: "w" }] });
+
+      expectStringsOnConsecutiveLines(marshal(pair), ["<a>x</a>", "<b>y</b>", "<a>w</a>"]);
+    });
+
+    test.each(["@_x", "#text"])(
+      "throws for a wildcard element named %j, which marks an attribute or text in the keyed format",
+      (name) => {
+        const pair = Object.assign(new Pair(), { _any: [{ [name]: "v" }] });
+
+        expect(() => marshal(pair)).toThrow(/cannot be named/);
+      }
+    );
+  });
+
+  describe("Marshal arrays", () => {
+    test("writes null entries as empty elements in their place", () => {
+      const person = new Person();
+      person.alias = ["J", null as unknown as string, "Johnny"];
+
+      expectStringsOnConsecutiveLines(marshal(person), [
+        "<alias>J</alias>",
+        "<alias/>",
+        "<alias>Johnny</alias>",
+      ]);
     });
   });
 

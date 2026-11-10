@@ -3,9 +3,8 @@ type: Reference
 title: Marshalling
 description: How unmarshal() turns an XML string into objects and marshal() turns them back - binding of attributes, elements, text and wildcards, value conversion, namespaces and prefixes, comments and order, the output format, and what a round trip keeps and changes.
 tags: [marshal, unmarshal, namespaces, round-trip, value-casting, public-api]
-status: stable
-generated: { by: human:neumaennl, at: 2026-11-10T14:47:10Z }
-verified: { by: human:neumaennl, at: 2026-11-10T15:31:36Z }
+status: draft
+generated: { by: human:neumaennl, at: 2026-11-10T19:40:48Z }
 sources:
   - id: unmarshal
     resource: ../src/marshalling/unmarshal.ts
@@ -16,6 +15,9 @@ sources:
   - id: marshal-context
     resource: ../src/marshalling/marshalContext.ts
     title: Namespace context of marshalling
+  - id: xml-tree
+    resource: ../src/marshalling/xmlTree.ts
+    title: Ordered tree of marshalling
   - id: namespace-helpers
     resource: ../src/marshalling/namespaceHelpers.ts
     title: Namespace and wildcard helpers for unmarshalling
@@ -106,19 +108,19 @@ Because the parser converts first, a type cannot undo the conversion: `<code>007
 
 # Marshalling
 
-`marshal()` builds the element tree from the object's fields and writes it with `fast-xml-builder`.[^marshal]
+`marshal()` builds the document from the object's fields as a list of elements, texts and comments in the order in which they are written, and writes it with the ordered mode of `fast-xml-builder`.[^xml-tree]
 
 - **Which fields.** Fields whose value is `undefined` are left out. A `null` element value is written as `xsi:nil="true"`. A `null` attribute value is left out, because XML has no nil for attributes. An empty string is written as an empty element, `<name/>`, which XML treats like `<name></name>`.
-- **`null` in arrays.** A `null` entry of an array is not written as `xsi:nil="true"` but as an empty element, and it moves to the front: `["x", null]` becomes `<arr/><arr>x</arr>` (see [Known issues](known-issues.md#null-entries-of-arrays-are-written-as-empty-elements-at-the-front)).
-- **Values.** Booleans are written as `true` and `false`, and everything else except dates with `String()`.[^value-casting] Special characters are escaped (`&lt;`, `&amp;` and so on), and a carriage return is written as `&#13;`, because a parser would otherwise turn it into a line feed. Line feeds and tabs in attribute values are written as they are, which a parser reads as spaces (see [Known issues](known-issues.md#line-feeds-and-tabs-in-attribute-values-are-not-normalized)). The text of comments is escaped as well, which changes it (see [Known issues](known-issues.md#comments-are-escaped-and-not-checked)).[^escaping]
+- **`null` in arrays.** A `null` entry of an array is not written as `xsi:nil="true"` but as an empty element in its place: `["x", null]` becomes `<arr>x</arr><arr/>` (see [Known issues](known-issues.md#null-entries-of-arrays-are-written-as-empty-elements)).
+- **Values.** Booleans are written as `true` and `false`, and everything else except dates with `String()`.[^value-casting] Special characters are escaped (`&lt;`, `&amp;` and so on), and a carriage return is written as `&#13;`, because a parser would otherwise turn it into a line feed. Line feeds and tabs in attribute values are written as they are, which a parser reads as spaces (see [Known issues](known-issues.md#line-feeds-and-tabs-in-attribute-values-are-not-normalized)).[^escaping]
 - **Special numbers.** `NaN` is written as `NaN`, which the XSD types `xs:float` and `xs:double` accept and the other numeric types reject. The infinities are written as `Infinity` and `-Infinity`, which no XSD type accepts; XSD writes them as `INF` and `-INF` (see [Known issues](known-issues.md#infinities-are-not-converted-to-and-from-inf)).
 - **Dates.** A `Date` is written with `toISOString()`, always as a date and time in UTC, such as `2026-01-02T00:00:00.000Z`. An `xs:date` therefore becomes a date and time, and a time without a time zone gets one (see [Known issues](known-issues.md#dates-are-written-as-date-and-time-in-utc)).
 - **Nested objects.** A value is written with the fields of the type that the field declares, not those of the value's own class: the fields that a subclass adds are left out, and `xsi:type` is neither written nor read (see [Known issues](known-issues.md#subclasses-and-xsitype-are-not-supported)). A plain object with the right properties works as well as an instance.
-- **Order.** Attributes come first, in the order of the fields, followed by the wildcard attributes. Then come the element fields, followed by the wildcard elements and the text. The elements are written field by field, all occurrences of one field together. Unmarshalled objects sort the fields by the first occurrence of their element in the source (see [Order and comments](#order-and-comments)); other objects use the order in which the fields are declared.
+- **Order.** Attributes come first, in the order of the fields, followed by the wildcard attributes. Then come the element fields, followed by the wildcard elements and the text. The elements are written field by field, all occurrences of one field together. Unmarshalled objects sort the fields by the first occurrence of their element in the source (see [Order and comments](#order-and-comments)); other objects use the order in which the fields are declared. A wildcard element with the name of a mapped element is written after the mapped ones as well. A wildcard element whose key starts with `@_` or is `#text` throws an error, because these keys mark attributes and text in the format of `fast-xml-parser`.[^marshal]
 
 ## Output format
 
-The output is indented by two spaces, with one element per line, attribute values in double quotes, and empty elements written as `<name/>`. The format is fixed; keeping the format of the source is planned in [#252](https://github.com/neumaennl/xmlbind-ts/issues/252).[^marshal]
+The output is indented by two spaces, with one element per line, attribute values in double quotes, and empty elements written as `<name/>`. It starts with a line break, unless it starts with the XML declaration, and does not end with one (see [Known issues](known-issues.md#the-output-of-marshal-starts-with-a-line-break)). In mixed content whose first child is an element, a line with only spaces is written before that element (see [Known issues](known-issues.md#mixed-content-gets-a-line-with-only-spaces)). The format is fixed; keeping the format of the source is planned in [#252](https://github.com/neumaennl/xmlbind-ts/issues/252).[^xml-tree]
 
 The output starts with `<?xml version="1.0" encoding="UTF-8"?>` only if the unmarshalled source had an XML declaration. The declaration's own `version`, `encoding` and `standalone` are not kept (see [Known issues](known-issues.md#the-attributes-of-the-xml-declaration-are-not-kept)).
 
@@ -142,7 +144,9 @@ Namespace declarations on elements below the root are not kept: a prefix declare
 
 `marshal()` sorts the element fields by the position of the first occurrence of their element in `_elementOrder`, and puts fields that do not occur after them in their declared order. This keeps the order of a document in which each element name occurs in one contiguous run. If occurrences of one name are separated by another element, as in `<a/><b/><a/>`, they are written together, as `<a/><a/><b/>`; wildcard elements always move behind the mapped ones (see [Known issues](known-issues.md#elements-are-reordered-when-occurrences-are-not-contiguous)).[^element-order]
 
-A comment's position counts the child elements before it, but `marshal()` inserts comments between fields, so a comment between two occurrences of the same element, or after a repeated element, moves (see [Known issues](known-issues.md#comments-between-repeated-elements-move)). Comments before the root element are written before it; comments after the root element are dropped.[^comments]
+A comment's position counts the child elements before it, but `marshal()` inserts comments between fields, so a comment between two occurrences of the same element moves, and one after a repeated element can be lost (see [Known issues](known-issues.md#comments-between-and-after-repeated-elements-move-or-are-lost)). An application can also set `_comments` to plain comment texts, which are written after the elements; mixed with comments that have a position, they are dropped (see [Known issues](known-issues.md#plain-comment-texts-are-dropped-when-mixed-with-comments-that-have-a-position)). Comments before the root element are written before it; comments after the root element are dropped.[^comments]
+
+`marshal()` writes the text of a comment as it is, because XML does not recognize references in comments, and throws an error for a comment that contains `--` or ends with `-`, which XML cannot represent. A carriage return in a comment is written as it is, and a parser reads it as a line feed, because XML normalizes line breaks before it parses. Comments from `unmarshal()` never contain one.[^xml-tree]
 
 # What unmarshalled objects remember
 
@@ -170,10 +174,10 @@ They are enumerable, so they appear in `JSON.stringify()` and in deep-equality c
 
 It changes:
 
-- **Values:** element text that looks like a number ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)), leading and trailing whitespace of element text, mixed content, dates and times in `Date` fields, `INF` and `-INF` in `Number` fields, empty values in `Number`, `Boolean` and `Date` fields, `xsi:nil` occurrences in arrays, the references `&#10;` and `&#9;` in attribute values, which are written as literal characters, and comments with special characters.
+- **Values:** element text that looks like a number ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)), leading and trailing whitespace of element text, mixed content, dates and times in `Date` fields, `INF` and `-INF` in `Number` fields, empty values in `Number`, `Boolean` and `Date` fields, `xsi:nil` occurrences in arrays, and the references `&#10;` and `&#9;` in attribute values, which are written as literal characters.
 - **Structure:** the order of elements that are not contiguous, the position of some comments, and the namespace of elements that had no namespace under a default namespace.
-- **Lost content:** unmapped attributes and elements, processing instructions, the document type declaration, comments after the root element, namespace declarations below the root, and the attributes of the XML declaration.
-- **Format:** indentation, line breaks, quotes, the order of attributes, character references, which are written as the characters they stand for, except those that are escaped as described in [Marshalling](#marshalling), and CDATA sections, which become escaped text ([#252](https://github.com/neumaennl/xmlbind-ts/issues/252)).
+- **Lost content:** unmapped attributes and elements, processing instructions, the document type declaration, some comments after a repeated element, comments after the root element, namespace declarations below the root, and the attributes of the XML declaration.
+- **Format:** indentation, line breaks, including those at the start and end of the output, quotes, the order of attributes, character references, which are written as the characters they stand for, except those that are escaped as described in [Marshalling](#marshalling), and CDATA sections, which become escaped text ([#252](https://github.com/neumaennl/xmlbind-ts/issues/252)).
 
 The problems in this list that change values, structure or content are described in [Known issues](known-issues.md).
 
@@ -182,6 +186,8 @@ The problems in this list that change values, structure or content are described
 [^marshal]: Marshalling
 
 [^marshal-context]: Namespace context of marshalling
+
+[^xml-tree]: Ordered tree of marshalling
 
 [^namespace-helpers]: Namespace and wildcard helpers for unmarshalling
 

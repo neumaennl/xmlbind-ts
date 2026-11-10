@@ -48,4 +48,5 @@ The maintainer reviews your work directly in the session.
 - Guidelines: [docs/development-guidelines.md](docs/development-guidelines.md). They apply to you like to every contributor.
 - Documentation: [docs/index.md](docs/index.md). Before you change code, read the documents that describe it. Update them and the [known issues](docs/known-issues.md) as described in [Documentation](docs/development-guidelines.md#documentation). When you plan fixes, look at the known issues and at the open GitHub issues.
 - Before handing work back, run the checks in [Before committing](docs/development-guidelines.md#before-committing).
+- If Copilot code review is not available to you, review the changes with your own code review capabilities instead, and handle the findings as the guidelines say for Copilot's comments: fix them, or give the reason if you do not.
 - Project board: [docs/agent-instructions/project-board.md](docs/agent-instructions/project-board.md) says how to find the next work on the project board and how to change it.

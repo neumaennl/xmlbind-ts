@@ -254,3 +254,69 @@ describe("XML Comments Preservation (Metadata Approach)", () => {
     expect(contentOpenIdx).toBeLessThan(comment3Idx);
   });
 });
+
+@XmlRoot("Doc")
+class CommentedDoc {
+  @XmlElement("Title")
+  title?: string;
+}
+
+/**
+ * Creates a document with a title and the given round-trip properties.
+ *
+ * @param props - Properties such as `_comments` or `_documentComments`
+ * @returns The document
+ */
+function commentedDoc(props: Record<string, unknown>): CommentedDoc {
+  return Object.assign(new CommentedDoc(), { title: "t" }, props);
+}
+
+describe("Writing comments", () => {
+  test("keeps markup characters in comments on a round trip", () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<!-- a & <b> "c" -->
+<Doc>
+  <!-- d &amp; <e/> -->
+  <Title>t</Title>
+</Doc>`;
+
+    const marshalled = marshal(unmarshal(CommentedDoc, xml));
+
+    expect(marshalled).toContain(`<!-- a & <b> "c" -->`);
+    expect(marshalled).toContain(`<!-- d &amp; <e/> -->`);
+    const again = unmarshal(CommentedDoc, marshalled) as any;
+    expect(again._documentComments).toEqual([` a & <b> "c" `]);
+    expect(again._comments).toEqual([{ text: " d &amp; <e/> ", position: 0 }]);
+  });
+
+  test("writes a carriage return in a comment as it is, which a parser reads as a line feed", () => {
+    const marshalled = marshal(commentedDoc({ _comments: [{ text: "a\rb", position: 0 }] }));
+
+    expect(marshalled).toContain("<!--a\rb-->");
+    expect((unmarshal(CommentedDoc, marshalled) as any)._comments).toEqual([
+      { text: "a\nb", position: 0 },
+    ]);
+  });
+
+  test("writes comment texts that are not strings with String()", () => {
+    const doc = commentedDoc({ _comments: [{ text: 5, position: 0 }] });
+
+    expect(marshal(doc)).toContain("<!--5-->");
+  });
+
+  test("writes plain comment texts after the elements", () => {
+    const marshalled = marshal(commentedDoc({ _comments: [" a ", " b "] }));
+
+    expect(marshalled).toBe("\n<Doc>\n  <Title>t</Title>\n  <!-- a -->\n  <!-- b -->\n</Doc>");
+  });
+
+  test.each([
+    ["a positioned comment with --", { _comments: [{ text: "a--b", position: 0 }] }],
+    ["a comment text ending with -", { _comments: ["a-"] }],
+    ["a comment before the root with -->", { _documentComments: [" --><evil/><!-- "] }],
+  ])("throws for %s, which XML cannot represent", (_case, props) => {
+    expect(() => marshal(commentedDoc(props))).toThrow(
+      /cannot contain "--" or end with "-"/
+    );
+  });
+});

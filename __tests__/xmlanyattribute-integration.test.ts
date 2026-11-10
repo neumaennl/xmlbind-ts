@@ -1,5 +1,5 @@
 import { XmlRoot, XmlElement, XmlAnyAttribute, marshal, getMeta } from "../src/index.js";
-import { expectStringsOnConsecutiveLines, expectStringsOnSameLine } from "./test-utils/index.js";
+import { expectStringsOnConsecutiveLines, expectStringsOnSameLine, firstLine } from "./test-utils/index.js";
 
 // Define classes at module level to avoid scoping issues
 @XmlRoot("Document")
@@ -37,8 +37,8 @@ describe("XmlAnyAttribute Integration Tests", () => {
 
     const xml = marshal(doc);
     // Verify that attributes appear on the same line as the opening tag
-    const firstLine = xml.split('\n')[0];
-    expectStringsOnSameLine(firstLine, [
+    const rootLine = firstLine(xml);
+    expectStringsOnSameLine(rootLine, [
       "<Document",
       'id="123"',
       'version="1.0"',
@@ -77,8 +77,8 @@ describe("XmlAnyAttribute Integration Tests", () => {
 
     const xml = marshal(obj);
     // Verify that attributes appear on the same line as the opening tag
-    const firstLine = xml.split('\n')[0];
-    expectStringsOnSameLine(firstLine, [
+    const rootLine = firstLine(xml);
+    expectStringsOnSameLine(rootLine, [
       'id="100"',
       'type="special"',
     ]);

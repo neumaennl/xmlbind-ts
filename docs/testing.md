@@ -3,9 +3,8 @@ type: Testing Strategy
 title: Testing
 description: How the library and the generator are tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
-status: stable
-generated: { by: human:neumaennl, at: 2026-11-10T14:27:49Z }
-verified: { by: human:neumaennl, at: 2026-11-10T15:31:36Z }
+status: draft
+generated: { by: human:neumaennl, at: 2026-11-10T19:40:48Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -37,6 +36,9 @@ sources:
   - id: xmlschema-test
     resource: ../__tests__/xsd-generator-xmlschema.test.ts
     title: Tests of the classes generated from XMLSchema.xsd
+  - id: upstream-tests
+    resource: ../__tests__/upstream-behavior.test.ts
+    title: Tests of upstream behavior
   - id: eslint
     resource: ../eslint.config.mjs
     title: ESLint configuration
@@ -95,6 +97,7 @@ Further settings:
 | `compilerTarget()` | returns `target` and `lib` of `tsconfig.target.json`, for the projects that tests compile with `tsc` |
 | `expectStringsOnSameLine(line, strings)` | checks that strings occur on one line in this order |
 | `expectStringsOnConsecutiveLines(text, strings)` | checks that strings occur on successive lines in this order |
+| `firstLine(text)` | returns the first line that is not empty, such as the start tag of the root element in the output of `marshal()` |
 | `decoratorMode`, `emitsDecoratorMetadata`, `detectDecoratorMode()` | see [Two Vitest projects](#two-vitest-projects) |
 
 `__tests__/test-utils/note.ts` exports `Note`, a bound class with the string attribute `title` and the string element `text`, for tests of how values are read and written. `index.ts` does not export it, so that importing the helpers does not register a class in the metadata registry.
@@ -118,6 +121,7 @@ Larger XSD and XML snippets are kept in `__tests__/test-resources/`:
 - **The XSD schema for schemas** is generated and type-checked with `tsc --noEmit`.[^xmlschema-test] `schema-roundtrip.test.ts` unmarshals and marshals `XMLSchema.xsd` and `example.xsd` with their generated classes and compares how often each element occurs before and after, not their order or text.
 - **CLI integration tests** pack the package with `npm pack`, install it into a consumer project and run its `xsd2ts`. One test type-checks the generated classes in an ES module project; the other compiles them as CommonJS with legacy decorators and `emitDecoratorMetadata` and round-trips a document with Node.js.[^cli-integration]
 - **Script tests** check the Node.js version scripts with stubbed network access.
+- **Upstream tests** in `upstream-behavior.test.ts` pin problems of dependencies that xmlbind-ts works around or documents. Each names the upstream issue and fails when a new version of the dependency fixes the problem; the known issue of the same upstream issue says what to change then (see [Development guidelines](development-guidelines.md#documentation)).[^upstream-tests]
 
 # Coverage
 
@@ -152,6 +156,8 @@ CI runs the tests with coverage on every push to `main` and every pull request i
 [^cli-integration]: Integration tests of the packed package
 
 [^xmlschema-test]: Tests of the classes generated from XMLSchema.xsd
+
+[^upstream-tests]: Tests of upstream behavior
 
 [^ci]: CI workflow
 
