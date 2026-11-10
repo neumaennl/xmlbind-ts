@@ -4,8 +4,8 @@ title: Architecture
 description: What xmlbind-ts is responsible for and what belongs to the application, how the package is divided into the runtime library and the xsd2ts generator - their modules, the public API of the entry point, the runtime dependencies, and the principles the code follows.
 tags: [architecture, public-api, dependencies, metadata, generator]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-05T05:34:09Z }
-verified: { by: human:neumaennl, at: 2026-11-05T05:34:09Z }
+generated: { by: human:neumaennl, at: 2026-11-10T14:27:49Z }
+verified: { by: human:neumaennl, at: 2026-11-10T15:31:36Z }
 sources:
   - id: entry
     resource: ../src/index.ts
@@ -82,7 +82,7 @@ flowchart LR
 |---|---|
 | `src/decorators` | One file per decorator: `@XmlRoot`, `@XmlElement`, `@XmlAttribute`, `@XmlText`, `@XmlEnum`, `@XmlAnyElement`, `@XmlAnyAttribute`. |
 | `src/metadata` | The metadata registry, which stores the mapping of each class. |
-| `src/marshalling` | `marshal()` and `unmarshal()`, with helpers for namespaces, element order and comments. |
+| `src/marshalling` | `marshal()` and `unmarshal()`, with helpers for namespaces, element order, comments, the decoding of entities and the escaping of values. |
 | `src/util` | Value casting, resolution of lazy type references, and namespace helpers, shared by the decorators and the marshalling. |
 | `src/types.ts` | The metadata types `ClassMeta` and `FieldMeta`, and `Constructor`. |
 | `src/xsd` | The generator: the XSD parser, `generateFromXsd()`, the command line interface and the cleanup of the output folder. |
@@ -106,12 +106,14 @@ Because the entry point exports `generateFromXsd()`, importing the package also 
 | Package | Used by | Purpose |
 |---|---|---|
 | `fast-xml-parser` | Runtime library | Parses XML in `unmarshal()`. |
+| `@nodable/entities` | Runtime library | Decodes entities and character references while `fast-xml-parser` parses. |
+| `is-unsafe` | Runtime library | Detects unsafe values of entities that a DOCTYPE declares, so that they are not expanded. |
 | `fast-xml-builder` | Runtime library | Writes XML in `marshal()`. |
 | `reflect-metadata` | Runtime library | Reads the `design:type` metadata of legacy decorators in `@XmlElement` and `@XmlAttribute`. |
 | `@xmldom/xmldom` | Generator | Parses the XSD into a DOM. |
 | `commander` | Generator | Parses the arguments of `xsd2ts`. |
 
-All five are runtime dependencies of the package, including those that only the generator needs.[^manifest]
+All seven are runtime dependencies of the package, including those that only the generator needs.[^manifest]
 
 # Principles
 

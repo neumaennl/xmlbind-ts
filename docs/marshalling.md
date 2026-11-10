@@ -4,8 +4,8 @@ title: Marshalling
 description: How unmarshal() turns an XML string into objects and marshal() turns them back - binding of attributes, elements, text and wildcards, value conversion, namespaces and prefixes, comments and order, the output format, and what a round trip keeps and changes.
 tags: [marshal, unmarshal, namespaces, round-trip, value-casting, public-api]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-02T15:02:42Z }
-verified: { by: human:neumaennl, at: 2026-11-03T09:42:18Z }
+generated: { by: human:neumaennl, at: 2026-11-10T14:47:10Z }
+verified: { by: human:neumaennl, at: 2026-11-10T15:31:36Z }
 sources:
   - id: unmarshal
     resource: ../src/marshalling/unmarshal.ts
@@ -28,6 +28,12 @@ sources:
   - id: value-casting
     resource: ../src/util/valueCasting.ts
     title: Value casting
+  - id: entity-decoder
+    resource: ../src/marshalling/entityDecoder.ts
+    title: Entity decoder of unmarshalling
+  - id: escaping
+    resource: ../src/marshalling/escaping.ts
+    title: Escaping of marshalling
   - id: source-namespaces-test
     resource: ../__tests__/marshal-preserves-source-namespaces.test.ts
     title: Tests of the namespaces kept from the source
@@ -84,7 +90,7 @@ marshal(order);
 
 ## Value conversion
 
-Attribute values arrive as strings. Element text is converted by the parser first: text that looks like a number becomes a number, `true` and `false` become booleans, and leading and trailing whitespace is removed.[^unmarshal] Then the field's type converts the value with `castValue()`:[^value-casting]
+Attribute values arrive as strings, with literal line feeds and tabs kept instead of being turned into spaces as XML requires (see [Known issues](known-issues.md#line-feeds-and-tabs-in-attribute-values-are-not-normalized)). Element text is converted by the parser first: text that looks like a number becomes a number, `true` and `false` become booleans, and leading and trailing whitespace is removed.[^unmarshal] Then the field's type converts the value with `castValue()`:[^value-casting]
 
 | Type | Conversion |
 |---|---|
@@ -96,7 +102,7 @@ Attribute values arrive as strings. Element text is converted by the parser firs
 
 An empty attribute value or empty element becomes `0` for `Number`, `false` for `Boolean` and an invalid date for `Date`, which `marshal()` then cannot write (see [Known issues](known-issues.md#empty-values-become-0-false-or-an-invalid-date)).
 
-Because the parser converts first, a type cannot undo the conversion: `<code>007</code>` becomes `"7"` even with `type: String` ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)). The parser also decodes only the five predefined entities: a character reference such as `&#65;` stays the literal text `&#65;` instead of `A` (see [Known issues](known-issues.md#character-references-are-not-decoded)). CDATA sections are read as ordinary text.
+Because the parser converts first, a type cannot undo the conversion: `<code>007</code>` becomes `"7"` even with `type: String` ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)). The parser decodes the five predefined entities, character references such as `&#65;` and `&#x41;`, and the entities a DOCTYPE declares, except those whose value is unsafe in HTML or XML, such as markup with a `<script>` element. HTML entities that XML does not define, such as `&nbsp;`, stay as they are, and references to characters that XML does not allow, such as `&#0;`, are removed without an error (see [Known issues](known-issues.md#invalid-character-references-are-removed-without-an-error)).[^entity-decoder] CDATA sections are read as ordinary text.
 
 # Marshalling
 
@@ -104,7 +110,7 @@ Because the parser converts first, a type cannot undo the conversion: `<code>007
 
 - **Which fields.** Fields whose value is `undefined` are left out. A `null` element value is written as `xsi:nil="true"`. A `null` attribute value is left out, because XML has no nil for attributes. An empty string is written as an empty element, `<name/>`, which XML treats like `<name></name>`.
 - **`null` in arrays.** A `null` entry of an array is not written as `xsi:nil="true"` but as an empty element, and it moves to the front: `["x", null]` becomes `<arr/><arr>x</arr>` (see [Known issues](known-issues.md#null-entries-of-arrays-are-written-as-empty-elements-at-the-front)).
-- **Values.** Booleans are written as `true` and `false`, and everything else except dates with `String()`. Special characters are escaped (`&lt;`, `&amp;` and so on).[^value-casting]
+- **Values.** Booleans are written as `true` and `false`, and everything else except dates with `String()`.[^value-casting] Special characters are escaped (`&lt;`, `&amp;` and so on), and a carriage return is written as `&#13;`, because a parser would otherwise turn it into a line feed. Line feeds and tabs in attribute values are written as they are, which a parser reads as spaces (see [Known issues](known-issues.md#line-feeds-and-tabs-in-attribute-values-are-not-normalized)). The text of comments is escaped as well, which changes it (see [Known issues](known-issues.md#comments-are-escaped-and-not-checked)).[^escaping]
 - **Special numbers.** `NaN` is written as `NaN`, which the XSD types `xs:float` and `xs:double` accept and the other numeric types reject. The infinities are written as `Infinity` and `-Infinity`, which no XSD type accepts; XSD writes them as `INF` and `-INF` (see [Known issues](known-issues.md#infinities-are-not-converted-to-and-from-inf)).
 - **Dates.** A `Date` is written with `toISOString()`, always as a date and time in UTC, such as `2026-01-02T00:00:00.000Z`. An `xs:date` therefore becomes a date and time, and a time without a time zone gets one (see [Known issues](known-issues.md#dates-are-written-as-date-and-time-in-utc)).
 - **Nested objects.** A value is written with the fields of the type that the field declares, not those of the value's own class: the fields that a subclass adds are left out, and `xsi:type` is neither written nor read (see [Known issues](known-issues.md#subclasses-and-xsitype-are-not-supported)). A plain object with the right properties works as well as an instance.
@@ -164,10 +170,10 @@ They are enumerable, so they appear in `JSON.stringify()` and in deep-equality c
 
 It changes:
 
-- **Values:** element text that looks like a number ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)), leading and trailing whitespace of element text, character references, mixed content, dates and times in `Date` fields, `INF` and `-INF` in `Number` fields, empty values in `Number`, `Boolean` and `Date` fields, and `xsi:nil` occurrences in arrays.
+- **Values:** element text that looks like a number ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)), leading and trailing whitespace of element text, mixed content, dates and times in `Date` fields, `INF` and `-INF` in `Number` fields, empty values in `Number`, `Boolean` and `Date` fields, `xsi:nil` occurrences in arrays, the references `&#10;` and `&#9;` in attribute values, which are written as literal characters, and comments with special characters.
 - **Structure:** the order of elements that are not contiguous, the position of some comments, and the namespace of elements that had no namespace under a default namespace.
 - **Lost content:** unmapped attributes and elements, processing instructions, the document type declaration, comments after the root element, namespace declarations below the root, and the attributes of the XML declaration.
-- **Format:** indentation, line breaks, quotes, the order of attributes, and CDATA sections, which become escaped text ([#252](https://github.com/neumaennl/xmlbind-ts/issues/252)).
+- **Format:** indentation, line breaks, quotes, the order of attributes, character references, which are written as the characters they stand for, except those that are escaped as described in [Marshalling](#marshalling), and CDATA sections, which become escaped text ([#252](https://github.com/neumaennl/xmlbind-ts/issues/252)).
 
 The problems in this list that change values, structure or content are described in [Known issues](known-issues.md).
 
@@ -184,5 +190,9 @@ The problems in this list that change values, structure or content are described
 [^comments]: Comments
 
 [^value-casting]: Value casting
+
+[^entity-decoder]: Entity decoder of unmarshalling
+
+[^escaping]: Escaping of marshalling
 
 [^source-namespaces-test]: Tests of the namespaces kept from the source

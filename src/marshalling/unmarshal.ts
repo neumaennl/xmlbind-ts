@@ -31,12 +31,14 @@ import {
   extractNestedElementOrder,
   mergeElementsByDocumentOrder,
 } from "./elementOrderUtils.js";
+import { createEntityDecoder } from "./entityDecoder.js";
 
 // Main parser for data
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   textNodeName: "#text",
+  entityDecoder: createEntityDecoder(),
 });
 
 // Comment parser with preserveOrder to capture comments with positions

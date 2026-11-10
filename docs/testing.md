@@ -4,8 +4,8 @@ title: Testing
 description: How the library and the generator are tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-07T17:30:17Z }
-verified: { by: human:neumaennl, at: 2026-11-07T20:29:03Z }
+generated: { by: human:neumaennl, at: 2026-11-10T14:27:49Z }
+verified: { by: human:neumaennl, at: 2026-11-10T15:31:36Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -96,6 +96,8 @@ Further settings:
 | `expectStringsOnSameLine(line, strings)` | checks that strings occur on one line in this order |
 | `expectStringsOnConsecutiveLines(text, strings)` | checks that strings occur on successive lines in this order |
 | `decoratorMode`, `emitsDecoratorMetadata`, `detectDecoratorMode()` | see [Two Vitest projects](#two-vitest-projects) |
+
+`__tests__/test-utils/note.ts` exports `Note`, a bound class with the string attribute `title` and the string element `text`, for tests of how values are read and written. `index.ts` does not export it, so that importing the helpers does not register a class in the metadata registry.
 
 The stub package of `setupGeneratedRuntime()` makes generated classes import the library from `src/`, like the other tests.[^generated-runtime] The two assertion helpers are registered with the ESLint rule `vitest/expect-expect`, so tests that use only them are not reported as tests without an assertion.[^eslint]
 

@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-09T13:19:15Z }
-verified: { by: human:neumaennl, at: 2026-11-09T13:22:13Z }
+generated: { by: human:neumaennl, at: 2026-11-10T14:14:59Z }
+verified: { by: human:neumaennl, at: 2026-11-10T15:31:36Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -16,6 +16,12 @@ sources:
   - id: unmarshal
     resource: ../src/marshalling/unmarshal.ts
     title: Unmarshalling
+  - id: entity-decoder
+    resource: ../src/marshalling/entityDecoder.ts
+    title: Entity decoder of unmarshalling
+  - id: escaping
+    resource: ../src/marshalling/escaping.ts
+    title: Escaping of marshalling
   - id: marshal
     resource: ../src/marshalling/marshal.ts
     title: Marshalling
@@ -116,14 +122,6 @@ Effort:
 - **Effort:** S
 - **Description:** `marshal()` writes a field whose value is `null` as `<name xsi:nil="true"/>`, but declares the prefix `xsi` only if the unmarshalled source declared it. For an object created in code, the result is `<R><n xsi:nil="true"/></R>`, which is not namespace-well-formed: a namespace-aware parser rejects the unbound prefix.[^marshal]
 - **GitHub issue:** none
-
-## Character references are not decoded
-
-- **Location:** `src/marshalling/unmarshal.ts` (the `XMLParser` options)
-- **Severity:** High
-- **Effort:** S
-- **Description:** The parser decodes only the five predefined entities (`&lt;`, `&gt;`, `&amp;`, `&quot;`, `&apos;`). A character reference such as `&#65;` or `&#x41;` stays the literal text `&#65;` in attribute values and element text, instead of `A`, and `marshal()` writes it back as `&amp;#65;`, which changes the document.[^unmarshal] `fast-xml-parser` decodes character references with the option `htmlEntities: true`; whether that option also decodes HTML entities that XML does not define needs to be checked.
-- **GitHub issue:** [#287](https://github.com/neumaennl/xmlbind-ts/issues/287)
 
 ## Leading and trailing whitespace of element text is removed
 
@@ -245,6 +243,14 @@ Effort:
 - **Description:** `generateFromXsd()` takes the text of one schema. `xs:import` only adds a prefix for the imported namespace; `xs:include`, `xs:redefine` and `xs:override` are ignored. A property whose type comes from an imported schema imports a file that is never generated, such as `import { thing } from './thing.js'`, which does not compile, and a top-level element of such a type gets no class. Types are also looked up by their local name only, so types with the same name in different namespaces cannot be told apart.[^gen-schema] `README.md` describes imports as having basic support.
 - **GitHub issue:** none
 
+## Comments are escaped and not checked
+
+- **Location:** `src/marshalling/marshal.ts`, `src/marshalling/marshalContext.ts` (`postProcessComments()`)
+- **Severity:** High
+- **Effort:** L
+- **Description:** `marshal()` passes the comments among the child elements to `fast-xml-builder` as elements named `#comment` or `#comment0`, `#comment1` and so on, and turns them into comments afterwards with a regular expression, because the builder's keyed-object mode can hold only one comment key per element. Their text is therefore escaped like element text: `<!-- a & <b> -->` is written back as `<!-- a &amp; &lt;b&gt; -->`, and a carriage return becomes `&#13;`.[^marshal] The comments before the root element are added to the output string without any check, so a comment that an application sets with `--` or `-->` in it gives a document that is not well-formed or contains injected markup. The fix is to build the tree in the builder's ordered mode (`preserveOrder: true`), with comments, the XML declaration and the comments before the root as entries of their own, and to throw an error for a comment that contains `--` or ends with `-`, because XML cannot represent it.
+- **GitHub issue:** [#292](https://github.com/neumaennl/xmlbind-ts/issues/292)
+
 ## `allMeta()` always returns an empty array
 
 - **Location:** `src/metadata/MetadataRegistry.ts` (`allMeta()`), exported from `src/index.ts`
@@ -347,6 +353,14 @@ Effort:
 - **Severity:** Medium
 - **Effort:** M
 - **Description:** `xs:long`, `xs:integer`, `xs:unsignedLong`, `xs:decimal` and the other integer types are mapped to `number`. Integers beyond 2^53 and decimals with more significant digits than a double holds change when they are read and written back, without notice.[^gen-types] JAXB maps them to `BigInteger` and `BigDecimal`; a string or `bigint` would keep the values.
+- **GitHub issue:** none
+
+## Line feeds and tabs in attribute values are not normalized
+
+- **Location:** `src/marshalling/unmarshal.ts` (the `XMLParser` options), `src/marshalling/escaping.ts`
+- **Severity:** Medium
+- **Effort:** L
+- **Description:** XML reads a literal line feed or tab in an attribute value as a space, and a character reference such as `&#10;` as the character itself. `fast-xml-parser` keeps literal line feeds and tabs ([NaturalIntelligence/fast-xml-parser#330](https://github.com/NaturalIntelligence/fast-xml-parser/issues/330)) and decodes the references before the value is available, so `unmarshal()` cannot tell the two apart: `a="x&#10;y"` and a literal line break both become `"x\ny"`.[^unmarshal] `marshal()` writes line feeds and tabs in attribute values as they are, so that a literal line break in the source keeps its meaning; a reference such as `&#10;` is written as a literal line feed, which other parsers read as a space.[^escaping] A fix needs the parser to normalize literal whitespace before it decodes references ([NaturalIntelligence/fast-xml-parser#920](https://github.com/NaturalIntelligence/fast-xml-parser/issues/920)), and then `marshal()` can write line feeds and tabs as references.
 - **GitHub issue:** none
 
 ## Unmapped content is dropped without notice
@@ -467,6 +481,14 @@ Effort:
 - **Severity:** Low
 - **Effort:** M
 - **Description:** The generator does not use `default` and `fixed` of elements and attributes. An absent attribute with `default="5"` is `undefined` after unmarshalling, not `5`.[^gen-elements] JAXB returns the default value of an absent attribute from the generated getter.
+- **GitHub issue:** none
+
+## Invalid character references are removed without an error
+
+- **Location:** `src/marshalling/entityDecoder.ts`
+- **Severity:** Low
+- **Effort:** M
+- **Description:** A character reference to a character that XML does not allow, such as `&#0;`, a surrogate like `&#xD800;` or a control character like `&#1;`, makes a document not well-formed, but `unmarshal()` removes it and reads the rest: `a&#0;b` becomes `"ab"`.[^entity-decoder] The decoder of `@nodable/entities` can throw only for `&#0;`; for the other characters its minimum action is to remove them, so rejecting them needs a check of its own or a change in `@nodable/entities`.
 - **GitHub issue:** none
 
 ## `any` is used widely
@@ -610,6 +632,10 @@ Effort:
 [^toplevel]: Top-level elements
 
 [^xmltext]: @XmlText
+
+[^entity-decoder]: Entity decoder of unmarshalling
+
+[^escaping]: Escaping of marshalling
 
 [^npmignore]: Files left out of the package
 

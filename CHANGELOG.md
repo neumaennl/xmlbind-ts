@@ -2,9 +2,18 @@
 
 ## Unreleased (since 2.3.0)
 
+### Fixed
+
+- `unmarshal()` decodes character references such as `&#65;` and `&#x41;` in attribute values and element text, so `marshal()` no longer writes them back as `&amp;#65;` ([#287](https://github.com/neumaennl/xmlbind-ts/issues/287)). HTML entities that XML does not define, such as `&nbsp;`, are still not decoded.
+- `marshal()` writes carriage returns as character references, so that they are read back unchanged instead of being normalized to line feeds.
+
 ### Changed
 
 - The package is compiled for ES2024 instead of ES2022, the edition that Node.js 24, the oldest supported version, fully supports. The compiler target now follows the supported Node.js version.
+
+### Maintenance
+
+- Added the runtime dependencies `@nodable/entities` and `is-unsafe`, which `unmarshal()` uses to decode entities and character references, and raised the minimum version of `fast-xml-parser` to 5.11.2.
 
 ## 2.3.0 (2026-10-23)
 

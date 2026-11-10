@@ -12,6 +12,7 @@ import {
   postProcessComments,
   type NsContext,
 } from "./marshalContext.js";
+import { escapeValue } from "./escaping.js";
 
 const builder = new XMLBuilder({
   ignoreAttributes: false,
@@ -21,6 +22,9 @@ const builder = new XMLBuilder({
   indentBy: "  ",
   suppressBooleanAttributes: false, // Preserve boolean attribute values like mixed="true"
   suppressEmptyNode: true, // Use self-closing tags for empty elements
+  processEntities: false, // The value processors escape instead
+  tagValueProcessor: escapeValue,
+  attributeValueProcessor: escapeValue,
 });
 
 /**
