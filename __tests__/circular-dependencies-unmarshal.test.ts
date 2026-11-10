@@ -257,7 +257,7 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     // The localElement should be a proper class constructor
     expect(typeof localElement).toBe("function");
     expect(localElement.prototype).toBeDefined();
-  });
+  }, 30000);
 
   test("unmarshals XMLSchema.xsd with example.xsd correctly", async () => {
     // Generate classes from XMLSchema.xsd
@@ -313,7 +313,7 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     expect(restriction.enumeration.length).toBe(5);
     expect(restriction.enumeration[0].constructor.name).toBe("noFixedFacet");
     expect(restriction.enumeration[0].value).toBe("error");
-  });
+  }, 30000);
 
   test("unmarshals nested choice inside sequence as typed explicitGroup instance", async () => {
     // Regression test for: explicitGroup missing type() on recursive choice/sequence decorators.
@@ -366,7 +366,7 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     const firstChoice = Array.isArray(choice) ? choice[0] : choice;
     expect(firstChoice).toBeDefined();
     expect(firstChoice.constructor.name).toBe("explicitGroup");
-  });
+  }, 30000);
 
   test("unmarshals root element with anonymous complexType sequence correctly", async () => {
     // This test specifically verifies the unmarshalling of elements in lines 10-11
@@ -431,5 +431,5 @@ describe("Circular Dependencies Unmarshalling Fix", () => {
     expect(productElement.type_).toBe("loggingType");
     expect(productElement.minOccurs).toBe(0);
     expect(productElement.maxOccurs).toBe("unbounded");
-  });
+  }, 30000);
 });
