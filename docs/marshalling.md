@@ -3,8 +3,9 @@ type: Reference
 title: Marshalling
 description: How unmarshal() turns an XML string into objects and marshal() turns them back - binding of attributes, elements, text and wildcards, value conversion, namespaces and prefixes, comments and order, the output format, and what a round trip keeps and changes.
 tags: [marshal, unmarshal, namespaces, round-trip, value-casting, public-api]
-status: draft
-generated: { by: human:neumaennl, at: 2026-11-10T19:40:48Z }
+status: stable
+generated: { by: human:neumaennl, at: 2026-11-10T20:19:43Z }
+verified: { by: human:neumaennl, at: 2026-11-10T20:25:35Z }
 sources:
   - id: unmarshal
     resource: ../src/marshalling/unmarshal.ts
@@ -144,7 +145,7 @@ Namespace declarations on elements below the root are not kept: a prefix declare
 
 `marshal()` sorts the element fields by the position of the first occurrence of their element in `_elementOrder`, and puts fields that do not occur after them in their declared order. This keeps the order of a document in which each element name occurs in one contiguous run. If occurrences of one name are separated by another element, as in `<a/><b/><a/>`, they are written together, as `<a/><a/><b/>`; wildcard elements always move behind the mapped ones (see [Known issues](known-issues.md#elements-are-reordered-when-occurrences-are-not-contiguous)).[^element-order]
 
-A comment's position counts the child elements before it, but `marshal()` inserts comments between fields, so a comment between two occurrences of the same element moves, and one after a repeated element can be lost (see [Known issues](known-issues.md#comments-between-and-after-repeated-elements-move-or-are-lost)). An application can also set `_comments` to plain comment texts, which are written after the elements; mixed with comments that have a position, they are dropped (see [Known issues](known-issues.md#plain-comment-texts-are-dropped-when-mixed-with-comments-that-have-a-position)). Comments before the root element are written before it; comments after the root element are dropped.[^comments]
+A comment's position counts the child elements before it, but `marshal()` inserts comments between fields, so a comment between two occurrences of the same element moves (see [Known issues](known-issues.md#comments-between-repeated-elements-move)), and a comment that follows more child elements than the class has element fields is lost (see [Known issues](known-issues.md#comments-after-the-last-element-field-are-lost)). An application can also set `_comments` to plain comment texts, which are written after the elements; mixed with comments that have a position, they are dropped (see [Known issues](known-issues.md#plain-comment-texts-are-dropped-when-mixed-with-comments-that-have-a-position)). Comments before the root element are written before it; comments after the root element are dropped.[^comments]
 
 `marshal()` writes the text of a comment as it is, because XML does not recognize references in comments, and throws an error for a comment that contains `--` or ends with `-`, which XML cannot represent. A carriage return in a comment is written as it is, and a parser reads it as a line feed, because XML normalizes line breaks before it parses. Comments from `unmarshal()` never contain one.[^xml-tree]
 

@@ -3,8 +3,9 @@ type: Known Issues
 title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
-status: draft
-generated: { by: human:neumaennl, at: 2026-11-10T19:40:48Z }
+status: stable
+generated: { by: human:neumaennl, at: 2026-11-10T20:25:35Z }
+verified: { by: human:neumaennl, at: 2026-11-10T20:25:35Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -168,6 +169,14 @@ Effort:
 - **Description:** `_comments` holds either comments with a position (`{ text, position }`) or plain comment texts, which `marshal()` writes after the elements. `hasPositionedComments()` looks only at the first entry, so in an array that mixes both, the plain texts are grouped by their position, which is `undefined`, and dropped without an error: `[{ text: "a", position: 0 }, "b"]` writes only `<!--a-->`.[^marshal] `unmarshal()` never mixes them; an application that adds a plain comment to an unmarshalled object loses it.
 - **GitHub issue:** none
 
+## Comments after the last element field are lost
+
+- **Location:** `src/marshalling/marshal.ts` (`writeElements()`)
+- **Severity:** High
+- **Effort:** S
+- **Description:** `writeElements()` writes the comments with a position by the index of the element fields, from 0 to the number of fields, so a comment whose position is larger than that number is dropped without an error. Because the position counts child elements, not fields, this happens to every comment that follows more child elements than the class has element fields: in `<R><a>1</a><a>2</a><!--c--></R>`, `c` has the position 2, but `R` has one element field. With the classes generated from `XMLSchema.xsd`, a comment at the end of a schema with 25 top-level elements is lost, and so is one at the end of an `xs:sequence` with eight elements.[^comments] Writing such comments after the last element field, instead of dropping them, keeps them; their exact place depends on [Comments between repeated elements move](#comments-between-repeated-elements-move).
+- **GitHub issue:** [#293](https://github.com/neumaennl/xmlbind-ts/issues/293)
+
 ## Element text that looks like a number is converted
 
 - **Location:** `src/marshalling/unmarshal.ts` (the `XMLParser` options)
@@ -232,12 +241,12 @@ Effort:
 - **Description:** When the anonymous type of a referenced top-level element gets a suffix because its name `<element>Type` is taken, properties that refer to the element with `ref` are typed with the class that has the original name. With `XMLSchema.xsd`, `simpleType.restriction` is typed `restrictionType` instead of `restrictionType_1`, and the `any` properties of the group types are typed `anyType`, the class of `xs:anyType`, instead of `anyType_1`. The decorator `type` is wrong as well, so `unmarshal()` creates objects of the wrong class.[^toplevel]
 - **GitHub issue:** [#278](https://github.com/neumaennl/xmlbind-ts/issues/278)
 
-## Comments between and after repeated elements move or are lost
+## Comments between repeated elements move
 
 - **Location:** `src/marshalling/commentUtils.ts`, `src/marshalling/marshal.ts` (`writeElements()`)
 - **Severity:** High
 - **Effort:** M
-- **Description:** `unmarshal()` records the position of a comment as the number of child elements before it, but `marshal()` inserts comments between fields. When a field has several occurrences, the positions no longer match: in `<a>1</a><!--c1--><a>2</a><b>x</b><!--c2--><c>y</c>`, `c1` moves behind the second `a` and `c2` behind `c`. A comment whose position is larger than the number of element fields is lost: in `<R><a>1</a><a>2</a><!--c--></R>`, `c` has the position 2, but `R` has one element field, so `marshal()` drops it.[^comments] The fix belongs together with [Elements are reordered when occurrences are not contiguous](#elements-are-reordered-when-occurrences-are-not-contiguous).
+- **Description:** `unmarshal()` records the position of a comment as the number of child elements before it, but `marshal()` inserts comments between fields. When a field has several occurrences, the positions no longer match: in `<a>1</a><!--c1--><a>2</a><b>x</b><!--c2--><c>y</c>`, `c1` moves behind the second `a` and `c2` behind `c`.[^comments] The fix belongs together with [Elements are reordered when occurrences are not contiguous](#elements-are-reordered-when-occurrences-are-not-contiguous). A comment whose position is larger than the number of element fields is not moved but lost; that is [an entry of its own](#comments-after-the-last-element-field-are-lost).
 - **GitHub issue:** none
 
 ## Elements are reordered when occurrences are not contiguous
