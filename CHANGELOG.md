@@ -8,9 +8,11 @@
 - `marshal()` writes carriage returns as character references, so that they are read back unchanged instead of being normalized to line feeds.
 - `marshal()` writes the text of comments as it is instead of escaping it, so `<!-- a & <b> -->` keeps its text. A comment that contains `--` or ends with `-`, which XML cannot represent, throws an error instead of producing a document that is not well-formed ([#292](https://github.com/neumaennl/xmlbind-ts/issues/292)).
 - `marshal()` writes `null` entries of arrays as empty elements in their place instead of before the other occurrences.
+- `marshal()` writes a comment after as many child elements as there were before it in the source, so comments between occurrences of the same element keep their place, and comments after more child elements than the class has element fields are written after the last element instead of being dropped ([#293](https://github.com/neumaennl/xmlbind-ts/issues/293)).
 
 ### Changed
 
+- The `position` of a comment in `_comments` counts the child elements that are written, not the element fields, also on objects that the application creates: a comment is written after that many elements, and unset fields do not count.
 - The output of `marshal()` starts with a line break unless it starts with the XML declaration, and no longer ends with one. In mixed content whose first child is an element, a line with only spaces is written before that element.
 - A wildcard element with the name of a mapped element is written after the mapped elements instead of being merged with them, and a wildcard element whose key starts with `@_` or is `#text` throws an error.
 - The package is compiled for ES2024 instead of ES2022, the edition that Node.js 24, the oldest supported version, fully supports. The compiler target now follows the supported Node.js version.

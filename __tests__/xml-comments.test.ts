@@ -1,5 +1,12 @@
+import { readFileSync } from "fs";
+import path from "path";
 import { unmarshal, marshal } from "../src/marshalling/index.js";
 import { XmlRoot, XmlElement } from "../src/decorators/index.js";
+import { withTmpDir } from "./test-utils/temp-dir.js";
+import {
+  setupGeneratedRuntime,
+  loadGeneratedClasses,
+} from "./test-utils/generated-runtime.js";
 
 describe("XML Comments Preservation (Metadata Approach)", () => {
   test("should preserve XML comments in unmarshal/marshal roundtrip", () => {
@@ -319,4 +326,100 @@ describe("Writing comments", () => {
       /cannot contain "--" or end with "-"/
     );
   });
+});
+
+@XmlRoot("R")
+class Repeated {
+  @XmlElement("a", { type: String, array: true })
+  a?: string[];
+
+  @XmlElement("b")
+  b?: string;
+
+  @XmlElement("c")
+  c?: string;
+}
+
+/**
+ * Creates an object of `Repeated` with the given properties.
+ *
+ * @param props - Element values and round-trip properties such as `_comments`
+ * @returns The object
+ */
+function repeated(props: Record<string, unknown>): Repeated {
+  return Object.assign(new Repeated(), props);
+}
+
+/**
+ * Returns the first item of an array, or the value itself when it is not one.
+ *
+ * @param value - A value that may be an array
+ * @returns The first item or the value
+ */
+function firstOrSelf(value: any): any {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+describe("Positions of comments", () => {
+  test("writes a comment that follows more elements than the class has fields after the last element", () => {
+    const xml = "\n<R>\n  <a>1</a>\n  <a>2</a>\n  <a>3</a>\n  <a>4</a>\n  <!--c-->\n</R>";
+
+    expect(marshal(unmarshal(Repeated, xml))).toBe(xml);
+  });
+
+  test("keeps comments between occurrences of a repeated element in place", () => {
+    const xml =
+      "\n<R>\n  <a>1</a>\n  <!--c1-->\n  <a>2</a>\n  <b>x</b>\n  <!--c2-->\n  <c>y</c>\n</R>";
+
+    expect(marshal(unmarshal(Repeated, xml))).toBe(xml);
+  });
+
+  test("writes a comment after as many elements as before when the elements are reordered", () => {
+    const xml = "<R><a>1</a><b>x</b><!--c--><a>2</a></R>";
+
+    expect(marshal(unmarshal(Repeated, xml))).toBe(
+      "\n<R>\n  <a>1</a>\n  <a>2</a>\n  <!--c-->\n  <b>x</b>\n</R>"
+    );
+  });
+
+  test("counts only the elements that are written, not unset fields", () => {
+    const obj = repeated({ b: "x", c: "y", _comments: [{ text: "c", position: 1 }] });
+
+    expect(marshal(obj)).toBe("\n<R>\n  <b>x</b>\n  <!--c-->\n  <c>y</c>\n</R>");
+  });
+
+  test("writes comments past the last element in the order of their positions", () => {
+    const obj = repeated({
+      b: "x",
+      _comments: [
+        { text: "c2", position: 9 },
+        { text: "c1", position: 5 },
+      ],
+    });
+
+    expect(marshal(obj)).toBe("\n<R>\n  <b>x</b>\n  <!--c1-->\n  <!--c2-->\n</R>");
+  });
+
+  test("keeps comments after many elements with the classes generated from XMLSchema.xsd", async () => {
+    await withTmpDir(async (tmpDir) => {
+      const xsdPath = path.join(__dirname, "test-resources", "XMLSchema.xsd");
+      setupGeneratedRuntime(tmpDir, [readFileSync(xsdPath, "utf-8")]);
+      const { schema: Schema } = await loadGeneratedClasses(tmpDir, ["schema"]);
+      const elements = (count: number) =>
+        Array.from({ length: count }, (_, i) => `<xs:element name="e${i}"/>`).join("");
+      const xsd = `<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="t"><xs:sequence>${elements(9)}<!--end of sequence--></xs:sequence></xs:complexType>
+  ${elements(25)}
+  <!--end of schema-->
+</xs:schema>`;
+
+      const original = unmarshal(Schema, xsd) as any;
+      const again = unmarshal(Schema, marshal(original)) as any;
+
+      expect(again._comments).toEqual([{ text: "end of schema", position: 26 }]);
+      expect(firstOrSelf(firstOrSelf(again.complexType).sequence)._comments).toEqual([
+        { text: "end of sequence", position: 9 },
+      ]);
+    });
+  }, 30000);
 });

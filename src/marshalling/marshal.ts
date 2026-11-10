@@ -93,9 +93,27 @@ function fieldEntries(
 }
 
 /**
+ * Writes the comments of one position and removes them from the map.
+ * @param children - The child entries to add to
+ * @param byPosition - The comment texts by position
+ * @param position - The number of child elements written so far
+ * @throws {Error} If a comment contains `--` or ends with `-`
+ */
+function writeCommentsAt(
+  children: XmlEntry[],
+  byPosition: Map<number, string[]>,
+  position: number
+): void {
+  for (const c of byPosition.get(position) ?? []) children.push(comment(String(c)));
+  byPosition.delete(position);
+}
+
+/**
  * Writes the element fields of an object in the order of `_elementOrder`,
- * with the comments of `_comments`: comments with a position between the
- * fields, plain comment texts after them.
+ * with the comments of `_comments`. A comment with a position is written
+ * after as many child elements as its position says, or after the last
+ * element if there are fewer; plain comment texts are written after the
+ * elements.
  * @param children - The child entries to add to
  * @param obj - The source object
  * @param fields - All fields of the object's type
@@ -120,13 +138,20 @@ function writeElements(
     ? groupCommentsByPosition(commentsData)
     : new Map<number, string[]>();
 
-  for (let i = 0; i <= elementFields.length; i++) {
-    for (const c of commentsByPosition.get(i) ?? []) children.push(comment(String(c)));
-    if (i === elementFields.length) break;
-    const f = elementFields[i];
+  let written = 0;
+  writeCommentsAt(children, commentsByPosition, written);
+  for (const f of elementFields) {
     const val = obj[f.key];
-    if (val !== undefined) children.push(...fieldEntries(f, val, ctx, isRoot));
+    if (val === undefined) continue;
+    for (const entry of fieldEntries(f, val, ctx, isRoot)) {
+      children.push(entry);
+      writeCommentsAt(children, commentsByPosition, ++written);
+    }
   }
+  const remaining = [...commentsByPosition.keys()]
+    .filter((p) => typeof p === "number")
+    .sort((a, b) => a - b);
+  for (const p of remaining) writeCommentsAt(children, commentsByPosition, p);
 
   if (!positioned && Array.isArray(commentsData)) {
     for (const c of commentsData) children.push(comment(String(c)));
