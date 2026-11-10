@@ -1,5 +1,8 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-10
+* **Update**: [Decorators](decorators.md#when-to-review) has a new section "When to review": when the recommendation of legacy decorators and the way the tests compile decorators are reviewed. [#290](https://github.com/neumaennl/xmlbind-ts/issues/290) tracks the review; it is blocked by [oxc-project/oxc#9170](https://github.com/oxc-project/oxc/issues/9170) and relates to [neumaennl/vscode-visual-xml-schema-editor#434](https://github.com/neumaennl/vscode-visual-xml-schema-editor/issues/434).
+
 ## 2026-11-09
 * **Update**: The [index](index.md#agent-instructions) explains the new folder `agent-instructions/`, which holds instructions for agents, starting with [how they use the project board](agent-instructions/project-board.md); `AGENTS.md` links it.
 * **Update**: [Known issues](known-issues.md): "Character references are not decoded" links [#287](https://github.com/neumaennl/xmlbind-ts/issues/287), and "The attributes of the XML declaration are not kept" links [#288](https://github.com/neumaennl/xmlbind-ts/issues/288).

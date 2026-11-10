@@ -14,7 +14,7 @@ okf_version: "0.2"
 
 # XML binding
 
-* [Decorators](decorators.md) - The decorators that map classes and fields to XML - what each one records, its options and defaults, how field types are resolved, how legacy and Stage 3 decorators reach the metadata registry, and the functions that read the metadata.
+* [Decorators](decorators.md) - The decorators that map classes and fields to XML - what each one records, its options and defaults, how field types are resolved, how legacy and Stage 3 decorators reach the metadata registry and when to review the recommendation of legacy decorators, and the functions that read the metadata.
 * [Marshalling](marshalling.md) - How unmarshal() turns an XML string into objects and marshal() turns them back - binding of attributes, elements, text and wildcards, value conversion, namespaces and prefixes, comments and order, the output format, and what a round trip keeps and changes.
 
 # Code generation

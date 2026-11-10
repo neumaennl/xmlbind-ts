@@ -1,11 +1,11 @@
 ---
 type: Reference
 title: Decorators
-description: The decorators that map classes and fields to XML - what each one records, its options and defaults, how field types are resolved, how legacy and Stage 3 decorators reach the metadata registry, and the functions that read the metadata.
+description: The decorators that map classes and fields to XML - what each one records, its options and defaults, how field types are resolved, how legacy and Stage 3 decorators reach the metadata registry and when to review the recommendation of legacy decorators, and the functions that read the metadata.
 tags: [decorators, metadata, legacy-decorators, stage3-decorators, public-api]
 status: stable
-generated: { by: human:neumaennl, at: 2026-10-30T15:15:56Z }
-verified: { by: human:neumaennl, at: 2026-10-30T16:03:41Z }
+generated: { by: human:neumaennl, at: 2026-11-10T10:54:35Z }
+verified: { by: human:neumaennl, at: 2026-11-10T11:14:05Z }
 sources:
   - id: xmlroot
     resource: ../src/decorators/XmlRoot.ts
@@ -215,6 +215,17 @@ Each decorator detects the kind from its arguments: a Stage 3 decorator receives
 **One pitfall with legacy decorators:** with `emitDecoratorMetadata`, TypeScript emits a reference to the declared type of each decorated field. If that type is a class declared further down in the same file, loading the file fails with `ReferenceError: Cannot access '<class>' before initialization`. A lazy `type: () => Item` does not help, because the reference comes from the field's declaration; declare the class first or move it into a module of its own. The generated classes put each class into a module of its own.
 
 The tests run in both modes: Vitest compiles all tests once with legacy and once with Stage 3 decorators (see [Testing](testing.md)),[^vitest-config] and `stage3-decorators.test.ts` checks that a test file was really compiled in the mode of its project and that the `addInitializer()` path registers each field once.[^stage3-tests]
+
+## When to review
+
+The recommendation of legacy decorators and the way the tests compile decorators are reviewed when one of these happens:
+
+- Oxc lowers Stage 3 decorators ([oxc-project/oxc#9170](https://github.com/oxc-project/oxc/issues/9170)). Oxc could then replace the plugin that calls `ts.transpileModule`, which TypeScript 7 no longer has.
+- The decorators proposal changes its stage, or a JavaScript engine ships decorators.
+- TypeScript deprecates `experimentalDecorators` or changes how either kind is compiled.
+- A release of TypeScript, Vite or Vitest whose changelog mentions decorators.
+
+[#290](https://github.com/neumaennl/xmlbind-ts/issues/290) tracks the review. It is blocked by [oxc-project/oxc#9170](https://github.com/oxc-project/oxc/issues/9170), relates to the review in the editor ([neumaennl/vscode-visual-xml-schema-editor#434](https://github.com/neumaennl/vscode-visual-xml-schema-editor/issues/434)), and collects what changes in the meantime.
 
 # Reading the metadata
 
