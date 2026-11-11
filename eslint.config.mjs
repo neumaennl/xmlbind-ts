@@ -6,16 +6,32 @@ import globals from "globals";
 import js from "@eslint/js";
 
 export default defineConfig([
-  js.configs.recommended,
-  ...typescriptEslint.configs["flat/recommended"],
-  vitest.configs.recommended,
+  // JavaScript modules, such as this file.
   {
-    files: ['**/*.ts'],
+    files: ["**/*.mjs"],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  // TypeScript. no-floating-promises reports promises that are neither awaited
+  // nor handled, because their errors are lost, such as a failing assertion in
+  // withTmpDir(). It needs type information from the projects that
+  // tsconfig.json references; the configuration files of Vitest are in none
+  // of them.
+  {
+    files: ["**/*.ts"],
+    extends: [js.configs.recommended, typescriptEslint.configs["flat/recommended"]],
     languageOptions: {
       parser: tsParser,
       sourceType: "module",
-      parserOptions: {},
-
+      parserOptions: {
+        projectService: { allowDefaultProject: ["vitest.config.ts", "vitest.setup.ts"] },
+        tsconfigRootDir: import.meta.dirname,
+      },
       globals: {
         ...globals.node,
       },
@@ -33,6 +49,14 @@ export default defineConfig([
 
       "@typescript-eslint/no-explicit-any": "off",
 
+      "@typescript-eslint/no-floating-promises": "error",
+    },
+  },
+  // Tests and their helpers.
+  {
+    files: ["**/__tests__/**/*.ts"],
+    extends: [vitest.configs.recommended],
+    rules: {
       "vitest/expect-expect": [
         "warn",
         {
@@ -43,22 +67,6 @@ export default defineConfig([
           ],
         },
       ],
-    },
-  },
-  // Promises must be awaited or handled; otherwise their errors are lost,
-  // such as a failing assertion in withTmpDir(). The rule needs type
-  // information from the projects that tsconfig.json references; the
-  // configuration files of Vitest are in none of them.
-  {
-    files: ["**/*.ts"],
-    languageOptions: {
-      parserOptions: {
-        projectService: { allowDefaultProject: ["vitest.config.ts", "vitest.setup.ts"] },
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-    rules: {
-      "@typescript-eslint/no-floating-promises": "error",
     },
   },
   // Allow only .ts and .mjs files: the package is an ES module, so .js would

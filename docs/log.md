@@ -1,6 +1,7 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-11
+* **Update**: [Build and release](build-and-release.md#lint) describes which rules ESLint applies to which files: the `typescript-eslint` rules only to `.ts` files, the Vitest rules only to the tests, and only the rules of ESLint to `.mjs` files.
 * **Update**: [Decorators](decorators.md#xmlattribute) describes that `@XmlAttribute` accepts an enum as `type` and treats it like no type, like `@XmlElement`. Removed "An enum as the `type` of `@XmlAttribute` throws" from [Known issues](known-issues.md) ([#276](https://github.com/neumaennl/xmlbind-ts/issues/276)), and "Enum objects as `type` are ignored" mentions `@XmlAttribute`.
 * **Update**: The Vitest configuration is renamed from `vitest.config.mts` to `vitest.config.ts`, because the package is an ES module anyway. [Build and release](build-and-release.md#lint) describes that ESLint now also rejects `.mts` and `.cts` files; [Testing](testing.md), [Build and release](build-and-release.md#lint), [Decorators](decorators.md) and [Known issues](known-issues.md) follow.
 * **Update**: [Build and release](build-and-release.md#lint) describes the ESLint rule `@typescript-eslint/no-floating-promises`, which checks all TypeScript files, and [Testing](testing.md#utilities-and-resources) that the tests must await `withTmpDir()`. Removed "Tests do not wait for `withTmpDir()`" from [Known issues](known-issues.md).
