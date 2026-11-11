@@ -4,8 +4,8 @@ title: Testing
 description: How the library and the generator are tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T07:58:43Z }
-verified: { by: human:neumaennl, at: 2026-11-11T08:28:29Z }
+generated: { by: human:neumaennl, at: 2026-11-11T12:45:26Z }
+verified: { by: human:neumaennl, at: 2026-11-11T13:12:15Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -57,7 +57,7 @@ This document describes how the library, the generator and the scripts are teste
 | Command | What it does |
 |---|---|
 | `npm test` | builds the library and type-checks the scripts (`pretest`), then runs all tests once |
-| `npm test -- --coverage` | the same, with a coverage report |
+| `npm test -- --coverage` | the same, with a coverage report; fails if the coverage is below the thresholds |
 | `npx vitest run __tests__/marshalling.test.ts` | runs one test file, without `pretest` |
 | `npx vitest` | runs the tests in watch mode |
 
@@ -126,11 +126,17 @@ Larger XSD and XML snippets are kept in `__tests__/test-resources/`:
 
 # Coverage
 
-Coverage is measured with V8 for `src/` only; the scripts are not measured. The reports are `coverage-summary.json`, a text table and `lcov`, all in `coverage/`. Both Vitest projects contribute to the same report. No thresholds are set, so a drop in coverage does not fail a run; branch coverage is below the 85% that the project aims at, the other metrics above (see [Coverage is not enforced](known-issues.md#coverage-is-not-enforced)).[^vitest-config]
+Coverage is measured with V8 (`@vitest/coverage-v8`) for the TypeScript files in `src/` and `scripts/`, except type declarations, test files and `__tests__` folders. Both Vitest projects contribute to the same report. The reports are a text table in the output, `coverage-summary.json` and `coverage-final.json` for CI (see [CI](#ci)), and an HTML report (`coverage/index.html`), all in `coverage/`.[^vitest-config]
+
+The threshold is 85% for lines, statements, functions and branches (`coverage.thresholds` in `vitest.config.mts`). A run with coverage below one of them fails, also in CI. Branch coverage is only a little above its threshold, which is enough because new and changed code is tested anyway (see [Development guidelines](development-guidelines.md#tests)).
 
 # CI
 
-CI runs the tests with coverage on every push to `main` and every pull request into it, after linting and building. It writes the coverage totals into the job summary and publishes the JUnit report as a check named "Vitest".[^ci] [Build and release](build-and-release.md#ci) describes the workflow.
+CI runs the tests with coverage on every push to `main` and every pull request into it, after linting and building.[^ci] [Build and release](build-and-release.md#ci) describes the workflow.
+
+- **Report.** The job summary has a section "Vitest" with the test report that `dorny/test-reporter` creates from the JUnit file, with the tests per file and the message of each failing test. `dorny/test-reporter` writes it into the job summary of the run (`use-actions-summary`, its default since version 2), not as a check of its own. The coverage report follows it.
+- **Coverage.** `davelosert/vitest-coverage-report-action` shows the totals against the thresholds, which it reads from `vitest.config.mts` (`vite-config-path`), and the coverage of the files changed in a pull request, with their uncovered lines. On pull requests from this repository it also keeps one comment with this report up to date; pull requests from forks get none, because their workflow runs have no write access. For the files of a pull request, Vitest writes the coverage reporter `json` (`coverage/coverage-final.json`) besides `json-summary`.[^vitest-config]
+- **Annotations.** In GitHub Actions, Vitest also adds its `github-actions` reporter, which marks the line of each failing test in the run and in the changed files of a pull request. Its own job summary is off, because the report steps write one.[^vitest-config]
 
 # What the tests do not cover
 

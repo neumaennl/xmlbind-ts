@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T08:51:04Z }
-verified: { by: human:neumaennl, at: 2026-11-11T09:50:12Z }
+generated: { by: human:neumaennl, at: 2026-11-11T12:45:26Z }
+verified: { by: human:neumaennl, at: 2026-11-11T13:12:15Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -587,14 +587,6 @@ Effort:
 - **Severity:** Low
 - **Effort:** S
 - **Description:** Vitest compiles the tests with `ts.transpileModule`, which removes types without checking them, and `pretest` type-checks only the build and the scripts. `tsconfig.test.json` covers `src/` and `__tests__/`, but no script and no CI step runs it, so type errors in tests go unnoticed. It passes today.[^vitest-config] Adding it to `npm run typecheck` would catch them.
-- **GitHub issue:** none
-
-## Coverage is not enforced
-
-- **Location:** `vitest.config.mts` (`coverage`), `.github/workflows/ci.yml`
-- **Severity:** Low
-- **Effort:** M
-- **Description:** The coverage configuration sets no thresholds, so a drop in coverage never fails a run; CI only shows the totals in the job summary.[^vitest-config] The thresholds should be 85% for all metrics. Branch coverage is below that, so setting them needs more tests first, mainly for branches. Coverage is also measured for `src/` only, although `scripts/` has tests as well.
 - **GitHub issue:** none
 
 ## Some test files are named after issues and scatter features

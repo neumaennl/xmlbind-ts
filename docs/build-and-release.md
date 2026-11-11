@@ -4,8 +4,8 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-07T20:43:24Z }
-verified: { by: human:neumaennl, at: 2026-11-07T20:58:12Z }
+generated: { by: human:neumaennl, at: 2026-11-11T12:45:26Z }
+verified: { by: human:neumaennl, at: 2026-11-11T13:12:15Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -138,7 +138,7 @@ The workflow `CI` runs on pushes to `main`, on pull requests into `main`, and we
 | Job | Runs | Steps |
 |---|---|---|
 | Check Node versions | always | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life |
-| Install, build and test | not on the weekly run | `npm ci`, `npm run lint`, `npm run build`, `npm test -- --coverage`, the coverage totals in the job summary, and the JUnit report as the check "Vitest" |
+| Install, build and test | not on the weekly run | `npm ci`, `npm run lint`, `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
 
 Both jobs use the latest release of the major version in `.nvmrc` (`check-latest: true`), on Ubuntu only. A warning of `node:check` appears as an annotation of the run. GitHub pauses scheduled workflows of a public repository after 60 days without activity; the workflow then has to be enabled again in the Actions tab.
 

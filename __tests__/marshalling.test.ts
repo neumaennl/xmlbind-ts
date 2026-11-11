@@ -4,6 +4,7 @@ import {
   XmlAttribute,
   XmlAnyElement,
   XmlAnyAttribute,
+  XmlText,
   marshal,
   unmarshal,
 } from "../src/index.js";
@@ -165,6 +166,55 @@ describe("Marshalling", () => {
       expect((obj._any as any[]).length).toBe(2);
       expect(obj._anyAttributes?.id).toBe("123");
       expect(obj._anyAttributes?.customAttr).toBe("x");
+    });
+  });
+
+  describe("Text content of the root", () => {
+    test("unmarshal reads the text of a root with attributes into the text field", () => {
+      @XmlRoot("Note")
+      class Note {
+        @XmlAttribute("lang")
+        lang?: string;
+
+        @XmlText()
+        text?: string;
+      }
+
+      const note = unmarshal(Note, `<Note lang="en">Hello</Note>`);
+
+      expect(note.lang).toBe("en");
+      expect(note.text).toBe("Hello");
+    });
+  });
+
+  describe("Unmarshal elements with unmapped attributes", () => {
+    test("reads the text of an element with attributes into a primitive field", () => {
+      const person = unmarshal(Person, `<Person xmlns="http://example.com/ns"><age unit="years">30</age></Person>`);
+
+      expect(person.age).toBe(30);
+    });
+  });
+
+  describe("Errors", () => {
+    class Undecorated {
+      name?: string;
+    }
+
+    test("unmarshal rejects a class without @XmlRoot", () => {
+      expect(() => unmarshal(Undecorated, "<Undecorated/>")).toThrow("No XmlRoot metadata for Undecorated");
+    });
+
+    test("unmarshal rejects a document without the root element", () => {
+      expect(() => unmarshal(Pair, "<Other/>")).toThrow("Root element Pair not found");
+    });
+
+    test("marshal rejects an object without @XmlRoot", () => {
+      expect(() => marshal(new Undecorated())).toThrow("No XmlRoot metadata for Undecorated");
+    });
+
+    test("marshal returns an empty string for null and undefined", () => {
+      expect(marshal(null)).toBe("");
+      expect(marshal(undefined)).toBe("");
     });
   });
 

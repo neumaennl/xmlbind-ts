@@ -288,4 +288,32 @@ describe("XSD Generator: Documentation", () => {
       expect(personTs).toContain(" * Person root element");
     });
   });
+
+  test("generates TSDoc comments for top-level elements with a simple type", async () => {
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Color">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="red"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="color" type="Color">
+    <xs:annotation><xs:documentation>A color.</xs:documentation></xs:annotation>
+  </xs:element>
+  <xs:element name="code">
+    <xs:annotation><xs:documentation>A code.</xs:documentation></xs:annotation>
+    <xs:simpleType><xs:restriction base="xs:string"/></xs:simpleType>
+  </xs:element>
+</xs:schema>`;
+
+    await withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+
+      const color = readFileSync(join(dir, "color.ts"), "utf-8");
+      expect(color).toMatch(/\/\*\*\n \* A color\.\n \*\/\n@XmlRoot\('color'\)/);
+
+      const code = readFileSync(join(dir, "code.ts"), "utf-8");
+      expect(code).toMatch(/\/\*\*\n \* A code\.\n \*\/\n@XmlRoot\('code'\)/);
+    });
+  });
 });

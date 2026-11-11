@@ -50,6 +50,15 @@ function typescriptTranspile(decoratorMode: DecoratorMode): Plugin {
   };
 }
 
+/**
+ * In GitHub Actions: annotations at the lines of failing tests. The job summary comes
+ * from the report steps in ci.yml, so Vitest's own summary is off.
+ */
+const githubActionsReporter: ["github-actions", { jobSummary: { enabled: boolean } }] = [
+  "github-actions",
+  { jobSummary: { enabled: false } },
+];
+
 export default defineConfig({
   // TypeScript is compiled by the typescript-transpile plugin of each project.
   oxc: false,
@@ -89,6 +98,7 @@ export default defineConfig({
     ],
     reporters: [
       "default",
+      ...(process.env.GITHUB_ACTIONS === "true" ? [githubActionsReporter] : []),
       [
         "junit",
         {
@@ -107,8 +117,12 @@ export default defineConfig({
     ],
     coverage: {
       provider: "v8",
-      include: ["src/**"],
-      reporter: ["json-summary", "text", "lcov"],
+      include: ["src/**/*.ts", "scripts/**/*.ts"],
+      exclude: ["**/*.d.ts", "**/__tests__/**", "**/*.test.ts"],
+      // json: the coverage of the changed files on pull requests (see "CI" in docs/testing.md)
+      reporter: ["text", "json-summary", "json", "html"],
+      // A run below these values fails (see "Coverage" in docs/testing.md)
+      thresholds: { lines: 85, statements: 85, functions: 85, branches: 85 },
     },
   },
 });

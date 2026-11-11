@@ -81,4 +81,27 @@ describe("XSD Generator - List Types", () => {
       expect(content).toContain("string[]");
     });
   });
+
+  test("imports the enum of a list whose item type is an enum", async () => {
+    const xsd = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Color">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="red"/>
+      <xs:enumeration value="blue"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Colors">
+    <xs:list itemType="Color"/>
+  </xs:simpleType>
+</xs:schema>`;
+
+    await withTmpDir((dir) => {
+      generateFromXsd(xsd, dir);
+
+      const content = readFileSync(path.join(dir, "types.ts"), "utf-8");
+      expect(content).toContain("import { Color } from './enums.js';");
+      expect(content).toContain("export type Colors = Color[];");
+    });
+  });
 });

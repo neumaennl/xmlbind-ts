@@ -296,6 +296,16 @@ describe("Writing comments", () => {
     expect(again._comments).toEqual([{ text: " d &amp; <e/> ", position: 0 }]);
   });
 
+  test("keeps empty comments on a round trip", () => {
+    const xml = `<!----><Doc><!----><Title>t</Title></Doc>`;
+
+    const marshalled = marshal(unmarshal(CommentedDoc, xml));
+
+    const again = unmarshal(CommentedDoc, marshalled) as any;
+    expect(again._documentComments).toEqual([""]);
+    expect(again._comments).toEqual([{ text: "", position: 0 }]);
+  });
+
   test("writes a carriage return in a comment as it is, which a parser reads as a line feed", () => {
     const marshalled = marshal(commentedDoc({ _comments: [{ text: "a\rb", position: 0 }] }));
 

@@ -227,4 +227,81 @@ describe("XSD Generator - Element and Attribute References", () => {
       });
     });
   });
+
+  describe("Types of referenced elements and attributes", () => {
+    const XSD = `<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="Color">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="red"/>
+      <xs:enumeration value="blue"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="color" type="Color"/>
+  <xs:element name="code">
+    <xs:simpleType>
+      <xs:restriction base="xs:string"><xs:maxLength value="3"/></xs:restriction>
+    </xs:simpleType>
+  </xs:element>
+  <xs:simpleType name="size"><xs:restriction base="xs:int"/></xs:simpleType>
+  <xs:element name="size">
+    <xs:simpleType><xs:restriction base="xs:int"/></xs:simpleType>
+  </xs:element>
+  <xs:attribute name="shade" type="Color">
+    <xs:annotation><xs:documentation>The shade.</xs:documentation></xs:annotation>
+  </xs:attribute>
+  <xs:complexType name="Paint">
+    <xs:sequence>
+      <xs:element ref="color"/>
+      <xs:element ref="code"/>
+      <xs:element ref="size"/>
+    </xs:sequence>
+    <xs:attribute ref="shade" use="required"/>
+  </xs:complexType>
+  <xs:element name="paint" type="Paint"/>
+</xs:schema>`;
+
+    test("uses the enum of a referenced element with an enum type", async () => {
+      await withTmpDir((dir) => {
+        generateFromXsd(XSD, dir);
+        const content = readFileSync(path.join(dir, "Paint.ts"), "utf8");
+
+        expect(content).toContain("import { Color } from './enums.js';");
+        expect(content).toMatch(/\bcolor!:\s*Color;/);
+      });
+    });
+
+    test("uses the wrapper class of a referenced element with an inline simple type", async () => {
+      await withTmpDir((dir) => {
+        generateFromXsd(XSD, dir);
+        const content = readFileSync(path.join(dir, "Paint.ts"), "utf8");
+
+        expect(content).toContain("import { code } from './code.js';");
+        expect(content).toContain("@XmlElement('code', { type: () => code })");
+        expect(content).toMatch(/\bcode!:\s*code;/);
+      });
+    });
+
+    test("uses the suffixed wrapper class when the element name collides with a type", async () => {
+      await withTmpDir((dir) => {
+        generateFromXsd(XSD, dir);
+        const content = readFileSync(path.join(dir, "Paint.ts"), "utf8");
+
+        expect(existsSync(path.join(dir, "sizeElement.ts"))).toBe(true);
+        expect(content).toContain("import { sizeElement } from './sizeElement.js';");
+        expect(content).toMatch(/\bsize!:\s*sizeElement;/);
+      });
+    });
+
+    test("uses the enum, documentation and use of a referenced attribute", async () => {
+      await withTmpDir((dir) => {
+        generateFromXsd(XSD, dir);
+        const content = readFileSync(path.join(dir, "Paint.ts"), "utf8");
+
+        expect(content).toContain("The shade.");
+        expect(content).toContain("@XmlAttribute('shade')");
+        expect(content).toMatch(/\bshade!:\s*Color;/);
+      });
+    });
+  });
 });

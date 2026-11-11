@@ -35,7 +35,7 @@ Before you open a pull request, run the checks in [Before committing](docs/devel
 
 A pull request into `main` is checked by:
 
-- **CI**, which checks the Node.js version and then installs, lints, builds and runs the tests with coverage. The test results appear as the check "Vitest", the coverage totals in the job summary ([Build and release](docs/build-and-release.md#ci)).
+- **CI**, which checks the Node.js version and then installs, lints, builds and runs the tests with coverage. Coverage below 85% fails the run. The test and coverage reports appear in the job summary, and the coverage report also as a comment on the pull request ([Testing](docs/testing.md#ci)).
 - **Copilot code review**. Handle its comments, and give the reason when you don't follow one.
 
 Commits follow the rules in [Commits](docs/development-guidelines.md#commits).

@@ -1,6 +1,7 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-11
+* **Update**: [Testing](testing.md#coverage) describes that coverage is measured for `src/` and `scripts/` with thresholds of 85% for all metrics, the HTML report, and the reports in CI: the test report "Vitest" and the coverage report with the changed files in the job summary, the coverage comment on pull requests, and the annotations of failing tests; [Build and release](build-and-release.md#ci) and `CONTRIBUTING.md` follow. Removed "Coverage is not enforced" from [Known issues](known-issues.md).
 * **Update**: [Known issues](known-issues.md#round-trips-are-not-tested-with-real-documents): new entry "Round trips are not tested with real documents", which [Testing](testing.md#what-the-tests-do-not-cover) links; the entry links [#294](https://github.com/neumaennl/xmlbind-ts/issues/294).
 * **Update**: [Marshalling](marshalling.md#order-and-comments) describes that `marshal()` writes a comment after as many elements as its position says, also between occurrences of the same element, and comments past the last element after it instead of dropping them. Removed "Comments after the last element field are lost" from [Known issues](known-issues.md) ([#293](https://github.com/neumaennl/xmlbind-ts/issues/293)) and narrowed "Comments between repeated elements move" to "Comments move when elements are reordered or dropped".
 
