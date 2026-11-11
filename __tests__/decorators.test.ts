@@ -193,6 +193,19 @@ describe("Decorators", () => {
         emitsDecoratorMetadata ? TypeError : undefined
       );
     });
+
+    test("accepts an enum as type and keeps its values (#276)", () => {
+      @XmlRoot("element")
+      class Element {
+        @XmlAttribute("status", { type: StatusEnum })
+        status?: StatusEnum;
+      }
+
+      const element = unmarshal(Element, `<element status="pending"/>`);
+
+      expect(element.status).toBe(StatusEnum.Pending);
+      expect(marshal(element)).toContain(`status="pending"`);
+    });
   });
 
   describe("XmlElement", () => {

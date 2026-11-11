@@ -4,8 +4,8 @@ title: Decorators
 description: The decorators that map classes and fields to XML - what each one records, its options and defaults, how field types are resolved, how legacy and Stage 3 decorators reach the metadata registry and when to review the recommendation of legacy decorators, and the functions that read the metadata.
 tags: [decorators, metadata, legacy-decorators, stage3-decorators, public-api]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T16:07:13Z }
-verified: { by: human:neumaennl, at: 2026-11-11T17:42:15Z }
+generated: { by: human:neumaennl, at: 2026-11-11T17:43:32Z }
+verified: { by: human:neumaennl, at: 2026-11-11T17:49:16Z }
 sources:
   - id: xmlroot
     resource: ../src/decorators/XmlRoot.ts
@@ -158,7 +158,7 @@ class Item {
 | `type` | see [Field types](#field-types) | `String`, `Number`, `Boolean` or `Date` |
 | `allowStringFallback` | `false` | as for `@XmlElement` |
 
-An attribute is always a single value; there is no `array` option.[^xmlattribute] Attribute values reach the field as strings unless a type converts them. With legacy decorators, an enum object as `type` makes the class definition throw (see [An enum as the `type` of `@XmlAttribute` throws](known-issues.md#an-enum-as-the-type-of-xmlattribute-throws)).
+An attribute is always a single value; there is no `array` option.[^xmlattribute] Attribute values reach the field as strings unless a type converts them. An enum object as `type` is accepted, but treated like no type (see [Field types](#field-types)).
 
 # @XmlText
 
@@ -215,7 +215,7 @@ With legacy decorators, an explicit `type` that contradicts the declaration, suc
 | `Date` | `new Date(value)` | `new Date(value)` |
 | class | — | an object of the class |
 
-Element text means the text of an `@XmlElement` field and of an `@XmlText()` field. The XML parser does not convert it, so `<code>007</code>` stays `"007"` in a `String` field or a field without a type.[^unmarshal] An enum object as `type` of `@XmlElement` is accepted, but treated like no type, because `resolveType()` only returns functions (see [Enum objects as `type` are ignored](known-issues.md#enum-objects-as-type-are-ignored)).[^type-resolution] [Marshalling](marshalling.md) describes the conversion in both directions.
+Element text means the text of an `@XmlElement` field and of an `@XmlText()` field. The XML parser does not convert it, so `<code>007</code>` stays `"007"` in a `String` field or a field without a type.[^unmarshal] An enum object as `type` of `@XmlElement` or `@XmlAttribute` is accepted, but treated like no type, because `resolveType()` only returns functions (see [Enum objects as `type` are ignored](known-issues.md#enum-objects-as-type-are-ignored)).[^type-resolution] [Marshalling](marshalling.md) describes the conversion in both directions.
 
 # Legacy and Stage 3 decorators
 

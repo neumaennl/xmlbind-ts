@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- `@XmlAttribute` no longer throws with legacy decorators when its `type` is an enum, such as `{ type: Color }` on a field `a?: Color` ([#276](https://github.com/neumaennl/xmlbind-ts/issues/276)).
 - `unmarshal()` no longer converts element text that looks like a number before the field's type is applied, so `<code>007</code>` stays `"007"` in a `String` field, an `@XmlText()` field or an enum, and `marshal()` writes it back unchanged ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)).
 - `unmarshal()` decodes character references such as `&#65;` and `&#x41;` in attribute values and element text, so `marshal()` no longer writes them back as `&amp;#65;` ([#287](https://github.com/neumaennl/xmlbind-ts/issues/287)). HTML entities that XML does not define, such as `&nbsp;`, are still not decoded.
 - `marshal()` writes carriage returns as character references, so that they are read back unchanged instead of being normalized to line feeds.

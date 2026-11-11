@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T16:07:13Z }
-verified: { by: human:neumaennl, at: 2026-11-11T17:42:15Z }
+generated: { by: human:neumaennl, at: 2026-11-11T17:42:26Z }
+verified: { by: human:neumaennl, at: 2026-11-11T17:49:16Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -67,9 +67,6 @@ sources:
   - id: decorators
     resource: ../src/decorators/XmlElement.ts
     title: "@XmlElement, as an example of the decorators"
-  - id: xmlattribute
-    resource: ../src/decorators/XmlAttribute.ts
-    title: "@XmlAttribute"
   - id: xmlenum
     resource: ../src/decorators/XmlEnum.ts
     title: "@XmlEnum"
@@ -284,14 +281,6 @@ Effort:
 - **Description:** `allMeta()` is part of the public API and its name and return type `ClassMeta[]` promise the metadata of all registered classes, but it has always returned an empty array: the registry is a `WeakMap`, which cannot be iterated. Only its TSDoc says so.[^registry] Nothing in the package or its tests uses it. The fix needs a decision: remove it (a breaking change, possibly after a deprecation), or also record the classes in a list, which keeps every decorated class reachable.
 - **GitHub issue:** none
 
-## An enum as the `type` of `@XmlAttribute` throws
-
-- **Location:** `src/decorators/XmlAttribute.ts` (`resolveAttributeType()`)
-- **Severity:** Medium
-- **Effort:** S
-- **Description:** With legacy decorators and `emitDecoratorMetadata`, `@XmlAttribute("a", { type: Color })` on a field `a?: Color`, where `Color` is a string enum, throws when the class is defined: `explicit type option "undefined" conflicts with the declared TypeScript type "String"`. TypeScript emits `String` as the field's type, and the check compares it with the enum object, which has no `name`. `@XmlElement` does not throw, because it resolves the type first (see [Enum objects as `type` are ignored](#enum-objects-as-type-are-ignored)).[^xmlattribute]
-- **GitHub issue:** [#276](https://github.com/neumaennl/xmlbind-ts/issues/276)
-
 ## `xsi:nil` is only recognized with the prefix `xsi`
 
 - **Location:** `src/marshalling/unmarshal.ts`
@@ -425,7 +414,7 @@ Effort:
 - **Location:** `src/util/typeResolution.ts` (`resolveType()`), `src/util/valueCasting.ts` (`castValue()`)
 - **Severity:** Low
 - **Effort:** S
-- **Description:** `README.md` names enums as possible values of the `type` option of `@XmlElement`, and its example of generated code shows `{ type: ColorType }`. `resolveType()` returns `undefined` for anything that is not a function, and `unmarshal()` passes every type through it, so an enum object is treated like no type. The branch of `castValue()` that maps enum keys to values is therefore never reached from `unmarshal()`.[^type-resolution]
+- **Description:** `README.md` names enums as possible values of the `type` option of `@XmlElement`, and its example of generated code shows `{ type: ColorType }`; `@XmlAttribute` accepts them as well. `resolveType()` returns `undefined` for anything that is not a function, and `unmarshal()` passes every type through it, so an enum object is treated like no type. The branch of `castValue()` that maps enum keys to values is therefore never reached from `unmarshal()`.[^type-resolution]
 - **GitHub issue:** none
 
 ## The `nillable` option has no effect
@@ -653,8 +642,6 @@ Effort:
 [^namespace-helpers]: Namespace and wildcard helpers for unmarshalling
 
 [^decorators]: @XmlElement, as an example of the decorators
-
-[^xmlattribute]: @XmlAttribute
 
 [^xmlenum]: @XmlEnum
 
