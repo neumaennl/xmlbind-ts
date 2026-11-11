@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T07:58:43Z }
-verified: { by: human:neumaennl, at: 2026-11-11T08:28:29Z }
+generated: { by: human:neumaennl, at: 2026-11-11T08:51:04Z }
+verified: { by: human:neumaennl, at: 2026-11-11T09:50:12Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -611,7 +611,7 @@ Effort:
 - **Severity:** Low
 - **Effort:** M
 - **Description:** The round-trip tests check selected features with small documents written for them. No test unmarshals and marshals real-world documents and compares the result with the source, so problems that only appear in their combination are found late: the reordering of elements in an `xs:sequence`, comments that were lost, and content that no field maps, such as `xs:assert` or a processing instruction, all showed up in round trips of real schemas. A corpus could start with `XMLSchema.xsd` itself and two schemas that combine these cases, and grow with documents such as the W3C XML Schema test suite, UBL and XHTML. The test compares source and result after removing insignificant differences, such as whitespace between elements and the order of attributes; documents that fail because of a known issue are marked as expected failures until it is fixed.
-- **GitHub issue:** none
+- **GitHub issue:** [#294](https://github.com/neumaennl/xmlbind-ts/issues/294)
 
 # Build and release
 
