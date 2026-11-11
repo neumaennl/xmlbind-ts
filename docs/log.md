@@ -1,6 +1,7 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-11
+* **Update**: [Known issues](known-issues.md#children-that-were-not-in-the-source-are-written-after-all-others): new entry "Children that were not in the source are written after all others", found in the editor, where an attribute added to a complex type with `xs:anyAttribute` is written after it.
 * **Update**: [Build and release](build-and-release.md#lint) describes the ESLint rule `vitest/no-importing-vitest-globals`, which reports imports of Vitest's API in the tests, because they use it as globals.
 * **Update**: [Build and release](build-and-release.md#lint) describes which rules ESLint applies to which files: the `typescript-eslint` rules only to `.ts` files, the Vitest rules only to the tests, and only the rules of ESLint to `.mjs` files.
 * **Update**: [Decorators](decorators.md#xmlattribute) describes that `@XmlAttribute` accepts an enum as `type` and treats it like no type, like `@XmlElement`. Removed "An enum as the `type` of `@XmlAttribute` throws" from [Known issues](known-issues.md) ([#276](https://github.com/neumaennl/xmlbind-ts/issues/276)), and "Enum objects as `type` are ignored" mentions `@XmlAttribute`.

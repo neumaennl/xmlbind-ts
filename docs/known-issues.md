@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T17:42:26Z }
-verified: { by: human:neumaennl, at: 2026-11-11T17:49:16Z }
+generated: { by: human:neumaennl, at: 2026-11-11T18:33:44Z }
+verified: { by: human:neumaennl, at: 2026-11-11T19:10:51Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -319,6 +319,14 @@ Effort:
 - **Severity:** Medium
 - **Effort:** S
 - **Description:** `castValue()` converts an empty attribute value or empty element with `Number("")`, which gives `0`, and treats it as `false` for `Boolean`; `marshal()` then writes a value that was not in the source, such as `<n>0</n>` for `<n/>`. For `Date`, `new Date("")` gives an invalid date, and `marshal()` throws `RangeError: Invalid time value` from `toISOString()`, so a document with `<d/>` cannot be written back. Empty values are not valid for these XSD types, but they occur in practice; `undefined`, or keeping the empty string, would not invent a value.[^value-casting]
+- **GitHub issue:** none
+
+## Children that were not in the source are written after all others
+
+- **Location:** `src/marshalling/elementOrderUtils.ts` (`sortFieldsByElementOrder()`)
+- **Severity:** Medium
+- **Effort:** S
+- **Description:** `marshal()` sorts the fields by the element order that `unmarshal()` recorded, and writes the fields whose elements were not in the source after all others, instead of at the place that the class declares for them. When an application adds the first child of a new kind to an unmarshalled object, it is written at the end, which the schema may not allow: adding an `xs:attribute` to `<xs:extension base="B"><xs:sequence/><xs:anyAttribute/></xs:extension>` with the classes generated from `XMLSchema.xsd` writes `<xs:sequence/><xs:anyAttribute/><xs:attribute name="a"/>`, which is invalid because attributes must come before `xs:anyAttribute`.[^element-order] The fix is to write such a field before the first recorded field that the class declares after it.
 - **GitHub issue:** none
 
 ## `@XmlEnum` has no effect
