@@ -4,8 +4,8 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T17:44:29Z }
-verified: { by: human:neumaennl, at: 2026-11-11T17:49:16Z }
+generated: { by: human:neumaennl, at: 2026-11-11T17:58:47Z }
+verified: { by: human:neumaennl, at: 2026-11-11T18:00:25Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -134,6 +134,7 @@ The project's own settings:
 - unused variables are errors, except parameters whose names start with `_`;
 - `any` is allowed (see [`any` is used widely](known-issues.md#any-is-used-widely));
 - `vitest/expect-expect` accepts the assertion helpers of the tests;
+- `vitest/no-importing-vitest-globals` reports imports of `test`, `expect`, `vi` and the rest of Vitest's API, which the tests use as globals (`globals: true` in `vitest.config.ts`); types such as `Mock` are still imported;
 - `@typescript-eslint/no-floating-promises` reports promises that are neither awaited nor handled, because their errors would be lost; in the tests, a failing assertion in `withTmpDir()` would not fail its test. The rule needs type information, which ESLint takes from the projects that `tsconfig.json` references; `vitest.config.ts` and `vitest.setup.ts`, which none of them includes, are checked without a project;
 - `.js`, `.cjs`, `.mts` and `.cts` files are not allowed at all, because the package is an ES module and needs no other kinds of files;
 - `dist/`, `coverage/`, `test-results/` and folders named `generated/` are ignored.

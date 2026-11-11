@@ -7,7 +7,6 @@
 import { writeFileSync, mkdtempSync, mkdirSync, rmSync } from "fs";
 import os from "os";
 import path from "path";
-import { vi, describe, beforeEach, afterEach, test, expect } from "vitest";
 
 // Mock the dependencies before importing
 const { mockGenerateFromXsd, mockCleanupGeneratedFiles } = vi.hoisted(() => ({

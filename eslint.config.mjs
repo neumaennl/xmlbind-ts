@@ -57,6 +57,8 @@ export default defineConfig([
     files: ["**/__tests__/**/*.ts"],
     extends: [vitest.configs.recommended],
     rules: {
+      // Vitest provides its API as globals (globals: true in vitest.config.ts).
+      "vitest/no-importing-vitest-globals": "error",
       "vitest/expect-expect": [
         "warn",
         {
