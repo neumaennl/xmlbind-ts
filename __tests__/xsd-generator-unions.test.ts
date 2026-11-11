@@ -4,7 +4,7 @@ import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator - Union Types", () => {
-  test("generates type alias for union with memberTypes", () => {
+  test("generates type alias for union with memberTypes", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -15,7 +15,7 @@ describe("XSD Generator - Union Types", () => {
   <xs:element name="Value" type="StringOrNumber"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       // Types are now in consolidated types.ts file
@@ -30,7 +30,7 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
-  test("handles union with multiple member types", () => {
+  test("handles union with multiple member types", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -41,7 +41,7 @@ describe("XSD Generator - Union Types", () => {
   <xs:element name="MixedValue" type="MixedType"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       // Types are now in consolidated types.ts file
@@ -52,7 +52,7 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
-  test("preserves literal members from inline enumerations", () => {
+  test("preserves literal members from inline enumerations", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:simpleType name="allNNI">
@@ -68,7 +68,7 @@ describe("XSD Generator - Union Types", () => {
   <xs:element name="maxOccurs" type="allNNI"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const typesContent = readFileSync(path.join(dir, "types.ts"), "utf-8");
@@ -85,7 +85,7 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
-  test("generates { type: Number, allowStringFallback: true } decorator for number-containing union element", () => {
+  test("generates { type: Number, allowStringFallback: true } decorator for number-containing union element", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:simpleType name="allNNI">
@@ -106,7 +106,7 @@ describe("XSD Generator - Union Types", () => {
   <xs:element name="Container" type="Container"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
       const content = readFileSync(path.join(dir, "Container.ts"), "utf-8");
       // Union-typed elements must carry both the type hint and the fallback flag
@@ -114,7 +114,7 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
-  test("generates { type: Number, allowStringFallback: true } decorator for number-containing union attribute", () => {
+  test("generates { type: Number, allowStringFallback: true } decorator for number-containing union attribute", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:simpleType name="allNNI">
@@ -133,7 +133,7 @@ describe("XSD Generator - Union Types", () => {
   <xs:element name="Occurrence" type="Occurrence"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
       const content = readFileSync(path.join(dir, "Occurrence.ts"), "utf-8");
       // Union-typed attributes must carry both the type hint and the fallback flag
@@ -141,7 +141,7 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
-  test("does not generate allowStringFallback for a plain number alias (non-union)", () => {
+  test("does not generate allowStringFallback for a plain number alias (non-union)", async () => {
     // xs:nonNegativeInteger restriction (no union) → type Foo = number → no fallback
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -155,7 +155,7 @@ describe("XSD Generator - Union Types", () => {
   <xs:element name="Item" type="Item"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
       const content = readFileSync(path.join(dir, "Item.ts"), "utf-8");
       // Plain number alias: no fallback option should be emitted
@@ -163,7 +163,7 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
-  test("does not generate type or allowStringFallback for a mixed number|boolean union", () => {
+  test("does not generate type or allowStringFallback for a mixed number|boolean union", async () => {
     // A union of both number and boolean: no single type can be chosen, so both options are omitted
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -177,7 +177,7 @@ describe("XSD Generator - Union Types", () => {
   <xs:element name="Item" type="Item"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
       const content = readFileSync(path.join(dir, "Item.ts"), "utf-8");
       // Mixed union: neither type coercion nor string fallback should be emitted
@@ -187,7 +187,7 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
-  test("generates { type: Date } decorator for a Date restriction alias (xs:date base)", () => {
+  test("generates { type: Date } decorator for a Date restriction alias (xs:date base)", async () => {
     // A simpleType restricting xs:date produces `export type MyDate = Date;` in generatedSimpleTypes.
     // computeDecoratorType must detect that and emit { type: Date }.
     const xsd = `<?xml version="1.0"?>
@@ -202,7 +202,7 @@ describe("XSD Generator - Union Types", () => {
   <xs:element name="Event" type="Event"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
       const content = readFileSync(path.join(dir, "Event.ts"), "utf-8");
       // Date restriction alias: should emit { type: Date } without allowStringFallback
@@ -211,7 +211,7 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
-  test("does not generate type: Date for a Date | string union alias", () => {
+  test("does not generate type: Date for a Date | string union alias", async () => {
     // A union of Date and string: no single type can safely be applied.
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -225,7 +225,7 @@ describe("XSD Generator - Union Types", () => {
   <xs:element name="Item" type="Item"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
       const content = readFileSync(path.join(dir, "Item.ts"), "utf-8");
       // Date | string: no type coercion should be emitted
@@ -233,7 +233,7 @@ describe("XSD Generator - Union Types", () => {
     });
   });
 
-  test("handles union with inline simpleType members", () => {
+  test("handles union with inline simpleType members", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -251,7 +251,7 @@ describe("XSD Generator - Union Types", () => {
   <xs:element name="FlexValue" type="FlexibleType"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       // Types are now in consolidated types.ts file
@@ -264,7 +264,7 @@ describe("XSD Generator - Union Types", () => {
   });
 
   describe("Inline union types in elements", () => {
-    test("handles inline simpleType union with memberTypes", () => {
+    test("handles inline simpleType union with memberTypes", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="UnionType">
@@ -280,7 +280,7 @@ describe("XSD Generator - Union Types", () => {
   <xsd:element name="UnionType" type="UnionType"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "UnionType.ts"), "utf8");
 
@@ -288,7 +288,7 @@ describe("XSD Generator - Union Types", () => {
       });
     });
 
-    test("handles inline simpleType union with inline member types", () => {
+    test("handles inline simpleType union with inline member types", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="ComplexUnion">
@@ -315,7 +315,7 @@ describe("XSD Generator - Union Types", () => {
   <xsd:element name="ComplexUnion" type="ComplexUnion"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "ComplexUnion.ts"), "utf8");
 
@@ -323,7 +323,7 @@ describe("XSD Generator - Union Types", () => {
       });
     });
 
-    test("handles empty union", () => {
+    test("handles empty union", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="EmptyUnion">
@@ -339,7 +339,7 @@ describe("XSD Generator - Union Types", () => {
   <xsd:element name="EmptyUnion" type="EmptyUnion"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "EmptyUnion.ts"), "utf8");
 
@@ -349,7 +349,7 @@ describe("XSD Generator - Union Types", () => {
   });
 
   describe("Inline restrictions in elements", () => {
-    test("handles inline simpleType restriction without enumeration", () => {
+    test("handles inline simpleType restriction without enumeration", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="RestrictedString">
@@ -367,7 +367,7 @@ describe("XSD Generator - Union Types", () => {
   <xsd:element name="RestrictedString" type="RestrictedString"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "RestrictedString.ts"),
@@ -378,7 +378,7 @@ describe("XSD Generator - Union Types", () => {
       });
     });
 
-    test("handles inline simpleType restriction without base", () => {
+    test("handles inline simpleType restriction without base", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="UnbasedRestriction">
@@ -396,7 +396,7 @@ describe("XSD Generator - Union Types", () => {
   <xsd:element name="UnbasedRestriction" type="UnbasedRestriction"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "UnbasedRestriction.ts"),

@@ -12,8 +12,8 @@ describe("XSD Generator - Occurrence Handling", () => {
   const xmlSchemaXsdPath = path.join(testResourcesDir, "XMLSchema.xsd");
 
   describe("maxOccurs on compositors", () => {
-    test("elements in compositors with maxOccurs > 1 are arrays", () => {
-      withTmpDir((tmpDir) => {
+    test("elements in compositors with maxOccurs > 1 are arrays", async () => {
+      await withTmpDir((tmpDir) => {
         const xsd = readFileSync(occurrencesXsdPath, "utf-8");
         setupGeneratedRuntime(tmpDir, [xsd]);
 
@@ -29,8 +29,8 @@ describe("XSD Generator - Occurrence Handling", () => {
       });
     });
 
-    test("nested compositors with different maxOccurs values", () => {
-      withTmpDir((tmpDir) => {
+    test("nested compositors with different maxOccurs values", async () => {
+      await withTmpDir((tmpDir) => {
         const xsd = readFileSync(occurrencesXsdPath, "utf-8");
         setupGeneratedRuntime(tmpDir, [xsd]);
 
@@ -52,8 +52,8 @@ describe("XSD Generator - Occurrence Handling", () => {
       });
     });
 
-    test("combines element maxOccurs with compositor maxOccurs", () => {
-      withTmpDir((tmpDir) => {
+    test("combines element maxOccurs with compositor maxOccurs", async () => {
+      await withTmpDir((tmpDir) => {
         const xsd = readFileSync(occurrencesXsdPath, "utf-8");
         setupGeneratedRuntime(tmpDir, [xsd]);
 
@@ -68,8 +68,8 @@ describe("XSD Generator - Occurrence Handling", () => {
       });
     });
 
-    test("XMLSchema.xsd schema element has array properties", () => {
-      withTmpDir((tmpDir) => {
+    test("XMLSchema.xsd schema element has array properties", async () => {
+      await withTmpDir((tmpDir) => {
         const xsd = readFileSync(xmlSchemaXsdPath, "utf-8");
         setupGeneratedRuntime(tmpDir, [xsd]);
 
@@ -99,8 +99,8 @@ describe("XSD Generator - Occurrence Handling", () => {
   });
 
   describe("minOccurs on compositors", () => {
-    test("elements in compositors with minOccurs=0 are optional", () => {
-      withTmpDir((tmpDir) => {
+    test("elements in compositors with minOccurs=0 are optional", async () => {
+      await withTmpDir((tmpDir) => {
         const xsd = readFileSync(occurrencesXsdPath, "utf-8");
         setupGeneratedRuntime(tmpDir, [xsd]);
 
@@ -121,8 +121,8 @@ describe("XSD Generator - Occurrence Handling", () => {
       });
     });
 
-    test("nested optional compositors propagate optionality", () => {
-      withTmpDir((tmpDir) => {
+    test("nested optional compositors propagate optionality", async () => {
+      await withTmpDir((tmpDir) => {
         const xsd = readFileSync(occurrencesXsdPath, "utf-8");
         setupGeneratedRuntime(tmpDir, [xsd]);
 
@@ -138,8 +138,8 @@ describe("XSD Generator - Occurrence Handling", () => {
   });
 
   describe("minOccurs and maxOccurs on elements", () => {
-    test("elements with minOccurs=0 are optional", () => {
-      withTmpDir((tmpDir) => {
+    test("elements with minOccurs=0 are optional", async () => {
+      await withTmpDir((tmpDir) => {
         const xsd = readFileSync(occurrencesXsdPath, "utf-8");
         setupGeneratedRuntime(tmpDir, [xsd]);
 
@@ -156,8 +156,8 @@ describe("XSD Generator - Occurrence Handling", () => {
       });
     });
 
-    test("elements with minOccurs > 1 are arrays", () => {
-      withTmpDir((tmpDir) => {
+    test("elements with minOccurs > 1 are arrays", async () => {
+      await withTmpDir((tmpDir) => {
         const xsd = readFileSync(occurrencesXsdPath, "utf-8");
         setupGeneratedRuntime(tmpDir, [xsd]);
 

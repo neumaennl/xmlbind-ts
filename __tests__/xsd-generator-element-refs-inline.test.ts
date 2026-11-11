@@ -8,7 +8,7 @@ import { setupGeneratedRuntime } from './test-utils/generated-runtime.js';
  * are resolved to proper generated classes instead of defaulting to 'any'.
  */
 describe('XSD Generator - element ref inline type resolution', () => {
-  test('resolves inline complexType on referenced element', () => {
+  test('resolves inline complexType on referenced element', async () => {
     const schema = `<?xml version="1.0" encoding="UTF-8"?>\n` +
       `<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">\n` +
       `  <xs:element name="child">\n` +
@@ -31,7 +31,7 @@ describe('XSD Generator - element ref inline type resolution', () => {
       `  </xs:element>\n` +
       `</xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       setupGeneratedRuntime(dir, [schema]);
       const containerPath = path.join(dir, 'container.ts');
       const childTypePath = path.join(dir, 'childType.ts');

@@ -4,7 +4,7 @@ import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator advanced features", () => {
-  test("adds imports for referenced complex types", () => {
+  test("adds imports for referenced complex types", async () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
   <xsd:complexType name="Address">
@@ -20,7 +20,7 @@ describe("XSD Generator advanced features", () => {
   </xsd:complexType>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const person = readFileSync(path.join(tmp, "Person.ts"), "utf8");
       expect(person).toContain("import { Address } from './Address.js';");
@@ -32,7 +32,7 @@ describe("XSD Generator advanced features", () => {
     });
   });
 
-  test("generates class for top-level element with anonymous complexType", () => {
+  test("generates class for top-level element with anonymous complexType", async () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
   <xsd:element name="Book">
@@ -45,7 +45,7 @@ describe("XSD Generator advanced features", () => {
   </xsd:element>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const book = readFileSync(path.join(tmp, "Book.ts"), "utf8");
       expect(book).toContain("export class Book");
@@ -57,7 +57,7 @@ describe("XSD Generator advanced features", () => {
     });
   });
 
-  test("emits extends for complexContent extension and wrapper for top-level element", () => {
+  test("emits extends for complexContent extension and wrapper for top-level element", async () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
   <xsd:complexType name="BaseType">
@@ -78,7 +78,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="Employee" type="EmployeeType"/>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const empType = readFileSync(path.join(tmp, "EmployeeType.ts"), "utf8");
       expect(empType).toContain("import { BaseType } from './BaseType.js';");
@@ -89,7 +89,7 @@ describe("XSD Generator advanced features", () => {
     });
   });
 
-  test("disambiguates when element and complexType have same name", () => {
+  test("disambiguates when element and complexType have same name", async () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
   <xsd:complexType name="Person">
@@ -106,7 +106,7 @@ describe("XSD Generator advanced features", () => {
   </xsd:element>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
 
       // complexType should generate Person.ts
@@ -130,7 +130,7 @@ describe("XSD Generator advanced features", () => {
   });
 
   describe("simpleContent", () => {
-    test("generates class with @XmlText for simpleContent with extension", () => {
+    test("generates class with @XmlText for simpleContent with extension", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="ShoeSize">
@@ -143,7 +143,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="ShoeSize" type="ShoeSize"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "ShoeSize.ts"), "utf8");
 
@@ -155,7 +155,7 @@ describe("XSD Generator advanced features", () => {
       });
     });
 
-    test("generates class with @XmlText for simpleContent with restriction", () => {
+    test("generates class with @XmlText for simpleContent with restriction", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="PostalCode">
@@ -168,7 +168,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="PostalCode" type="PostalCode"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "PostalCode.ts"), "utf8");
 
@@ -233,7 +233,7 @@ describe("XSD Generator advanced features", () => {
       });
     });
 
-    test("generates class with @XmlText without base type", () => {
+    test("generates class with @XmlText without base type", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="SimpleValue">
@@ -246,7 +246,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="SimpleValue" type="SimpleValue"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "SimpleValue.ts"), "utf8");
 
@@ -255,7 +255,7 @@ describe("XSD Generator advanced features", () => {
       });
     });
 
-    test("maps various base types correctly in simpleContent", () => {
+    test("maps various base types correctly in simpleContent", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="BooleanValue">
@@ -276,7 +276,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="DateValue" type="DateValue"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
 
         const boolContent = readFileSync(
@@ -295,7 +295,7 @@ describe("XSD Generator advanced features", () => {
   });
 
   describe("complexContent restriction", () => {
-    test("generates class for complexContent with restriction", () => {
+    test("generates class for complexContent with restriction", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="BaseType">
@@ -317,7 +317,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="RestrictedType" type="RestrictedType"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "RestrictedType.ts"),
@@ -331,7 +331,7 @@ describe("XSD Generator advanced features", () => {
       });
     });
 
-    test("generates class for complexContent restriction without base type", () => {
+    test("generates class for complexContent restriction without base type", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="EmptyRestriction">
@@ -346,7 +346,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="EmptyRestriction" type="EmptyRestriction"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "EmptyRestriction.ts"),
@@ -360,7 +360,7 @@ describe("XSD Generator advanced features", () => {
   });
 
   describe("mixed content", () => {
-    test("generates @XmlText for mixed content in complexType", () => {
+    test("generates @XmlText for mixed content in complexType", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="MixedContent" mixed="true">
@@ -372,7 +372,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="MixedContent" type="MixedContent"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "MixedContent.ts"), "utf8");
 
@@ -384,7 +384,7 @@ describe("XSD Generator advanced features", () => {
       });
     });
 
-    test("generates @XmlText for mixed content with extension", () => {
+    test("generates @XmlText for mixed content with extension", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="BaseType">
@@ -404,7 +404,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="MixedExtension" type="MixedExtension"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "MixedExtension.ts"),
@@ -420,7 +420,7 @@ describe("XSD Generator advanced features", () => {
       });
     });
 
-    test("generates @XmlText for mixed content with restriction", () => {
+    test("generates @XmlText for mixed content with restriction", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="BaseType">
@@ -440,7 +440,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="MixedRestriction" type="MixedRestriction"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "MixedRestriction.ts"),
@@ -456,7 +456,7 @@ describe("XSD Generator advanced features", () => {
   });
 
   describe("complexContent extension edge cases", () => {
-    test("does not extend when base is builtin type", () => {
+    test("does not extend when base is builtin type", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="ExtendedString">
@@ -471,7 +471,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="ExtendedString" type="ExtendedString"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "ExtendedString.ts"),
@@ -483,7 +483,7 @@ describe("XSD Generator advanced features", () => {
       });
     });
 
-    test("handles extension without base attribute", () => {
+    test("handles extension without base attribute", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="NoBaseExtension">
@@ -498,7 +498,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="NoBaseExtension" type="NoBaseExtension"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "NoBaseExtension.ts"),
@@ -512,7 +512,7 @@ describe("XSD Generator advanced features", () => {
   });
 
   describe("namespace handling in @XmlRoot", () => {
-    test("includes namespace and prefixes in @XmlRoot decorator", () => {
+    test("includes namespace and prefixes in @XmlRoot decorator", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             xmlns:ns="http://example.com/ns"
@@ -525,7 +525,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="NamespacedType" type="NamespacedType"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "NamespacedType.ts"),
@@ -536,7 +536,7 @@ describe("XSD Generator advanced features", () => {
       });
     });
 
-    test("@XmlRoot without namespace when no targetNamespace", () => {
+    test("@XmlRoot without namespace when no targetNamespace", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="NoNamespace">
@@ -547,7 +547,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="NoNamespace" type="NoNamespace"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "NoNamespace.ts"), "utf8");
 
@@ -558,7 +558,7 @@ describe("XSD Generator advanced features", () => {
   });
 
   describe("empty complexContent", () => {
-    test("handles complexContent with neither extension nor restriction", () => {
+    test("handles complexContent with neither extension nor restriction", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="EmptyComplexContent">
@@ -568,7 +568,7 @@ describe("XSD Generator advanced features", () => {
   <xsd:element name="EmptyComplexContent" type="EmptyComplexContent"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "EmptyComplexContent.ts"),

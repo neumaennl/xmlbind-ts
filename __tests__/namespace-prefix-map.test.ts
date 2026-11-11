@@ -103,7 +103,7 @@ describe("_namespacePrefixes on unmarshalled root object", () => {
 });
 
 describe("_namespacePrefixes in generated XSD classes", () => {
-  test("generated root class declares _namespacePrefixes property", () => {
+  test("generated root class declares _namespacePrefixes property", async () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             targetNamespace="http://example.com/ns"
@@ -111,14 +111,14 @@ describe("_namespacePrefixes in generated XSD classes", () => {
   <xsd:element name="Root" type="xsd:string"/>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const content = readFileSync(path.join(tmp, "Root.ts"), "utf8");
       expect(content).toContain("_namespacePrefixes?: Record<string, string>");
     });
   });
 
-  test("generated root wrapper class (extending complex type) declares _namespacePrefixes", () => {
+  test("generated root wrapper class (extending complex type) declares _namespacePrefixes", async () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             targetNamespace="http://example.com/ns"
@@ -131,7 +131,7 @@ describe("_namespacePrefixes in generated XSD classes", () => {
   <xsd:element name="Person" type="PersonType"/>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       // Person (root element wrapper extending PersonType) should have _namespacePrefixes
       const personContent = readFileSync(path.join(tmp, "Person.ts"), "utf8");
@@ -145,7 +145,7 @@ describe("_namespacePrefixes in generated XSD classes", () => {
     });
   });
 
-  test("generated inline complexType root class declares _namespacePrefixes", () => {
+  test("generated inline complexType root class declares _namespacePrefixes", async () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             targetNamespace="http://example.com/ns"
@@ -159,7 +159,7 @@ describe("_namespacePrefixes in generated XSD classes", () => {
   </xsd:element>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const content = readFileSync(path.join(tmp, "Config.ts"), "utf8");
       expect(content).toContain("_namespacePrefixes?: Record<string, string>");

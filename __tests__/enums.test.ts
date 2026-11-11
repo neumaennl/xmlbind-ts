@@ -274,7 +274,7 @@ describe("Enums", () => {
   });
 
   describe("XSD generation with enums", () => {
-    test("generates enum from named simpleType with restrictions", () => {
+    test("generates enum from named simpleType with restrictions", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
   <xsd:simpleType name="ColorType">
@@ -292,7 +292,7 @@ describe("Enums", () => {
   </xsd:complexType>
 </xsd:schema>`;
 
-      withTmpDir((tmp: string) => {
+      await withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         // Enums are now in consolidated enums.ts file
@@ -319,7 +319,7 @@ describe("Enums", () => {
       });
     });
 
-    test("generates inline enum for element with anonymous simpleType restriction", () => {
+    test("generates inline enum for element with anonymous simpleType restriction", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
   <xsd:complexType name="Order">
@@ -337,7 +337,7 @@ describe("Enums", () => {
   </xsd:complexType>
 </xsd:schema>`;
 
-      withTmpDir((tmp: string) => {
+      await withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         // Enums are now in consolidated enums.ts file
@@ -357,7 +357,7 @@ describe("Enums", () => {
       });
     });
 
-    test("generates enum wrapper class for top-level element with enum type", () => {
+    test("generates enum wrapper class for top-level element with enum type", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
   <xsd:simpleType name="SizeType">
@@ -370,7 +370,7 @@ describe("Enums", () => {
   <xsd:element name="Size" type="SizeType"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp: string) => {
+      await withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         // Enums are now in consolidated enums.ts file
@@ -388,7 +388,7 @@ describe("Enums", () => {
       });
     });
 
-    test("generates inline enum for top-level element with anonymous enum simpleType", () => {
+    test("generates inline enum for top-level element with anonymous enum simpleType", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
   <xsd:element name="Priority">
@@ -402,7 +402,7 @@ describe("Enums", () => {
   </xsd:element>
 </xsd:schema>`;
 
-      withTmpDir((tmp: string) => {
+      await withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         // Enums are now in consolidated enums.ts file
@@ -425,7 +425,7 @@ describe("Enums", () => {
       });
     });
 
-    test("handles enum values with special characters", () => {
+    test("handles enum values with special characters", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
   <xsd:simpleType name="SpecialType">
@@ -437,7 +437,7 @@ describe("Enums", () => {
   </xsd:simpleType>
 </xsd:schema>`;
 
-      withTmpDir((tmp: string) => {
+      await withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         // Enums are now in consolidated enums.ts file
@@ -452,7 +452,7 @@ describe("Enums", () => {
       });
     });
 
-    test("generates array of enum values", () => {
+    test("generates array of enum values", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">
   <xsd:simpleType name="TagType">
@@ -470,7 +470,7 @@ describe("Enums", () => {
   </xsd:complexType>
 </xsd:schema>`;
 
-      withTmpDir((tmp: string) => {
+      await withTmpDir((tmp: string) => {
         generateFromXsd(XSD, tmp);
 
         const taskFile = path.join(tmp, "Task.ts");

@@ -6,7 +6,7 @@ import { withTmpDir } from "./test-utils/temp-dir.js";
 
 
 describe("XSD Generator - Attribute Groups", () => {
-  test("generates classes with attribute group references", () => {
+  test("generates classes with attribute group references", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -28,7 +28,7 @@ describe("XSD Generator - Attribute Groups", () => {
   <xs:element name="Document" type="Document"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const docFile = path.join(dir, "Document.ts");
@@ -50,7 +50,7 @@ describe("XSD Generator - Attribute Groups", () => {
     });
   });
 
-  test("handles multiple attribute groups", () => {
+  test("handles multiple attribute groups", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -75,7 +75,7 @@ describe("XSD Generator - Attribute Groups", () => {
   <xs:element name="Entity" type="Entity"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const entityFile = path.join(dir, "Entity.ts");

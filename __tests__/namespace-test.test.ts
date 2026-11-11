@@ -6,7 +6,7 @@ import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("Namespace handling", () => {
 
-  test("generates namespace on @XmlRoot from targetNamespace", () => {
+  test("generates namespace on @XmlRoot from targetNamespace", async () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/myns" 
@@ -18,14 +18,14 @@ describe("Namespace handling", () => {
   </xsd:complexType>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const book = readFileSync(path.join(tmp, "Book.ts"), "utf8");
       expect(book).toContain("namespace: 'http://example.com/myns'");
     });
   });
 
-  test("element with form or namespace attribute", () => {
+  test("element with form or namespace attribute", async () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/myns" 
@@ -38,7 +38,7 @@ describe("Namespace handling", () => {
   </xsd:complexType>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const book = readFileSync(path.join(tmp, "Book.ts"), "utf8");
       // Currently generator doesn't handle per-element namespace/form
@@ -48,7 +48,7 @@ describe("Namespace handling", () => {
     });
   });
 
-  test("attribute with namespace", () => {
+  test("attribute with namespace", async () => {
     const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/myns" 
@@ -59,7 +59,7 @@ describe("Namespace handling", () => {
   </xsd:complexType>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const book = readFileSync(path.join(tmp, "Book.ts"), "utf8");
       // Now generator qualifies attribute namespace when attributeFormDefault is qualified

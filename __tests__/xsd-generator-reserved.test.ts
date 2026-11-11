@@ -6,7 +6,7 @@ import { withTmpDir } from "./test-utils/temp-dir.js";
 
 
 describe("XSD Generator - Reserved Word Handling", () => {
-  test("handles reserved words in class names", () => {
+  test("handles reserved words in class names", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -19,7 +19,7 @@ describe("XSD Generator - Reserved Word Handling", () => {
   <xs:element name="ImportData" type="import"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       // Should rename 'import' to avoid reserved word
@@ -33,7 +33,7 @@ describe("XSD Generator - Reserved Word Handling", () => {
     });
   });
 
-  test("handles reserved words in element/property names", () => {
+  test("handles reserved words in element/property names", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -48,7 +48,7 @@ describe("XSD Generator - Reserved Word Handling", () => {
   <xs:element name="Configuration" type="Config"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const configFile = path.join(dir, "Config.ts");
@@ -61,7 +61,7 @@ describe("XSD Generator - Reserved Word Handling", () => {
     });
   });
 
-  test("handles reserved words in type names", () => {
+  test("handles reserved words in type names", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -75,7 +75,7 @@ describe("XSD Generator - Reserved Word Handling", () => {
   <xs:element name="VoidType" type="void"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       // Enums are now in consolidated enums.ts file
@@ -95,7 +95,7 @@ describe("XSD Generator - Reserved Word Handling", () => {
     });
   });
 
-  test("handles multiple reserved words in the same schema", () => {
+  test("handles multiple reserved words in the same schema", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -116,7 +116,7 @@ describe("XSD Generator - Reserved Word Handling", () => {
   <xs:element name="InterfaceData" type="interface"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const exportFile = path.join(dir, "export_.ts");

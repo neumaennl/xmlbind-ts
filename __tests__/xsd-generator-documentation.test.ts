@@ -4,7 +4,7 @@ import { generateFromXsd } from "../src/xsd/TsGenerator.js";
 import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator: Documentation", () => {
-  test("generates TSDoc comments from xs:annotation/xs:documentation for complex types", () => {
+  test("generates TSDoc comments from xs:annotation/xs:documentation for complex types", async () => {
     const xsd = `<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
            targetNamespace="http://example.com/test"
@@ -21,7 +21,7 @@ describe("XSD Generator: Documentation", () => {
   
 </xs:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(xsd, tmpDir);
       const personTypeTs = readFileSync(join(tmpDir, "PersonType.ts"), "utf-8");
 
@@ -34,7 +34,7 @@ describe("XSD Generator: Documentation", () => {
     });
   });
 
-  test("generates TSDoc comments for element properties", () => {
+  test("generates TSDoc comments for element properties", async () => {
     const xsd = `<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
            targetNamespace="http://example.com/test"
@@ -57,7 +57,7 @@ describe("XSD Generator: Documentation", () => {
   
 </xs:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(xsd, tmpDir);
       const personTypeTs = readFileSync(join(tmpDir, "PersonType.ts"), "utf-8");
 
@@ -72,7 +72,7 @@ describe("XSD Generator: Documentation", () => {
     });
   });
 
-  test("generates TSDoc comments for attribute properties", () => {
+  test("generates TSDoc comments for attribute properties", async () => {
     const xsd = `<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
            targetNamespace="http://example.com/test"
@@ -96,7 +96,7 @@ describe("XSD Generator: Documentation", () => {
   
 </xs:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(xsd, tmpDir);
       const personTypeTs = readFileSync(join(tmpDir, "PersonType.ts"), "utf-8");
 
@@ -111,7 +111,7 @@ describe("XSD Generator: Documentation", () => {
     });
   });
 
-  test("generates TSDoc comments for top-level elements", () => {
+  test("generates TSDoc comments for top-level elements", async () => {
     const xsd = `<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
            targetNamespace="http://example.com/test"
@@ -131,7 +131,7 @@ describe("XSD Generator: Documentation", () => {
   
 </xs:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(xsd, tmpDir);
       const personTs = readFileSync(join(tmpDir, "person.ts"), "utf-8");
 
@@ -144,7 +144,7 @@ describe("XSD Generator: Documentation", () => {
     });
   });
 
-  test("handles multi-line documentation", () => {
+  test("handles multi-line documentation", async () => {
     const xsd = `<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
            targetNamespace="http://example.com/test"
@@ -165,7 +165,7 @@ describe("XSD Generator: Documentation", () => {
   
 </xs:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(xsd, tmpDir);
       const personTypeTs = readFileSync(join(tmpDir, "PersonType.ts"), "utf-8");
 
@@ -178,7 +178,7 @@ describe("XSD Generator: Documentation", () => {
     });
   });
 
-  test("omits TSDoc when no documentation is present", () => {
+  test("omits TSDoc when no documentation is present", async () => {
     const xsd = `<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
            targetNamespace="http://example.com/test"
@@ -194,7 +194,7 @@ describe("XSD Generator: Documentation", () => {
   
 </xs:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(xsd, tmpDir);
       const personTypeTs = readFileSync(join(tmpDir, "PersonType.ts"), "utf-8");
 
@@ -204,7 +204,7 @@ describe("XSD Generator: Documentation", () => {
     });
   });
 
-  test("generates documentation for referenced elements", () => {
+  test("generates documentation for referenced elements", async () => {
     const xsd = `<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
            targetNamespace="http://example.com/test"
@@ -224,7 +224,7 @@ describe("XSD Generator: Documentation", () => {
   
 </xs:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(xsd, tmpDir);
       const documentTs = readFileSync(join(tmpDir, "DocumentType.ts"), "utf-8");
 
@@ -236,7 +236,7 @@ describe("XSD Generator: Documentation", () => {
     });
   });
 
-  test("comprehensive test with all documentation types", () => {
+  test("comprehensive test with all documentation types", async () => {
     const xsd = `<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
            targetNamespace="http://example.com/test"
@@ -273,7 +273,7 @@ describe("XSD Generator: Documentation", () => {
   
 </xs:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(xsd, tmpDir);
       
       // Check PersonType.ts

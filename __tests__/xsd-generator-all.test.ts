@@ -4,7 +4,7 @@ import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator - xs:all Compositor", () => {
-  test("generates class with xs:all elements", () => {
+  test("generates class with xs:all elements", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -19,7 +19,7 @@ describe("XSD Generator - xs:all Compositor", () => {
   <xs:element name="PersonData" type="Person"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const personFile = path.join(dir, "Person.ts");
@@ -39,7 +39,7 @@ describe("XSD Generator - xs:all Compositor", () => {
     });
   });
 
-  test("handles xs:all with optional elements", () => {
+  test("handles xs:all with optional elements", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -54,7 +54,7 @@ describe("XSD Generator - xs:all Compositor", () => {
   <xs:element name="ContactInfo" type="Contact"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const contactFile = path.join(dir, "Contact.ts");
@@ -67,7 +67,7 @@ describe("XSD Generator - xs:all Compositor", () => {
     });
   });
 
-  test("handles xs:all with attributes", () => {
+  test("handles xs:all with attributes", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -82,7 +82,7 @@ describe("XSD Generator - xs:all Compositor", () => {
   <xs:element name="ProductData" type="Product"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const productFile = path.join(dir, "Product.ts");

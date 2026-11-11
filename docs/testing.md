@@ -4,8 +4,8 @@ title: Testing
 description: How the library and the generator are tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T13:05:00Z }
-verified: { by: human:neumaennl, at: 2026-11-11T13:12:15Z }
+generated: { by: human:neumaennl, at: 2026-11-11T15:36:28Z }
+verified: { by: human:neumaennl, at: 2026-11-11T16:07:00Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -92,7 +92,7 @@ Further settings:
 
 | Helper | Purpose |
 |---|---|
-| `withTmpDir(callback)` | runs the callback with a new temporary folder and deletes it afterwards; returns a promise, which the test awaits (see [Tests do not wait for `withTmpDir()`](known-issues.md#tests-do-not-wait-for-withtmpdir)) |
+| `withTmpDir(callback)` | runs the callback with a new temporary folder and deletes it afterwards; returns a promise, which the test must await; ESLint reports a call without `await` (see [Lint](build-and-release.md#lint)) |
 | `setupGeneratedRuntime(outDir, xsds)` | generates classes from XSD texts into a folder and adds a stub package `@neumaennl/xmlbind-ts` there that re-exports `src/index.ts` |
 | `loadGeneratedClasses(outDir, names)` | imports generated classes by name |
 | `compilerTarget()` | returns `target` and `lib` of `tsconfig.target.json`, for the projects that tests compile with `tsc` |

@@ -6,7 +6,7 @@ import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator - Multiple schemas with imports and cross-namespace references", () => {
 
-  test("handles schema with import and type reference from imported namespace", () => {
+  test("handles schema with import and type reference from imported namespace", async () => {
     const ADDRESS_XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/address" 
@@ -36,7 +36,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
   </xsd:complexType>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       // Generate from address schema
       generateFromXsd(ADDRESS_XSD, tmp);
       const addressFile = readFileSync(path.join(tmp, "Address.ts"), "utf8");
@@ -62,7 +62,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
     });
   });
 
-  test("handles multiple imports with element references across namespaces", () => {
+  test("handles multiple imports with element references across namespaces", async () => {
     const CONTACT_XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             targetNamespace="http://example.com/contact"
@@ -105,7 +105,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
   </xsd:complexType>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       // Generate contact types
       generateFromXsd(CONTACT_XSD, tmp);
 
@@ -134,7 +134,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
     });
   });
 
-  test("handles nested imports with three different namespaces", () => {
+  test("handles nested imports with three different namespaces", async () => {
     const CORE_XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             targetNamespace="http://example.com/core"
@@ -184,7 +184,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
   <xsd:element name="Document" type="Document"/>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       // Generate core types
       generateFromXsd(CORE_XSD, tmp);
       const identifierFile = readFileSync(
@@ -238,7 +238,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
     });
   });
 
-  test("handles schema with element references to imported elements", () => {
+  test("handles schema with element references to imported elements", async () => {
     const BASE_XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             targetNamespace="http://example.com/base"
@@ -278,7 +278,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
   <xsd:element name="Message" type="Message"/>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       // Generate base types
       generateFromXsd(BASE_XSD, tmp);
       const headerFile = readFileSync(
@@ -302,7 +302,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
     });
   });
 
-  test("handles circular dependencies between namespaces", () => {
+  test("handles circular dependencies between namespaces", async () => {
     const ORDER_XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             xmlns:cust="http://example.com/customer"
@@ -335,7 +335,7 @@ describe("XSD Generator - Multiple schemas with imports and cross-namespace refe
   </xsd:complexType>
 </xsd:schema>`;
 
-    withTmpDir((tmp) => {
+    await withTmpDir((tmp) => {
       // Generate order types first
       generateFromXsd(ORDER_XSD, tmp);
       const orderFile = readFileSync(path.join(tmp, "Order.ts"), "utf8");

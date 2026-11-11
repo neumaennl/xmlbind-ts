@@ -4,7 +4,7 @@ import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator - Restrictions", () => {
-  test("handles attributeGroup refs in base type when using restriction", () => {
+  test("handles attributeGroup refs in base type when using restriction", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -35,7 +35,7 @@ describe("XSD Generator - Restrictions", () => {
   <xs:element name="LocalElement" type="localElement"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const localElementFile = path.join(dir, "localElement.ts");
@@ -58,7 +58,7 @@ describe("XSD Generator - Restrictions", () => {
     });
   });
 
-  test("handles nested attributeGroups in base type restriction", () => {
+  test("handles nested attributeGroups in base type restriction", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -96,7 +96,7 @@ describe("XSD Generator - Restrictions", () => {
   <xs:element name="RestrictedDoc" type="restrictedDocument"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const docFile = path.join(dir, "restrictedDocument.ts");
@@ -113,7 +113,7 @@ describe("XSD Generator - Restrictions", () => {
     });
   });
 
-  test("handles direct attributes (not in attributeGroups) from base type", () => {
+  test("handles direct attributes (not in attributeGroups) from base type", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -140,7 +140,7 @@ describe("XSD Generator - Restrictions", () => {
   <xs:element name="RestrictedItem" type="restrictedType"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const restrictedFile = path.join(dir, "restrictedType.ts");
@@ -161,7 +161,7 @@ describe("XSD Generator - Restrictions", () => {
     });
   });
 
-  test("handles anyAttribute from base type in restriction", () => {
+  test("handles anyAttribute from base type in restriction", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -188,7 +188,7 @@ describe("XSD Generator - Restrictions", () => {
   <xs:element name="RestrictedExt" type="restrictedExtensible"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const restrictedFile = path.join(dir, "restrictedExtensible.ts");

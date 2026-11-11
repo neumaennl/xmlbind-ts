@@ -6,7 +6,7 @@ import { withTmpDir } from "./test-utils/temp-dir.js";
 
 
 describe("XSD Generator - Wildcards", () => {
-  test("emits XmlAnyElement for xs:any", () => {
+  test("emits XmlAnyElement for xs:any", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:complexType name="Container">
@@ -17,7 +17,7 @@ describe("XSD Generator - Wildcards", () => {
   <xs:element name="Root" type="Container"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
       const file = path.join(dir, "Container.ts");
       const content = readFileSync(file, "utf-8");
@@ -26,7 +26,7 @@ describe("XSD Generator - Wildcards", () => {
     });
   });
 
-  test("emits XmlAnyAttribute for xs:anyAttribute", () => {
+  test("emits XmlAnyAttribute for xs:anyAttribute", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:complexType name="WithAttrs">
@@ -36,7 +36,7 @@ describe("XSD Generator - Wildcards", () => {
   <xs:element name="A" type="WithAttrs"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
       const file = path.join(dir, "WithAttrs.ts");
       const content = readFileSync(file, "utf-8");
@@ -46,7 +46,7 @@ describe("XSD Generator - Wildcards", () => {
   });
 
   describe("Wildcard edge cases", () => {
-    test("does not duplicate @XmlAnyElement", () => {
+    test("does not duplicate @XmlAnyElement", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="MultipleAny">
@@ -59,7 +59,7 @@ describe("XSD Generator - Wildcards", () => {
   <xsd:element name="MultipleAny" type="MultipleAny"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "MultipleAny.ts"),
@@ -73,7 +73,7 @@ describe("XSD Generator - Wildcards", () => {
   });
 
   describe("Group references", () => {
-    test("handles direct group as child of complexType", () => {
+    test("handles direct group as child of complexType", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:group name="DirectGroup">
@@ -89,7 +89,7 @@ describe("XSD Generator - Wildcards", () => {
   <xsd:element name="DirectGroupUsage" type="DirectGroupUsage"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "DirectGroupUsage.ts"),

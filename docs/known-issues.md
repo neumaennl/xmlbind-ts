@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T17:42:26Z }
-verified: { by: human:neumaennl, at: 2026-11-11T17:49:16Z }
+generated: { by: human:neumaennl, at: 2026-11-11T15:36:28Z }
+verified: { by: human:neumaennl, at: 2026-11-11T16:07:00Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -94,9 +94,6 @@ sources:
   - id: gen-restriction
     resource: ../src/xsd/tsgen/restriction-helpers.ts
     title: Attributes of restricted types
-  - id: temp-dir
-    resource: ../__tests__/test-utils/temp-dir.ts
-    title: Temporary folders of the tests
 ---
 
 # Purpose
@@ -611,14 +608,6 @@ Effort:
 - **Description:** Vitest compiles the tests with `ts.transpileModule`, which removes types without checking them, and `pretest` type-checks only the build and the scripts. `tsconfig.test.json` covers `src/` and `__tests__/`, but no script and no CI step runs it, so type errors in tests go unnoticed. It passes today.[^vitest-config] Adding it to `npm run typecheck` would catch them.
 - **GitHub issue:** none
 
-## Tests do not wait for `withTmpDir()`
-
-- **Location:** `__tests__/test-utils/temp-dir.ts`, 135 calls in 21 test files
-- **Severity:** Low
-- **Effort:** S
-- **Description:** `withTmpDir()` is asynchronous, but most tests call it without `await`.[^temp-dir] A failing assertion in the callback then does not fail its test: the test passes, and Vitest reports the error as an unhandled error of the whole run, without the test it belongs to. The tests should `await` the call; the ESLint rule `@typescript-eslint/no-floating-promises`, which needs type information, would enforce it.
-- **GitHub issue:** none
-
 ## Some test files are named after issues and scatter features
 
 - **Location:** `__tests__/issue-261-array-single-occurrence.test.ts`, `__tests__/issue-schema-unmarshal.test.ts`, `__tests__/issue-weather-schema.test.ts`, `__tests__/manual-verification-undefined-types.test.ts`, `__tests__/unmarshal-undefined-type.test.ts`, `__tests__/circular-dependency-reproduction.test.ts`, `__tests__/circular-dependencies-unmarshal.test.ts`
@@ -710,5 +699,3 @@ Effort:
 [^gen-base-attributes]: Attributes of base types
 
 [^gen-restriction]: Attributes of restricted types
-
-[^temp-dir]: Temporary folders of the tests

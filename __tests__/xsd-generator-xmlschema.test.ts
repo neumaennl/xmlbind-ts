@@ -7,8 +7,8 @@ import { setupGeneratedRuntime } from "./test-utils/generated-runtime.js";
 import { compilerTarget } from "./test-utils/compiler-target.js";
 
 describe("XSD Generator - XML Schema XSD", () => {
-  test("generates TypeScript classes from XML Schema XSD and verifies compilation", () => {
-    withTmpDir((tmpDir) => {
+  test("generates TypeScript classes from XML Schema XSD and verifies compilation", async () => {
+    await withTmpDir((tmpDir) => {
       // Load the XML Schema XSD from local test resources
       const xsdPath = path.join(__dirname, "test-resources", "XMLSchema.xsd");
       const xmlSchemaXsd = readFileSync(xsdPath, "utf-8");

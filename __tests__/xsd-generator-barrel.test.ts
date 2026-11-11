@@ -6,7 +6,7 @@ import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator - Barrel Export", () => {
 
-  test("generates barrel export (index.ts) for all generated types", () => {
+  test("generates barrel export (index.ts) for all generated types", async () => {
     const XSD = `<?xml version="1.0" encoding="UTF-8"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             targetNamespace="http://example.com/test"
@@ -43,7 +43,7 @@ describe("XSD Generator - Barrel Export", () => {
   <xsd:element name="Address" type="Address"/>
 </xsd:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(XSD, tmpDir);
 
       // Verify index.ts exists
@@ -80,7 +80,7 @@ describe("XSD Generator - Barrel Export", () => {
     });
   });
 
-  test("barrel export handles case-insensitive filename collisions", () => {
+  test("barrel export handles case-insensitive filename collisions", async () => {
     const XSD = `<?xml version="1.0" encoding="UTF-8"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="NOTATION">
@@ -94,7 +94,7 @@ describe("XSD Generator - Barrel Export", () => {
   <xsd:element name="notation" type="notation"/>
 </xsd:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(XSD, tmpDir);
 
       const indexPath = path.join(tmpDir, "index.ts");
@@ -117,7 +117,7 @@ describe("XSD Generator - Barrel Export", () => {
     });
   });
 
-  test("barrel export includes only type exports for type aliases", () => {
+  test("barrel export includes only type exports for type aliases", async () => {
     const XSD = `<?xml version="1.0" encoding="UTF-8"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="MyString">
@@ -141,7 +141,7 @@ describe("XSD Generator - Barrel Export", () => {
   <xsd:element name="MyClass" type="MyClass"/>
 </xsd:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(XSD, tmpDir);
 
       const indexPath = path.join(tmpDir, "index.ts");
@@ -170,12 +170,12 @@ describe("XSD Generator - Barrel Export", () => {
     });
   });
 
-  test("barrel export works with empty schema", () => {
+  test("barrel export works with empty schema", async () => {
     const XSD = `<?xml version="1.0" encoding="UTF-8"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 </xsd:schema>`;
 
-    withTmpDir((tmpDir) => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(XSD, tmpDir);
 
       const indexPath = path.join(tmpDir, "index.ts");

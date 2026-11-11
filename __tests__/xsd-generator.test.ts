@@ -6,8 +6,8 @@ import { withTmpDir } from "./test-utils/temp-dir.js";
 const SAMPLE_XSD = `<?xml version="1.0" encoding="utf-8"?>\n<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/ns" elementFormDefault="qualified">\n  <xsd:complexType name="Person">\n    <xsd:sequence>\n      <xsd:element name="name" type="xsd:string"/>\n      <xsd:element name="age" type="xsd:int"/>\n      <xsd:element name="alias" type="xsd:string" maxOccurs="unbounded" minOccurs="0"/>\n    </xsd:sequence>\n    <xsd:attribute name="id" type="xsd:int"/>\n  </xsd:complexType>\n</xsd:schema>`;
 
 describe("XSD Generator", () => {
-  test("xsd generator applies correct decorators to class members", () => {
-    withTmpDir((tmpDir) => {
+  test("xsd generator applies correct decorators to class members", async () => {
+    await withTmpDir((tmpDir) => {
       generateFromXsd(SAMPLE_XSD, tmpDir);
       const target = path.join(tmpDir, "Person.ts");
       const gen = readFileSync(target, "utf8");
@@ -41,7 +41,7 @@ describe("XSD Generator", () => {
 
   describe("Type resolution", () => {
     describe("resolveType with enum types", () => {
-      test("resolves enum type reference in element", () => {
+      test("resolves enum type reference in element", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="StatusEnum">
@@ -60,7 +60,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Record" type="Record"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "Record.ts"), "utf8");
 
@@ -71,7 +71,7 @@ describe("XSD Generator", () => {
         });
       });
 
-      test("resolves enum type in attribute", () => {
+      test("resolves enum type in attribute", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="SizeEnum">
@@ -89,7 +89,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Product" type="Product"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "Product.ts"), "utf8");
 
@@ -99,7 +99,7 @@ describe("XSD Generator", () => {
     });
 
     describe("resolveType with simpleType references", () => {
-      test("resolves simpleType with restriction base", () => {
+      test("resolves simpleType with restriction base", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="PositiveInt">
@@ -117,7 +117,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Counter" type="Counter"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "Counter.ts"), "utf8");
 
@@ -125,7 +125,7 @@ describe("XSD Generator", () => {
         });
       });
 
-      test("resolves simpleType with restriction without base", () => {
+      test("resolves simpleType with restriction without base", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="PatternString">
@@ -143,7 +143,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Code" type="Code"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "Code.ts"), "utf8");
 
@@ -151,7 +151,7 @@ describe("XSD Generator", () => {
         });
       });
 
-      test("resolves simpleType without restriction (defaults to String)", () => {
+      test("resolves simpleType without restriction (defaults to String)", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="CustomString">
@@ -167,7 +167,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Text" type="Text"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "Text.ts"), "utf8");
 
@@ -175,7 +175,7 @@ describe("XSD Generator", () => {
         });
       });
 
-      test("recursively resolves nested simpleType restrictions", () => {
+      test("recursively resolves nested simpleType restrictions", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="BaseString">
@@ -199,7 +199,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Message" type="Message"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "Message.ts"), "utf8");
 
@@ -207,7 +207,7 @@ describe("XSD Generator", () => {
         });
       });
 
-      test("handles simpleType restriction with no base attribute", () => {
+      test("handles simpleType restriction with no base attribute", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="NoBaseRestriction">
@@ -225,7 +225,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Data" type="Data"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "Data.ts"), "utf8");
 
@@ -233,7 +233,7 @@ describe("XSD Generator", () => {
         });
       });
 
-      test("resolves builtin types directly", () => {
+      test("resolves builtin types directly", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="BasicTypes">
@@ -248,7 +248,7 @@ describe("XSD Generator", () => {
   <xsd:element name="BasicTypes" type="BasicTypes"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "BasicTypes.ts"), "utf8");
 
@@ -261,7 +261,7 @@ describe("XSD Generator", () => {
     });
 
     describe("resolveType with generated inline enums", () => {
-      test("reuses inline enum generated from element", () => {
+      test("reuses inline enum generated from element", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="Config">
@@ -288,7 +288,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Config" type="Config"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "Config.ts"), "utf8");
 
@@ -299,7 +299,7 @@ describe("XSD Generator", () => {
     });
 
     describe("resolveType with null/undefined type", () => {
-      test("defaults to String when type is not specified on attribute", () => {
+      test("defaults to String when type is not specified on attribute", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="NoTypeAttr">
@@ -309,7 +309,7 @@ describe("XSD Generator", () => {
   <xsd:element name="NoTypeAttr" type="NoTypeAttr"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "NoTypeAttr.ts"), "utf8");
 
@@ -318,7 +318,7 @@ describe("XSD Generator", () => {
         });
       });
 
-      test("defaults to String when type is not specified on element", () => {
+      test("defaults to String when type is not specified on element", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="NoType">
@@ -330,7 +330,7 @@ describe("XSD Generator", () => {
   <xsd:element name="NoType" type="NoType"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "NoType.ts"), "utf8");
 
@@ -340,7 +340,7 @@ describe("XSD Generator", () => {
     });
 
     describe("resolveType with simpleType without restriction", () => {
-      test("handles simpleType with union type", () => {
+      test("handles simpleType with union type", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="UnionType">
@@ -356,7 +356,7 @@ describe("XSD Generator", () => {
   <xsd:element name="UsesUnion" type="UsesUnion"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(path.join(tmp, "UsesUnion.ts"), "utf8");
 
@@ -365,7 +365,7 @@ describe("XSD Generator", () => {
         });
       });
 
-      test("handles simpleType restriction with recursive base resolution", () => {
+      test("handles simpleType restriction with recursive base resolution", async () => {
         const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:simpleType name="RestrictedString">
@@ -381,7 +381,7 @@ describe("XSD Generator", () => {
   <xsd:element name="UsesRestricted" type="UsesRestricted"/>
 </xsd:schema>`;
 
-        withTmpDir((tmp) => {
+        await withTmpDir((tmp) => {
           generateFromXsd(XSD, tmp);
           const content = readFileSync(
             path.join(tmp, "UsesRestricted.ts"),
@@ -404,7 +404,7 @@ describe("XSD Generator", () => {
     });
   });
   describe("Namespace handling", () => {
-    test("top-level elements always use targetNamespace", () => {
+    test("top-level elements always use targetNamespace", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/toplevel"
@@ -418,7 +418,7 @@ describe("XSD Generator", () => {
   <xsd:element name="TopLevelTest" type="TopLevelTest"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "TopLevelTest.ts"), "utf8");
 
@@ -428,7 +428,7 @@ describe("XSD Generator", () => {
       });
     });
 
-    test("handles elementFormDefault=qualified", () => {
+    test("handles elementFormDefault=qualified", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/ns"
@@ -442,7 +442,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Item" type="Item"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "Item.ts"), "utf8");
 
@@ -450,7 +450,7 @@ describe("XSD Generator", () => {
       });
     });
 
-    test("handles elementFormDefault=unqualified", () => {
+    test("handles elementFormDefault=unqualified", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/ns"
@@ -464,7 +464,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Item" type="Item"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "Item.ts"), "utf8");
 
@@ -478,7 +478,7 @@ describe("XSD Generator", () => {
       });
     });
 
-    test("handles element form=qualified override", () => {
+    test("handles element form=qualified override", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/ns"
@@ -493,7 +493,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Item" type="Item"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "Item.ts"), "utf8");
 
@@ -502,7 +502,7 @@ describe("XSD Generator", () => {
       });
     });
 
-    test("handles attributeFormDefault=qualified", () => {
+    test("handles attributeFormDefault=qualified", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/ns"
@@ -514,7 +514,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Item" type="Item"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "Item.ts"), "utf8");
 
@@ -522,7 +522,7 @@ describe("XSD Generator", () => {
       });
     });
 
-    test("handles attribute form=qualified override", () => {
+    test("handles attribute form=qualified override", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/ns"
@@ -535,7 +535,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Item" type="Item"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "Item.ts"), "utf8");
 
@@ -546,7 +546,7 @@ describe("XSD Generator", () => {
   });
 
   describe("Inline complexType", () => {
-    test("generates anonymous class for inline complexType", () => {
+    test("generates anonymous class for inline complexType", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="Container">
@@ -564,7 +564,7 @@ describe("XSD Generator", () => {
   <xsd:element name="Container" type="Container"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const containerContent = readFileSync(
           path.join(tmp, "Container.ts"),

@@ -37,8 +37,8 @@ function relativeSpecifiers(dir: string): string[] {
 }
 
 describe("XSD Generator: import extensions", () => {
-  test("writes .js in all relative imports and exports by default", () => {
-    withTmpDir((tmp) => {
+  test("writes .js in all relative imports and exports by default", async () => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp);
       const specs = relativeSpecifiers(tmp);
       expect(specs.length).toBeGreaterThan(0);
@@ -49,8 +49,8 @@ describe("XSD Generator: import extensions", () => {
     });
   });
 
-  test("omits extensions when importExtensions is false", () => {
-    withTmpDir((tmp) => {
+  test("omits extensions when importExtensions is false", async () => {
+    await withTmpDir((tmp) => {
       generateFromXsd(XSD, tmp, false);
       const specs = relativeSpecifiers(tmp);
       expect(specs.length).toBeGreaterThan(0);

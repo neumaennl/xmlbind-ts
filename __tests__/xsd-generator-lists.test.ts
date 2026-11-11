@@ -4,7 +4,7 @@ import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator - List Types", () => {
-  test("generates array type for list with itemType", () => {
+  test("generates array type for list with itemType", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -15,7 +15,7 @@ describe("XSD Generator - List Types", () => {
   <xs:element name="Tags" type="StringList"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       // Types are now in consolidated types.ts file
@@ -30,7 +30,7 @@ describe("XSD Generator - List Types", () => {
     });
   });
 
-  test("handles list with integer itemType", () => {
+  test("handles list with integer itemType", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -41,7 +41,7 @@ describe("XSD Generator - List Types", () => {
   <xs:element name="Scores" type="NumberList"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       // Types are now in consolidated types.ts file
@@ -52,7 +52,7 @@ describe("XSD Generator - List Types", () => {
     });
   });
 
-  test("handles list with inline simpleType", () => {
+  test("handles list with inline simpleType", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -69,7 +69,7 @@ describe("XSD Generator - List Types", () => {
   <xs:element name="Codes" type="RestrictedList"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       // Types are now in consolidated types.ts file

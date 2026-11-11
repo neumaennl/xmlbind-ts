@@ -4,7 +4,7 @@ import path from "path";
 import { withTmpDir } from "./test-utils/temp-dir.js";
 
 describe("XSD Generator - Element and Attribute References", () => {
-  test("handles element references", () => {
+  test("handles element references", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -20,7 +20,7 @@ describe("XSD Generator - Element and Attribute References", () => {
   <xs:element name="Doc" type="Document"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const docFile = path.join(dir, "Document.ts");
@@ -38,7 +38,7 @@ describe("XSD Generator - Element and Attribute References", () => {
     });
   });
 
-  test("handles attribute references", () => {
+  test("handles attribute references", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -55,7 +55,7 @@ describe("XSD Generator - Element and Attribute References", () => {
   <xs:element name="Doc" type="Document"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const docFile = path.join(dir, "Document.ts");
@@ -73,7 +73,7 @@ describe("XSD Generator - Element and Attribute References", () => {
     });
   });
 
-  test("handles element reference with maxOccurs", () => {
+  test("handles element reference with maxOccurs", async () => {
     const xsd = `<?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
   
@@ -88,7 +88,7 @@ describe("XSD Generator - Element and Attribute References", () => {
   <xs:element name="ItemList" type="List"/>
 </xs:schema>`;
 
-    withTmpDir((dir) => {
+    await withTmpDir((dir) => {
       generateFromXsd(xsd, dir);
 
       const listFile = path.join(dir, "List.ts");
@@ -101,7 +101,7 @@ describe("XSD Generator - Element and Attribute References", () => {
   });
 
   describe("Element reference edge cases", () => {
-    test("handles element ref with nillable", () => {
+    test("handles element ref with nillable", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:element name="NullableField" type="xsd:int"/>
@@ -115,7 +115,7 @@ describe("XSD Generator - Element and Attribute References", () => {
   <xsd:element name="NullableContainer" type="NullableContainer"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "NullableContainer.ts"),
@@ -127,7 +127,7 @@ describe("XSD Generator - Element and Attribute References", () => {
       });
     });
 
-    test("includes null in the item type of nillable array references", () => {
+    test("includes null in the item type of nillable array references", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:element name="NullableField" type="xsd:int"/>
@@ -142,7 +142,7 @@ describe("XSD Generator - Element and Attribute References", () => {
   <xsd:element name="NullableContainer" type="NullableContainer"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "NullableContainer.ts"),
@@ -154,7 +154,7 @@ describe("XSD Generator - Element and Attribute References", () => {
       });
     });
 
-    test("handles element ref with minOccurs in choice", () => {
+    test("handles element ref with minOccurs in choice", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:element name="OptionA" type="xsd:string"/>
@@ -170,7 +170,7 @@ describe("XSD Generator - Element and Attribute References", () => {
   <xsd:element name="Choice" type="Choice"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "Choice.ts"), "utf8");
 
@@ -179,7 +179,7 @@ describe("XSD Generator - Element and Attribute References", () => {
       });
     });
 
-    test("skips element without name attribute", () => {
+    test("skips element without name attribute", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <xsd:complexType name="MalformedElement">
@@ -192,7 +192,7 @@ describe("XSD Generator - Element and Attribute References", () => {
   <xsd:element name="MalformedElement" type="MalformedElement"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(
           path.join(tmp, "MalformedElement.ts"),
@@ -205,7 +205,7 @@ describe("XSD Generator - Element and Attribute References", () => {
       });
     });
 
-    test("includes namespace in element decorator when qualified", () => {
+    test("includes namespace in element decorator when qualified", async () => {
       const XSD = `<?xml version="1.0"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
             targetNamespace="http://example.com/ns"
@@ -219,7 +219,7 @@ describe("XSD Generator - Element and Attribute References", () => {
   <xsd:element name="Namespaced" type="Namespaced"/>
 </xsd:schema>`;
 
-      withTmpDir((tmp) => {
+      await withTmpDir((tmp) => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "Namespaced.ts"), "utf8");
 
