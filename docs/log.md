@@ -1,6 +1,7 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-11
+* **Update**: [Known issues](known-issues.md#children-that-were-not-in-the-source-are-written-after-all-others): "Children that were not in the source are written after all others" links [#296](https://github.com/neumaennl/xmlbind-ts/issues/296).
 * **Update**: [Known issues](known-issues.md#children-that-were-not-in-the-source-are-written-after-all-others): new entry "Children that were not in the source are written after all others", found in the editor, where an attribute added to a complex type with `xs:anyAttribute` is written after it.
 * **Update**: [Build and release](build-and-release.md#lint) describes the ESLint rule `vitest/no-importing-vitest-globals`, which reports imports of Vitest's API in the tests, because they use it as globals.
 * **Update**: [Build and release](build-and-release.md#lint) describes which rules ESLint applies to which files: the `typescript-eslint` rules only to `.ts` files, the Vitest rules only to the tests, and only the rules of ESLint to `.mjs` files.

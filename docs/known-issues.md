@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T18:33:44Z }
-verified: { by: human:neumaennl, at: 2026-11-11T19:10:51Z }
+generated: { by: human:neumaennl, at: 2026-11-11T19:44:14Z }
+verified: { by: human:neumaennl, at: 2026-11-11T19:45:16Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -327,7 +327,7 @@ Effort:
 - **Severity:** Medium
 - **Effort:** S
 - **Description:** `marshal()` sorts the fields by the element order that `unmarshal()` recorded, and writes the fields whose elements were not in the source after all others, instead of at the place that the class declares for them. When an application adds the first child of a new kind to an unmarshalled object, it is written at the end, which the schema may not allow: adding an `xs:attribute` to `<xs:extension base="B"><xs:sequence/><xs:anyAttribute/></xs:extension>` with the classes generated from `XMLSchema.xsd` writes `<xs:sequence/><xs:anyAttribute/><xs:attribute name="a"/>`, which is invalid because attributes must come before `xs:anyAttribute`.[^element-order] The fix is to write such a field before the first recorded field that the class declares after it.
-- **GitHub issue:** none
+- **GitHub issue:** [#296](https://github.com/neumaennl/xmlbind-ts/issues/296)
 
 ## `@XmlEnum` has no effect
 
