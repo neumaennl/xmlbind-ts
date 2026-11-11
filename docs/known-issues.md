@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T12:45:26Z }
+generated: { by: human:neumaennl, at: 2026-11-11T13:05:00Z }
 verified: { by: human:neumaennl, at: 2026-11-11T13:12:15Z }
 sources:
   - id: registry
@@ -91,6 +91,15 @@ sources:
   - id: vitest-config
     resource: ../vitest.config.mts
     title: Vitest configuration
+  - id: gen-base-attributes
+    resource: ../src/xsd/tsgen/base-attribute-helpers.ts
+    title: Attributes of base types
+  - id: gen-restriction
+    resource: ../src/xsd/tsgen/restriction-helpers.ts
+    title: Attributes of restricted types
+  - id: temp-dir
+    resource: ../__tests__/test-utils/temp-dir.ts
+    title: Temporary folders of the tests
 ---
 
 # Purpose
@@ -167,6 +176,22 @@ Effort:
 - **Severity:** High
 - **Effort:** S
 - **Description:** `_comments` holds either comments with a position (`{ text, position }`) or plain comment texts, which `marshal()` writes after the elements. `hasPositionedComments()` looks only at the first entry, so in an array that mixes both, the plain texts are grouped by their position, which is `undefined`, and dropped without an error: `[{ text: "a", position: 0 }, "b"]` writes only `<!--a-->`.[^marshal] `unmarshal()` never mixes them; an application that adds a plain comment to an unmarshalled object loses it.
+- **GitHub issue:** none
+
+## A restriction drops the attribute references of its base
+
+- **Location:** `src/xsd/tsgen/base-attribute-helpers.ts` (`emitAllAttributesFiltered()`, `emitAttrsFiltered()`)
+- **Severity:** High
+- **Effort:** S
+- **Description:** The class of a restricted complex type gets the attributes of its base, but the generator skips the attributes that the base declares with `ref`, directly or in an attribute group ("skip for now").[^gen-base-attributes] With `<xs:attribute ref="lang"/>` in the base `Base` and `<xs:restriction base="Base"/>` in `Plain`, `Base` has the property `lang` and `Plain` does not, so `unmarshal()` drops the attribute of a `Plain` element and `marshal()` cannot write it.
+- **GitHub issue:** none
+
+## Attributes of attribute groups in a restriction are generated twice
+
+- **Location:** `src/xsd/tsgen/restriction-helpers.ts` (`collectExcludedAttributesInRestrictionChain()`)
+- **Severity:** High
+- **Effort:** S
+- **Description:** The class of a restricted complex type gets the attributes of its base, except those that the restriction redefines. The generator recognizes a redefinition only by an attribute with a `name` directly in the restriction, not by an attribute group or an attribute `ref`.[^gen-restriction] A restriction that repeats the `<xs:attributeGroup ref="common"/>` of its base therefore gets each attribute of `common` twice, once from the base and once from the restriction, and TypeScript rejects the class with a duplicate identifier. For the same reason, `<xs:attribute ref="lang" use="prohibited"/>` would not remove `lang`; today this is hidden because attribute references of the base are dropped anyway (see [A restriction drops the attribute references of its base](#a-restriction-drops-the-attribute-references-of-its-base)).
 - **GitHub issue:** none
 
 ## Element text that looks like a number is converted
@@ -473,6 +498,14 @@ Effort:
 - **Description:** When an element's first child is an element and text follows, `fast-xml-builder` writes a line that contains only the indentation, which adds text to the element: `<M><i>a</i>b</M>` is written as `<M>\n  \n  <i>a</i>\n  b\n</M>` ([NaturalIntelligence/fast-xml-builder#31](https://github.com/NaturalIntelligence/fast-xml-builder/issues/31), fixed by [NaturalIntelligence/fast-xml-builder#32](https://github.com/NaturalIntelligence/fast-xml-builder/pull/32)). `unmarshal()` removes the whitespace again (see [Leading and trailing whitespace of element text is removed](#leading-and-trailing-whitespace-of-element-text-is-removed)).[^upstream-tests] When the builder changes, the second test in `__tests__/upstream-behavior.test.ts` fails; then remove it and update [Marshalling](marshalling.md#output-format) and the TSDoc of `writeXml()`.
 - **GitHub issue:** none
 
+## `findElementOccurrences()` is never called
+
+- **Location:** `src/marshalling/elementOrderUtils.ts` (`findElementOccurrences()`)
+- **Severity:** Low
+- **Effort:** S
+- **Description:** `findElementOccurrences()` is exported from its module but not from the package, and no code calls it; `mergeElementsByDocumentOrder()` took over its job.[^element-order] It is one of the walks through the document-order tree (see [Unmarshalling duplicates code for the root and nested elements](#unmarshalling-duplicates-code-for-the-root-and-nested-elements)) and can be removed.
+- **GitHub issue:** none
+
 ## Importing the package also loads the generator
 
 - **Location:** `src/index.ts`, `src/xsd/TsGenerator.ts`, `package.json` (`dependencies`, `exports`)
@@ -571,6 +604,14 @@ Effort:
 - **Description:** The [development guidelines](development-guidelines.md#tests) ask for `test()`, but these files use `it()`. Once they are converted, the rule `vitest/consistent-test-it` can enforce `test()`.
 - **GitHub issue:** none
 
+## Duplicated code is not detected automatically
+
+- **Location:** `src/`, `scripts/`, `package.json`, `.github/workflows/ci.yml`
+- **Severity:** Low
+- **Effort:** S
+- **Description:** The [development guidelines](development-guidelines.md#code-quality) ask to avoid duplicated code, but only reviews check this, and duplicates got through, such as [The decorators duplicate their code](#the-decorators-duplicate-their-code) and [Unmarshalling duplicates code for the root and nested elements](#unmarshalling-duplicates-code-for-the-root-and-nested-elements). The coverage report cannot find duplicates, because V8 coverage only records which code runs. A copy-paste detector such as [jscpd](https://github.com/kucherenko/jscpd) can check the code in `npm run lint` and in CI and fail the run above a threshold of duplicated lines.
+- **GitHub issue:** [#295](https://github.com/neumaennl/xmlbind-ts/issues/295)
+
 ## Source files are longer than 500 lines
 
 - **Location:** `src/marshalling/unmarshal.ts`, `scripts/lib/node-releases.ts`
@@ -587,6 +628,14 @@ Effort:
 - **Severity:** Low
 - **Effort:** S
 - **Description:** Vitest compiles the tests with `ts.transpileModule`, which removes types without checking them, and `pretest` type-checks only the build and the scripts. `tsconfig.test.json` covers `src/` and `__tests__/`, but no script and no CI step runs it, so type errors in tests go unnoticed. It passes today.[^vitest-config] Adding it to `npm run typecheck` would catch them.
+- **GitHub issue:** none
+
+## Tests do not wait for `withTmpDir()`
+
+- **Location:** `__tests__/test-utils/temp-dir.ts`, 135 calls in 21 test files
+- **Severity:** Low
+- **Effort:** S
+- **Description:** `withTmpDir()` is asynchronous, but most tests call it without `await`.[^temp-dir] A failing assertion in the callback then does not fail its test: the test passes, and Vitest reports the error as an unhandled error of the whole run, without the test it belongs to. The tests should `await` the call; the ESLint rule `@typescript-eslint/no-floating-promises`, which needs type information, would enforce it.
 - **GitHub issue:** none
 
 ## Some test files are named after issues and scatter features
@@ -678,3 +727,9 @@ Effort:
 [^eslint]: ESLint configuration
 
 [^vitest-config]: Vitest configuration
+
+[^gen-base-attributes]: Attributes of base types
+
+[^gen-restriction]: Attributes of restricted types
+
+[^temp-dir]: Temporary folders of the tests

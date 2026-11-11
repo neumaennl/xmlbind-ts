@@ -4,8 +4,8 @@ title: Code generation
 description: How xsd2ts turns an XSD into decorated TypeScript classes - the command line and generateFromXsd(), the generated files, the mapping of names, types, elements, attributes, groups, references and derivations, and the XSD constructs it does not support.
 tags: [xsd2ts, generator, xsd, code-generation, cli]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-04T14:06:19Z }
-verified: { by: human:neumaennl, at: 2026-11-04T14:06:19Z }
+generated: { by: human:neumaennl, at: 2026-11-11T13:05:00Z }
+verified: { by: human:neumaennl, at: 2026-11-11T13:12:15Z }
 sources:
   - id: cli
     resource: ../src/xsd/cli.ts
@@ -191,7 +191,7 @@ References to `xs:group` and `xs:attributeGroup` are expanded: their elements an
 The two kinds of complex type derivation map differently:
 
 - **`xs:extension` becomes `extends`.** The derived class extends the class of its base and adds the extension's elements and attributes. With the XSD schema for schemas, `facet extends annotated` and `annotated extends openAttrs`.
-- **`xs:restriction` becomes a standalone class.** The class does not extend its base. It gets the base's attributes, including those the base inherits, except the attributes that the restriction or a restriction further up the chain prohibits or redefines, and only the elements that the restriction lists. With the XSD schema for schemas, `topLevelElement` and `localElement` restrict `element`, and `explicitGroup` restricts `group`, but none of them extends its base.[^restriction]
+- **`xs:restriction` becomes a standalone class.** The class does not extend its base. It gets the base's attributes, including those the base inherits, except the attributes that the restriction or a restriction further up the chain prohibits or redefines, and only the elements that the restriction lists. With the XSD schema for schemas, `topLevelElement` and `localElement` restrict `element`, and `explicitGroup` restricts `group`, but none of them extends its base.[^restriction] Attributes that the base declares with `ref` are left out, and attribute groups that the restriction repeats give duplicate properties (see [A restriction drops the attribute references of its base](known-issues.md#a-restriction-drops-the-attribute-references-of-its-base) and [Attributes of attribute groups in a restriction are generated twice](known-issues.md#attributes-of-attribute-groups-in-a-restriction-are-generated-twice)).
 
 This is deliberate. A restriction can take things away from its base: prohibit an attribute, remove optional child elements, tighten occurrence limits or narrow value types. A TypeScript subclass can narrow a property's type, but it cannot remove an inherited property. If a restricted type extended its base, its class would declare attributes and elements that the schema forbids, and it would break substitutability: a `topLevelElement` must not have `minOccurs`, but as a subclass of `element` it would.
 
