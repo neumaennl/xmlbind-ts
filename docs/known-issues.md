@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T15:36:28Z }
-verified: { by: human:neumaennl, at: 2026-11-11T16:07:00Z }
+generated: { by: human:neumaennl, at: 2026-11-11T16:07:13Z }
+verified: { by: human:neumaennl, at: 2026-11-11T17:42:15Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -86,7 +86,7 @@ sources:
     resource: ../eslint.config.mjs
     title: ESLint configuration
   - id: vitest-config
-    resource: ../vitest.config.mts
+    resource: ../vitest.config.ts
     title: Vitest configuration
   - id: gen-base-attributes
     resource: ../src/xsd/tsgen/base-attribute-helpers.ts
@@ -602,7 +602,7 @@ Effort:
 
 ## Tests are not type-checked
 
-- **Location:** `package.json` (`pretest`), `tsconfig.test.json`, `vitest.config.mts`
+- **Location:** `package.json` (`pretest`), `tsconfig.test.json`, `vitest.config.ts`
 - **Severity:** Low
 - **Effort:** S
 - **Description:** Vitest compiles the tests with `ts.transpileModule`, which removes types without checking them, and `pretest` type-checks only the build and the scripts. `tsconfig.test.json` covers `src/` and `__tests__/`, but no script and no CI step runs it, so type errors in tests go unnoticed. It passes today.[^vitest-config] Adding it to `npm run typecheck` would catch them.

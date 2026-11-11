@@ -4,8 +4,8 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T15:36:28Z }
-verified: { by: human:neumaennl, at: 2026-11-11T16:07:00Z }
+generated: { by: human:neumaennl, at: 2026-11-11T16:07:13Z }
+verified: { by: human:neumaennl, at: 2026-11-11T17:42:15Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -121,13 +121,13 @@ The scripts read the release schedule from the Node.js release repository on Git
 
 # Lint
 
-ESLint checks all TypeScript and `.mjs` files with the recommended rules of ESLint, `typescript-eslint` and the Vitest plugin.[^eslint] The project's own settings:
+ESLint checks all `.ts` and `.mjs` files with the recommended rules of ESLint, `typescript-eslint` and the Vitest plugin.[^eslint] The project's own settings:
 
 - unused variables are errors, except parameters whose names start with `_`;
 - `any` is allowed (see [`any` is used widely](known-issues.md#any-is-used-widely));
 - `vitest/expect-expect` accepts the assertion helpers of the tests;
-- `@typescript-eslint/no-floating-promises` reports promises that are neither awaited nor handled, because their errors would be lost; in the tests, a failing assertion in `withTmpDir()` would not fail its test. The rule needs type information, which ESLint takes from the projects that `tsconfig.json` references; `vitest.config.mts` and `vitest.setup.ts`, which none of them includes, are checked without a project;
-- `.js` and `.cjs` files are not allowed at all;
+- `@typescript-eslint/no-floating-promises` reports promises that are neither awaited nor handled, because their errors would be lost; in the tests, a failing assertion in `withTmpDir()` would not fail its test. The rule needs type information, which ESLint takes from the projects that `tsconfig.json` references; `vitest.config.ts` and `vitest.setup.ts`, which none of them includes, are checked without a project;
+- `.js`, `.cjs`, `.mts` and `.cts` files are not allowed at all, because the package is an ES module and needs no other kinds of files;
 - `dist/`, `coverage/`, `test-results/` and folders named `generated/` are ignored.
 
 ESLint does not check the size limits of the guidelines yet (see [ESLint does not check the size limits](known-issues.md#eslint-does-not-check-the-size-limits)).

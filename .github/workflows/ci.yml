@@ -59,7 +59,7 @@ jobs:
         run: npm run build
 
       - name: Run tests (coverage; JSON and JUnit via config)
-        # coverage/ and test-results/ are created here; the reporters are configured in vitest.config.mts
+        # coverage/ and test-results/ are created here; the reporters are configured in vitest.config.ts
         run: |
           mkdir -p test-results
           npm test -- --coverage
@@ -82,5 +82,5 @@ jobs:
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           # The thresholds in the report come from this file.
-          vite-config-path: vitest.config.mts
+          vite-config-path: vitest.config.ts
           comment-on: ${{ github.event.pull_request.head.repo.full_name == github.repository && 'pr' || 'none' }}

@@ -30,7 +30,7 @@ function typescriptTranspile(decoratorMode: DecoratorMode): Plugin {
     name: `typescript-transpile-${decoratorMode}`,
     enforce: "pre",
     transform(code, id) {
-      if (id.endsWith(".ts") || id.endsWith(".tsx") || id.endsWith(".mts")) {
+      if (id.endsWith(".ts")) {
         const result = ts.transpileModule(code, {
           compilerOptions: {
             target,

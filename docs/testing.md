@@ -4,14 +4,14 @@ title: Testing
 description: How the library and the generator are tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T15:36:28Z }
-verified: { by: human:neumaennl, at: 2026-11-11T16:07:00Z }
+generated: { by: human:neumaennl, at: 2026-11-11T16:07:13Z }
+verified: { by: human:neumaennl, at: 2026-11-11T17:42:15Z }
 sources:
   - id: manifest
     resource: ../package.json
     title: Package manifest (test scripts)
   - id: vitest-config
-    resource: ../vitest.config.mts
+    resource: ../vitest.config.ts
     title: Vitest configuration
   - id: vitest-setup
     resource: ../vitest.setup.ts
@@ -128,14 +128,14 @@ Larger XSD and XML snippets are kept in `__tests__/test-resources/`:
 
 Coverage is measured with V8 (`@vitest/coverage-v8`) for the TypeScript files in `src/` and `scripts/`, except type declarations, test files and `__tests__` folders. Both Vitest projects contribute to the same report. The reports are a text table in the output, `coverage-summary.json` and `coverage-final.json` for CI (see [CI](#ci)), and an HTML report (`coverage/index.html`), all in `coverage/`.[^vitest-config]
 
-The threshold is 85% for lines, statements, functions and branches (`coverage.thresholds` in `vitest.config.mts`). A run with coverage below one of them fails, also in CI. Branch coverage is only a little above its threshold, which is enough because new and changed code is tested anyway (see [Development guidelines](development-guidelines.md#tests)).
+The threshold is 85% for lines, statements, functions and branches (`coverage.thresholds` in `vitest.config.ts`). A run with coverage below one of them fails, also in CI. Branch coverage is only a little above its threshold, which is enough because new and changed code is tested anyway (see [Development guidelines](development-guidelines.md#tests)).
 
 # CI
 
 CI runs the tests with coverage on every push to `main` and every pull request into it, after linting and building.[^ci] [Build and release](build-and-release.md#ci) describes the workflow.
 
 - **Report.** The job summary has a section "Vitest" with the test report that `dorny/test-reporter` creates from the JUnit file, with the tests per file and the message of each failing test. `dorny/test-reporter` writes it into the job summary of the run (`use-actions-summary`, its default since version 2), not as a check of its own. The coverage report follows it.
-- **Coverage.** `davelosert/vitest-coverage-report-action` shows the totals against the thresholds, which it reads from `vitest.config.mts` (`vite-config-path`), and the coverage of the files changed in a pull request, with their uncovered lines. On pull requests from this repository it also keeps one comment with this report up to date; pull requests from forks get none, because their workflow runs have no write access. For the files of a pull request, Vitest writes the coverage reporter `json` (`coverage/coverage-final.json`) besides `json-summary`.[^vitest-config]
+- **Coverage.** `davelosert/vitest-coverage-report-action` shows the totals against the thresholds, which it reads from `vitest.config.ts` (`vite-config-path`), and the coverage of the files changed in a pull request, with their uncovered lines. On pull requests from this repository it also keeps one comment with this report up to date; pull requests from forks get none, because their workflow runs have no write access. For the files of a pull request, Vitest writes the coverage reporter `json` (`coverage/coverage-final.json`) besides `json-summary`.[^vitest-config]
 - **Annotations.** In GitHub Actions, Vitest also adds its `github-actions` reporter, which marks the line of each failing test in the run and in the changed files of a pull request. Its own job summary is off, because the report steps write one.[^vitest-config]
 
 # What the tests do not cover

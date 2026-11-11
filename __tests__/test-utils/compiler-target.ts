@@ -9,7 +9,7 @@ export interface CompilerTarget {
 /**
  * Reads `target` and `lib` from `tsconfig.target.json`, which the build and the
  * scripts extend, so that the tests and the projects they compile use the same
- * edition. `vitest.config.mts` uses it as well.
+ * edition. `vitest.config.ts` uses it as well.
  *
  * @returns The target and the libraries
  */

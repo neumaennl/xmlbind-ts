@@ -10,7 +10,7 @@ export default defineConfig([
   ...typescriptEslint.configs["flat/recommended"],
   vitest.configs.recommended,
   {
-    files: ['**/*.ts', '**/*.mts', '**/*.cts'],
+    files: ['**/*.ts'],
     languageOptions: {
       parser: tsParser,
       sourceType: "module",
@@ -50,10 +50,10 @@ export default defineConfig([
   // information from the projects that tsconfig.json references; the
   // configuration files of Vitest are in none of them.
   {
-    files: ["**/*.ts", "**/*.mts", "**/*.cts"],
+    files: ["**/*.ts"],
     languageOptions: {
       parserOptions: {
-        projectService: { allowDefaultProject: ["*.mts", "vitest.setup.ts"] },
+        projectService: { allowDefaultProject: ["vitest.config.ts", "vitest.setup.ts"] },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -61,15 +61,20 @@ export default defineConfig([
       "@typescript-eslint/no-floating-promises": "error",
     },
   },
-  // Disallow .js and .cjs files (project uses ESM with .mjs and TypeScript)
+  // Allow only .ts and .mjs files: the package is an ES module, so .js would
+  // be ambiguous, and .cjs, .mts and .cts are not needed. Without this block,
+  // ESLint would skip .mts and .cts files, because no other block matches them.
   {
-    files: ['**/*.js', '**/*.cjs'],
+    files: ['**/*.js', '**/*.cjs', '**/*.mts', '**/*.cts'],
+    languageOptions: {
+      parser: tsParser,
+    },
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: 'Program',
-          message: 'JavaScript (.js) and CommonJS (.cjs) files are not allowed. Use TypeScript (.ts) or ES modules (.mjs) instead.',
+          message: 'Only TypeScript (.ts) and ES module (.mjs) files are allowed; .js, .cjs, .mts and .cts files are not.',
         },
       ],
     },

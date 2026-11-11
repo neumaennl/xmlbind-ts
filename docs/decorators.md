@@ -4,8 +4,8 @@ title: Decorators
 description: The decorators that map classes and fields to XML - what each one records, its options and defaults, how field types are resolved, how legacy and Stage 3 decorators reach the metadata registry and when to review the recommendation of legacy decorators, and the functions that read the metadata.
 tags: [decorators, metadata, legacy-decorators, stage3-decorators, public-api]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T14:21:59Z }
-verified: { by: human:neumaennl, at: 2026-11-11T15:35:16Z }
+generated: { by: human:neumaennl, at: 2026-11-11T16:07:13Z }
+verified: { by: human:neumaennl, at: 2026-11-11T17:42:15Z }
 sources:
   - id: xmlroot
     resource: ../src/decorators/XmlRoot.ts
@@ -44,7 +44,7 @@ sources:
     resource: ../__tests__/stage3-decorators.test.ts
     title: Tests of the decorators in both modes
   - id: vitest-config
-    resource: ../vitest.config.mts
+    resource: ../vitest.config.ts
     title: Vitest configuration
 ---
 

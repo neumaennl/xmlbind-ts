@@ -1,7 +1,7 @@
 /**
  * Tests for Stage 3 decorator support (without experimentalDecorators flag)
  *
- * Vitest runs this file in two projects (see vitest.config.mts):
+ * Vitest runs this file in two projects (see vitest.config.ts):
  * - legacy-decorators: compiled with experimentalDecorators and emitDecoratorMetadata
  * - stage3-decorators: compiled with Stage 3 decorators
  */
