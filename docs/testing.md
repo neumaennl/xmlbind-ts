@@ -3,8 +3,9 @@ type: Testing Strategy
 title: Testing
 description: How the library and the generator are tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
-status: draft
-generated: { by: human:neumaennl, at: 2026-11-10T19:40:48Z }
+status: stable
+generated: { by: human:neumaennl, at: 2026-11-11T07:58:43Z }
+verified: { by: human:neumaennl, at: 2026-11-11T08:28:29Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -135,7 +136,7 @@ CI runs the tests with coverage on every push to `main` and every pull request i
 
 - **Type errors in tests.** The plugin removes types without checking them, `pretest` type-checks only the scripts, and nothing runs `tsconfig.test.json` (see [Tests are not type-checked](known-issues.md#tests-are-not-type-checked)).
 - **Generated classes as native ES modules.** The generated classes are run through Vite's module loader, or compiled as CommonJS, but never compiled with `tsc` and run as native ES modules. This hides that generated classes with circular imports fail to load with `emitDecoratorMetadata` (see [Known issues](known-issues.md#generated-classes-with-circular-references-fail-to-load-with-emitdecoratormetadata)).
-- **Round trips of real documents in general.** The round-trip tests check selected features; there is no corpus of real-world documents whose round trip is compared with the source.
+- **Round trips of real documents in general.** The round-trip tests check selected features; there is no corpus of real-world documents whose round trip is compared with the source (see [Round trips are not tested with real documents](known-issues.md#round-trips-are-not-tested-with-real-documents)).
 
 [^manifest]: Package manifest (test scripts)
 

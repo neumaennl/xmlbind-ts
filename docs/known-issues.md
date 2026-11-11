@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T07:36:49Z }
-verified: { by: human:neumaennl, at: 2026-11-11T07:36:49Z }
+generated: { by: human:neumaennl, at: 2026-11-11T07:58:43Z }
+verified: { by: human:neumaennl, at: 2026-11-11T08:28:29Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -603,6 +603,14 @@ Effort:
 - **Severity:** Low
 - **Effort:** M
 - **Description:** The [development guidelines](development-guidelines.md#tests) ask for one feature per test file and for tests of one feature not to be scattered over several files. Several files are named after the issue or the bug they were written for instead of the feature they test, and some features are split between them: elements without a type in `unmarshal-undefined-type.test.ts` and `manual-verification-undefined-types.test.ts`, circular references in `circular-dependency-reproduction.test.ts` and `circular-dependencies-unmarshal.test.ts`. The tests would be easier to find if they were merged into the files of their feature.
+- **GitHub issue:** none
+
+## Round trips are not tested with real documents
+
+- **Location:** `__tests__/`
+- **Severity:** Low
+- **Effort:** M
+- **Description:** The round-trip tests check selected features with small documents written for them. No test unmarshals and marshals real-world documents and compares the result with the source, so problems that only appear in their combination are found late: the reordering of elements in an `xs:sequence`, comments that were lost, and content that no field maps, such as `xs:assert` or a processing instruction, all showed up in round trips of real schemas. A corpus could start with `XMLSchema.xsd` itself and two schemas that combine these cases, and grow with documents such as the W3C XML Schema test suite, UBL and XHTML. The test compares source and result after removing insignificant differences, such as whitespace between elements and the order of attributes; documents that fail because of a known issue are marked as expected failures until it is fixed.
 - **GitHub issue:** none
 
 # Build and release

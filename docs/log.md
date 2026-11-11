@@ -1,6 +1,7 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-11
+* **Update**: [Known issues](known-issues.md#round-trips-are-not-tested-with-real-documents): new entry "Round trips are not tested with real documents", which [Testing](testing.md#what-the-tests-do-not-cover) links.
 * **Update**: [Marshalling](marshalling.md#order-and-comments) describes that `marshal()` writes a comment after as many elements as its position says, also between occurrences of the same element, and comments past the last element after it instead of dropping them. Removed "Comments after the last element field are lost" from [Known issues](known-issues.md) ([#293](https://github.com/neumaennl/xmlbind-ts/issues/293)) and narrowed "Comments between repeated elements move" to "Comments move when elements are reordered or dropped".
 
 ## 2026-11-10
