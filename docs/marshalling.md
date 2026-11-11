@@ -4,8 +4,8 @@ title: Marshalling
 description: How unmarshal() turns an XML string into objects and marshal() turns them back - binding of attributes, elements, text and wildcards, value conversion, namespaces and prefixes, comments and order, the output format, and what a round trip keeps and changes.
 tags: [marshal, unmarshal, namespaces, round-trip, value-casting, public-api]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T07:36:49Z }
-verified: { by: human:neumaennl, at: 2026-11-11T07:36:49Z }
+generated: { by: human:neumaennl, at: 2026-11-11T17:58:06Z }
+verified: { by: human:neumaennl, at: 2026-11-11T17:58:06Z }
 sources:
   - id: unmarshal
     resource: ../src/marshalling/unmarshal.ts
@@ -86,18 +86,18 @@ marshal(order);
 - **Elements.** An element field without `namespace` matches child elements by local name, with or without prefix; if both occur, the unprefixed ones win, and elements with the same local name in another namespace are not mixed in. With `namespace`, a child element matches if its prefix, or the default namespace for an unprefixed element, resolves to that URI. Prefixes are resolved with the declarations of the parent and its ancestors; a default namespace declared on the child element itself is ignored (see [Known issues](known-issues.md#a-default-namespace-declared-on-a-child-element-is-ignored)).[^namespace-helpers]
 - **Several occurrences.** A field with `array: true` gets all occurrences in document order, an empty array if there is none. A field without `array: true` gets the value of a single occurrence; if the element occurs more than once, it gets an array anyway (see [Known issues](known-issues.md#a-single-valued-field-gets-an-array-for-repeated-elements)).[^unmarshal]
 - **Nil.** An occurrence with `xsi:nil="true"` becomes `null`, also within arrays. Only the literal prefix `xsi` is recognized (see [Known issues](known-issues.md#xsinil-is-only-recognized-with-the-prefix-xsi)).
-- **Nested objects.** For a field whose type is a class, `unmarshal()` creates an object of that class and binds it in the same way. A field without a type gets the parser's raw value: a string, number or boolean for an element with only text, otherwise an object in the parser's form, with attributes as keys with the prefix `@_` and text as `#text`.
+- **Nested objects.** For a field whose type is a class, `unmarshal()` creates an object of that class and binds it in the same way. A field without a type gets the parser's raw value: a string for an element with only text, otherwise an object in the parser's form, with attributes as keys with the prefix `@_` and text as `#text`.
 - **Text.** The `@XmlText()` field gets the element's text. In mixed content, all text pieces are concatenated without the whitespace between them (see [Known issues](known-issues.md#mixed-content-is-reordered-and-loses-whitespace)).
 - **Wildcards.** `@XmlAnyAttribute()` gets all attributes that no attribute field matched, except namespace declarations; `@XmlAnyElement()` gets all child elements that no element field matched (see [Decorators](decorators.md#xmlanyelement-and-xmlanyattribute) for their form).
 - **Unmapped content.** Without a wildcard field, attributes and elements that no field matches are dropped without notice (see [Known issues](known-issues.md#unmapped-content-is-dropped-without-notice)).
 
 ## Value conversion
 
-Attribute values arrive as strings, with literal line feeds and tabs kept instead of being turned into spaces as XML requires (see [Known issues](known-issues.md#line-feeds-and-tabs-in-attribute-values-are-not-normalized)). Element text is converted by the parser first: text that looks like a number becomes a number, `true` and `false` become booleans, and leading and trailing whitespace is removed.[^unmarshal] Then the field's type converts the value with `castValue()`:[^value-casting]
+Attribute values arrive as strings, with literal line feeds and tabs kept instead of being turned into spaces as XML requires (see [Known issues](known-issues.md#line-feeds-and-tabs-in-attribute-values-are-not-normalized)). Element text, including the text of an `@XmlText()` field, arrives as a string too, with leading and trailing whitespace removed (see [Known issues](known-issues.md#leading-and-trailing-whitespace-of-element-text-is-removed)); the parser does not convert text that looks like a number or boolean.[^unmarshal] Then the field's type converts the value with `castValue()`:[^value-casting]
 
 | Type | Conversion |
 |---|---|
-| none | the value stays as the parser delivered it |
+| none | the value stays the string from the document |
 | `String` | `String(value)` |
 | `Number` | `Number(value)`; with `allowStringFallback`, a value that gives `NaN` stays the original string. `NaN` is read correctly, but XSD's `INF` and `-INF` become `NaN` |
 | `Boolean` | `true` for `true` and `1`, `false` for anything else; with `allowStringFallback`, values other than `true`, `1`, `false` and `0` stay strings |
@@ -105,7 +105,7 @@ Attribute values arrive as strings, with literal line feeds and tabs kept instea
 
 An empty attribute value or empty element becomes `0` for `Number`, `false` for `Boolean` and an invalid date for `Date`, which `marshal()` then cannot write (see [Known issues](known-issues.md#empty-values-become-0-false-or-an-invalid-date)).
 
-Because the parser converts first, a type cannot undo the conversion: `<code>007</code>` becomes `"7"` even with `type: String` ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)). The parser decodes the five predefined entities, character references such as `&#65;` and `&#x41;`, and the entities a DOCTYPE declares, except those whose value is unsafe in HTML or XML, such as markup with a `<script>` element. HTML entities that XML does not define, such as `&nbsp;`, stay as they are, and references to characters that XML does not allow, such as `&#0;`, are removed without an error (see [Known issues](known-issues.md#invalid-character-references-are-removed-without-an-error)).[^entity-decoder] CDATA sections are read as ordinary text.
+So `<code>007</code>` stays `"007"` in a `String` field and in a field without a type, and becomes `7` only in a `Number` field. The parser decodes the five predefined entities, character references such as `&#65;` and `&#x41;`, and the entities a DOCTYPE declares, except those whose value is unsafe in HTML or XML, such as markup with a `<script>` element. HTML entities that XML does not define, such as `&nbsp;`, stay as they are, and references to characters that XML does not allow, such as `&#0;`, are removed without an error (see [Known issues](known-issues.md#invalid-character-references-are-removed-without-an-error)).[^entity-decoder] CDATA sections are read as ordinary text.
 
 # Marshalling
 
@@ -113,7 +113,7 @@ Because the parser converts first, a type cannot undo the conversion: `<code>007
 
 - **Which fields.** Fields whose value is `undefined` are left out. A `null` element value is written as `xsi:nil="true"`. A `null` attribute value is left out, because XML has no nil for attributes. An empty string is written as an empty element, `<name/>`, which XML treats like `<name></name>`.
 - **`null` in arrays.** A `null` entry of an array is not written as `xsi:nil="true"` but as an empty element in its place: `["x", null]` becomes `<arr>x</arr><arr/>` (see [Known issues](known-issues.md#null-entries-of-arrays-are-written-as-empty-elements)).
-- **Values.** Booleans are written as `true` and `false`, and everything else except dates with `String()`.[^value-casting] Special characters are escaped (`&lt;`, `&amp;` and so on), and a carriage return is written as `&#13;`, because a parser would otherwise turn it into a line feed. Line feeds and tabs in attribute values are written as they are, which a parser reads as spaces (see [Known issues](known-issues.md#line-feeds-and-tabs-in-attribute-values-are-not-normalized)).[^escaping]
+- **Values.** In attributes, elements and the text of `@XmlText()` fields, booleans are written as `true` and `false`, and everything else except dates with `String()`.[^value-casting] Special characters are escaped (`&lt;`, `&amp;` and so on), and a carriage return is written as `&#13;`, because a parser would otherwise turn it into a line feed. Line feeds and tabs in attribute values are written as they are, which a parser reads as spaces (see [Known issues](known-issues.md#line-feeds-and-tabs-in-attribute-values-are-not-normalized)).[^escaping]
 - **Special numbers.** `NaN` is written as `NaN`, which the XSD types `xs:float` and `xs:double` accept and the other numeric types reject. The infinities are written as `Infinity` and `-Infinity`, which no XSD type accepts; XSD writes them as `INF` and `-INF` (see [Known issues](known-issues.md#infinities-are-not-converted-to-and-from-inf)).
 - **Dates.** A `Date` is written with `toISOString()`, always as a date and time in UTC, such as `2026-01-02T00:00:00.000Z`. An `xs:date` therefore becomes a date and time, and a time without a time zone gets one (see [Known issues](known-issues.md#dates-are-written-as-date-and-time-in-utc)).
 - **Nested objects.** A value is written with the fields of the type that the field declares, not those of the value's own class: the fields that a subclass adds are left out, and `xsi:type` is neither written nor read (see [Known issues](known-issues.md#subclasses-and-xsitype-are-not-supported)). A plain object with the right properties works as well as an instance.
@@ -175,7 +175,7 @@ They are enumerable, so they appear in `JSON.stringify()` and in deep-equality c
 
 It changes:
 
-- **Values:** element text that looks like a number ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)), leading and trailing whitespace of element text, mixed content, dates and times in `Date` fields, `INF` and `-INF` in `Number` fields, empty values in `Number`, `Boolean` and `Date` fields, `xsi:nil` occurrences in arrays, and the references `&#10;` and `&#9;` in attribute values, which are written as literal characters.
+- **Values:** the form of numbers and booleans in `Number` and `Boolean` fields, such as `007`, `1.50` and `1`, which are written as `7`, `1.5` and `true`, leading and trailing whitespace of element text, mixed content, dates and times in `Date` fields, `INF` and `-INF` in `Number` fields, empty values in `Number`, `Boolean` and `Date` fields, `xsi:nil` occurrences in arrays, and the references `&#10;` and `&#9;` in attribute values, which are written as literal characters.
 - **Structure:** the order of elements that are not contiguous, the position of some comments, and the namespace of elements that had no namespace under a default namespace.
 - **Lost content:** unmapped attributes and elements, processing instructions, the document type declaration, comments after the root element, namespace declarations below the root, and the attributes of the XML declaration.
 - **Format:** indentation, line breaks, including those at the start and end of the output, quotes, the order of attributes, character references, which are written as the characters they stand for, except those that are escaped as described in [Marshalling](#marshalling), and CDATA sections, which become escaped text ([#252](https://github.com/neumaennl/xmlbind-ts/issues/252)).

@@ -4,8 +4,8 @@ title: Decorators
 description: The decorators that map classes and fields to XML - what each one records, its options and defaults, how field types are resolved, how legacy and Stage 3 decorators reach the metadata registry and when to review the recommendation of legacy decorators, and the functions that read the metadata.
 tags: [decorators, metadata, legacy-decorators, stage3-decorators, public-api]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-10T10:54:35Z }
-verified: { by: human:neumaennl, at: 2026-11-10T11:14:05Z }
+generated: { by: human:neumaennl, at: 2026-11-11T14:21:59Z }
+verified: { by: human:neumaennl, at: 2026-11-11T15:35:16Z }
 sources:
   - id: xmlroot
     resource: ../src/decorators/XmlRoot.ts
@@ -19,6 +19,9 @@ sources:
   - id: xmltext
     resource: ../src/decorators/XmlText.ts
     title: "@XmlText"
+  - id: field-type
+    resource: ../src/decorators/fieldType.ts
+    title: Type of a field from its declaration
   - id: xmlenum
     resource: ../src/decorators/XmlEnum.ts
     title: "@XmlEnum"
@@ -56,7 +59,7 @@ The decorators describe how a class maps to XML. They do nothing at runtime exce
 | `@XmlRoot(name?, options?)` | a class | the class to an element; used for the document's root element |
 | `@XmlElement(name?, options?)` | a field | the field to child elements |
 | `@XmlAttribute(name?, options?)` | a field | the field to an attribute |
-| `@XmlText()` | a field | the field to the text content of the element |
+| `@XmlText(options?)` | a field | the field to the text content of the element |
 | `@XmlEnum(enumType)` | a field | records an enum on the field's metadata; has no effect |
 | `@XmlAnyElement()` | a field | the field to all child elements that no `@XmlElement` maps |
 | `@XmlAnyAttribute()` | a field | the field to all attributes that no `@XmlAttribute` maps |
@@ -159,7 +162,19 @@ An attribute is always a single value; there is no `array` option.[^xmlattribute
 
 # @XmlText
 
-`@XmlText()` maps the field to the text content of the element, for elements that have attributes and text, such as `<item sku="A1">Blue pen</item>`.[^xmltext] It has no options. A class has at most one such field; if there are several, only the first is used.
+```typescript
+@XmlText(options?: {
+  type?: unknown;
+  allowStringFallback?: boolean;
+})
+```
+
+| Option | Default | Meaning |
+|---|---|---|
+| `type` | see [Field types](#field-types) | `String`, `Number`, `Boolean` or `Date` |
+| `allowStringFallback` | `false` | as for `@XmlElement` |
+
+`@XmlText()` maps the field to the text content of the element, for elements that have attributes and text, such as `<item sku="A1">Blue pen</item>`.[^xmltext] A class has at most one such field; if there are several, only the first is used.
 
 # @XmlEnum
 
@@ -186,21 +201,21 @@ Wildcards accept everything; they have no options to restrict the namespaces the
 How a value is converted between XML text and the field depends on the type that the field's metadata records:
 
 1. The `type` option, if given.
-2. Otherwise, with legacy decorators and `emitDecoratorMetadata`, the type that TypeScript emits for the field's declaration (`design:type`). For an array field it emits `Array` and for a union `Object`; `@XmlElement` ignores both, `@XmlAttribute` ignores `Object`.[^xmlelement]
+2. Otherwise, with legacy decorators and `emitDecoratorMetadata`, the type that TypeScript emits for the field's declaration (`design:type`). For an array field it emits `Array` and for a union `Object`; `@XmlElement` ignores both, `@XmlAttribute` and `@XmlText` ignore `Object`.[^field-type]
 3. Otherwise none. Stage 3 decorators never get a type from the declaration.
 
 With legacy decorators, an explicit `type` that contradicts the declaration, such as `{ type: Number }` on a field declared as `string`, makes the class definition throw a `TypeError`. Stage 3 decorators cannot detect this.[^xmlattribute]
 
 | Type | Attribute value | Element text |
 |---|---|---|
-| none | string | converted by the XML parser: text that looks like a number or boolean becomes one |
-| `String` | string | string, but see below |
+| none | string | string |
+| `String` | string | string |
 | `Number` | `Number(value)` | `Number(value)` |
 | `Boolean` | `true` for `true` and `1`, otherwise `false` | the same |
 | `Date` | `new Date(value)` | `new Date(value)` |
 | class | — | an object of the class |
 
-Element text is converted by the XML parser before the type is applied, so a type cannot undo the conversion: `<code>007</code>` becomes `"7"` even with `type: String`, and `0x1A` becomes `"26"` (see [Element text that looks like a number is converted](known-issues.md#element-text-that-looks-like-a-number-is-converted)).[^unmarshal] An enum object as `type` of `@XmlElement` is accepted, but treated like no type, because `resolveType()` only returns functions (see [Enum objects as `type` are ignored](known-issues.md#enum-objects-as-type-are-ignored)).[^type-resolution] [Marshalling](marshalling.md) describes the conversion in both directions.
+Element text means the text of an `@XmlElement` field and of an `@XmlText()` field. The XML parser does not convert it, so `<code>007</code>` stays `"007"` in a `String` field or a field without a type.[^unmarshal] An enum object as `type` of `@XmlElement` is accepted, but treated like no type, because `resolveType()` only returns functions (see [Enum objects as `type` are ignored](known-issues.md#enum-objects-as-type-are-ignored)).[^type-resolution] [Marshalling](marshalling.md) describes the conversion in both directions.
 
 # Legacy and Stage 3 decorators
 
@@ -208,7 +223,7 @@ TypeScript has two kinds of decorators: legacy decorators, with `experimentalDec
 
 Each decorator detects the kind from its arguments: a Stage 3 decorator receives a context object with a `kind`, a legacy field decorator receives the prototype and the field name, and a legacy class decorator the constructor.[^xmlelement]
 
-**Legacy decorators** add the field to the registry entry of `target.constructor` when the class is defined. With `emitDecoratorMetadata`, `@XmlElement` and `@XmlAttribute` also read `design:type` through `reflect-metadata` (see [Field types](#field-types)).
+**Legacy decorators** add the field to the registry entry of `target.constructor` when the class is defined. With `emitDecoratorMetadata`, `@XmlElement`, `@XmlAttribute` and `@XmlText` also read `design:type` through `reflect-metadata` (see [Field types](#field-types)).
 
 **Stage 3 decorators** cannot reach the class from a field decorator, so they store the fields on the class's decorator metadata object, `context.metadata`, which the registry links to the class when it is first used. TypeScript passes `context.metadata` only when `Symbol.metadata` exists, which JavaScript engines do not provide yet; the registry therefore defines it when it is loaded, before any decorated class is defined.[^registry] Without `context.metadata`, a field registers itself through `context.addInitializer()` when the first object of the class is created; according to `README.md`, this is the case with TypeScript 5.0 and 5.1.
 
@@ -248,6 +263,8 @@ Each field entry (`FieldMeta`) has the field name (`key`), the XML name (`name`)
 [^xmlattribute]: @XmlAttribute
 
 [^xmltext]: @XmlText
+
+[^field-type]: Type of a field from its declaration
 
 [^xmlenum]: @XmlEnum
 

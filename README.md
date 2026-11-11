@@ -66,7 +66,7 @@ The library supports both **legacy decorators** (`experimentalDecorators`) and *
 
 - The TC39 decorators proposal went back to Stage 2.7 in May 2026. No JavaScript engine ships it, and it may still change.
 - Oxc, and with it Vite 8 and Vitest 5, does not lower Stage 3 decorators ([oxc-project/oxc#9170](https://github.com/oxc-project/oxc/issues/9170)). It lowers legacy decorators.
-- With legacy decorators and `emitDecoratorMetadata`, `@XmlElement` and `@XmlAttribute` take the type of a field from its declaration, so `count?: number` is read as a number. Stage 3 decorators get no type information, so pass the type explicitly, as in `@XmlAttribute("count", { type: Number })`. Without it, attribute values stay strings, and element text that looks like a number or boolean is converted by the XML parser (so `<flag>1</flag>` becomes the number `1`, not `true`).
+- With legacy decorators and `emitDecoratorMetadata`, `@XmlElement`, `@XmlAttribute` and `@XmlText` take the type of a field from its declaration, so `count?: number` is read as a number. Stage 3 decorators get no type information, so pass the type explicitly, as in `@XmlAttribute("count", { type: Number })`. Without it, attribute values and element text stay strings (so `<flag>1</flag>` becomes the string `"1"`, not `true`).
 
 Legacy decorators:
 
@@ -171,7 +171,6 @@ The same generation is available as `generateFromXsd(xsdText, outDir)`. [Code ge
 
 `xmlbind-ts` aims at JAXB's functionality, but is not there yet. The most important gaps today:
 
-- Element text that looks like a number is converted, even in string fields: `<code>007</code>` becomes `"7"` ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)).
 - A round trip with `marshal(unmarshal(…))` does not keep everything: elements whose occurrences are not contiguous are reordered, mixed content is reordered, unmapped content, processing instructions and namespace declarations below the root are dropped, and the formatting is normalized ([#252](https://github.com/neumaennl/xmlbind-ts/issues/252)).
 - The generator does not read imported or included schemas, and some schemas produce code that does not compile, for example with hyphens in type names or with an attribute and an element of the same name.
 

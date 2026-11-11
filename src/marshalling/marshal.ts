@@ -189,7 +189,9 @@ function writeWildcardsAndText(
 
   const textField = fields.find((f) => f.kind === "text");
   const tv = textField && obj[textField.key];
-  if (tv !== undefined && tv !== null) content.children.push(text(String(tv)));
+  if (textField && tv !== undefined && tv !== null) {
+    content.children.push(text(serializePrimitive(tv, resolveType(textField.type))));
+  }
 }
 
 /**

@@ -22,7 +22,7 @@ function extractTypeExpression(typeDef: string): string | undefined {
  * option is being generated (e.g. mixed `number | boolean`, `Date | string`,
  * or list aliases), `allowStringFallback` is never emitted either.
  *
- * Used by both attribute and element decorator emission.
+ * Used by attribute, element and text decorator emission.
  *
  * @param tsType - The resolved TypeScript type name
  * @param state - The generator state (used to look up generated type aliases)
@@ -65,7 +65,7 @@ export function needsAllowStringFallback(
  * Matching is done at the member level (splitting on `|`) to avoid false
  * positives from list aliases like `number[]`.
  *
- * Used by both attribute and element decorator emission.
+ * Used by attribute, element and text decorator emission.
  *
  * @param tsType - The resolved TypeScript type name
  * @param state - The generator state (used to look up generated type aliases)
@@ -107,3 +107,25 @@ export function computeDecoratorType(
   return undefined;
 }
 
+/**
+ * Builds the `@XmlText` decorator line for a text field of the given
+ * TypeScript type, with the same `type` and `allowStringFallback` options
+ * that an attribute of that type gets.
+ *
+ * @param tsType - The resolved TypeScript type of the text field
+ * @param state - The generator state (used to look up generated type aliases)
+ * @returns The indented decorator line
+ *
+ * @example
+ * ```typescript
+ * buildXmlTextDecorator("number", state); // "  @XmlText({ type: Number })"
+ * buildXmlTextDecorator("string", state); // "  @XmlText()"
+ * ```
+ */
+export function buildXmlTextDecorator(tsType: string, state: GeneratorState): string {
+  const opts: string[] = [];
+  const decoratorType = computeDecoratorType(tsType, state);
+  if (decoratorType) opts.push(`type: ${decoratorType}`);
+  if (needsAllowStringFallback(tsType, state)) opts.push("allowStringFallback: true");
+  return opts.length === 0 ? "  @XmlText()" : `  @XmlText({ ${opts.join(", ")} })`;
+}

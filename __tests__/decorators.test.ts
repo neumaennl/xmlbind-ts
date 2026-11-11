@@ -247,9 +247,8 @@ describe("Decorators", () => {
       expectStringsOnConsecutiveLines(xml, ["<child>", "<name>test</name>"]);
     });
 
-    // Without design:type, the XML parser converts element text that looks
-    // like a number or boolean.
-    it("should unmarshal numeric element as number", () => {
+    // Without design:type, element text stays a string.
+    test("should unmarshal numeric element as number via reflect-metadata, as string without emitDecoratorMetadata", () => {
       @XmlRoot("element")
       class Element {
         @XmlElement("count")
@@ -258,10 +257,10 @@ describe("Decorators", () => {
 
       const xml = `<element><count>42</count></element>`;
       const result = unmarshal(Element, xml);
-      expect(result.count).toBe(42);
+      expect(result.count).toBe(emitsDecoratorMetadata ? 42 : "42");
     });
 
-    it("should unmarshal boolean element as boolean", () => {
+    test("should unmarshal boolean element as boolean via reflect-metadata, as string without emitDecoratorMetadata", () => {
       @XmlRoot("element")
       class Element {
         @XmlElement("active")
@@ -270,10 +269,10 @@ describe("Decorators", () => {
 
       const xml = `<element><active>true</active></element>`;
       const result = unmarshal(Element, xml);
-      expect(result.active).toBe(true);
+      expect(result.active).toBe(emitsDecoratorMetadata ? true : "true");
     });
 
-    it("should unmarshal boolean element expressed as '1' as true via reflect-metadata, as number without emitDecoratorMetadata", () => {
+    test("should unmarshal boolean element expressed as '1' as true via reflect-metadata, as string without emitDecoratorMetadata", () => {
       @XmlRoot("element")
       class Element {
         @XmlElement("flag")
@@ -283,7 +282,7 @@ describe("Decorators", () => {
       // XML Schema allows "1" for true and "0" for false
       const xml = `<element><flag>1</flag></element>`;
       const result = unmarshal(Element, xml);
-      expect(result.flag).toBe(emitsDecoratorMetadata ? true : 1);
+      expect(result.flag).toBe(emitsDecoratorMetadata ? true : "1");
     });
 
     it("should throw when explicit type option conflicts with declared element type, if emitDecoratorMetadata is used", () => {
@@ -457,6 +456,98 @@ describe("Decorators", () => {
       const meta = getMeta(TestClass);
       const field = meta?.fields.find((f: any) => f.key === "textProp");
       expect((field as any)?.kind).toBe("text");
+    });
+
+    test("converts the text with the type option, at the root and in nested elements", () => {
+      class Price {
+        @XmlAttribute("currency")
+        currency?: string;
+
+        @XmlText({ type: Number })
+        amount?: number;
+      }
+
+      class Weight {
+        @XmlText({ type: Number })
+        value?: number;
+      }
+
+      @XmlRoot("item")
+      class Item {
+        @XmlElement("price", { type: Price })
+        price?: Price;
+
+        @XmlElement("weight", { type: Weight })
+        weight?: Weight;
+      }
+
+      @XmlRoot("total")
+      class Total {
+        @XmlText({ type: Number })
+        amount?: number;
+      }
+
+      const item = unmarshal(Item, `<item><price currency="EUR">1.50</price><weight>2.0</weight></item>`);
+      expect(item.price?.amount).toBe(1.5);
+      expect(item.weight?.value).toBe(2);
+      expect(unmarshal(Total, `<total>42</total>`).amount).toBe(42);
+      expect(unmarshal(Total, `<total a="1">42</total>`).amount).toBe(42);
+    });
+
+    test("takes the type from the declaration via reflect-metadata, keeps a string without emitDecoratorMetadata", () => {
+      @XmlRoot("count")
+      class Count {
+        @XmlText()
+        value?: number;
+      }
+
+      expect(unmarshal(Count, `<count>42</count>`).value).toBe(emitsDecoratorMetadata ? 42 : "42");
+    });
+
+    test("throws when the type option conflicts with the declared type, if emitDecoratorMetadata is used", () => {
+      const error = thrownBy(() => {
+        @XmlRoot("count")
+        class Count {
+          @XmlText({ type: Number })
+          value?: string;
+        }
+        void Count;
+      });
+      expect((error as Error | undefined)?.constructor).toBe(
+        emitsDecoratorMetadata ? TypeError : undefined
+      );
+    });
+
+    test("keeps text that cannot be converted with allowStringFallback", () => {
+      @XmlRoot("max")
+      class Max {
+        @XmlText({ type: Number, allowStringFallback: true })
+        value?: number | "unbounded";
+      }
+
+      expect(unmarshal(Max, `<max>unbounded</max>`).value).toBe("unbounded");
+      expect(unmarshal(Max, `<max>5</max>`).value).toBe(5);
+    });
+
+    test("writes Date and boolean text like element values", () => {
+      @XmlRoot("event")
+      class Event {
+        @XmlText({ type: Date })
+        at?: Date;
+      }
+
+      @XmlRoot("flag")
+      class Flag {
+        @XmlText({ type: Boolean })
+        on?: boolean;
+      }
+
+      const event = new Event();
+      event.at = new Date("2026-11-11T10:00:00.000Z");
+      expect(marshal(event)).toContain(">2026-11-11T10:00:00.000Z</event>");
+      const flag = unmarshal(Flag, `<flag>1</flag>`);
+      expect(flag.on).toBe(true);
+      expect(marshal(flag)).toContain(">true</flag>");
     });
   });
 

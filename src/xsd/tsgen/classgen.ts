@@ -14,6 +14,7 @@ import {
   emitAttrsExcludingProhibited,
 } from "./restriction-helpers.js";
 import { emitBaseAttributes } from "./base-attribute-helpers.js";
+import { buildXmlTextDecorator } from "./decorator-type-helpers.js";
 
 /**
  * Ensures a class is generated for a given XSD element, creating it if it doesn't exist.
@@ -197,7 +198,7 @@ function handleSimpleContent(
     if (base) textTs = typeMapping(base);
   }
   lines.push(`export class ${name} {`);
-  lines.push(`  @XmlText()`);
+  lines.push(buildXmlTextDecorator(textTs, state));
   lines.push(`  value?: ${textTs};`);
   lines.push("");
   if (ext) emitAttrs(ext as any, lines, unit, state);

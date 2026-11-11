@@ -6,6 +6,7 @@ import {
 } from "../metadata/MetadataRegistry.js";
 import { castValue } from "../util/valueCasting.js";
 import { resolveType } from "../util/typeResolution.js";
+import type { FieldMeta } from "../types.js";
 import {
   ParsedXmlNode,
   ParsedXmlValue,
@@ -33,11 +34,13 @@ import {
 } from "./elementOrderUtils.js";
 import { createEntityDecoder } from "./entityDecoder.js";
 
-// Main parser for data
+// Main parser for data. Element text stays a string, so that only the
+// field's type converts it and text such as "007" is kept.
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   textNodeName: "#text",
+  parseTagValue: false,
   entityDecoder: createEntityDecoder(),
 });
 
@@ -50,6 +53,16 @@ const commentParser = new XMLParser({
   parseTagValue: false,
   parseAttributeValue: false,
 });
+
+/**
+ * Converts the text of an element to the type of its `@XmlText()` field.
+ * @param value - The text from the parsed XML
+ * @param field - The metadata of the text field
+ * @returns The converted value
+ */
+function castText(value: ParsedXmlValue, field: FieldMeta): unknown {
+  return castValue(value, resolveType(field.type), field.allowStringFallback);
+}
 
 /**
  * Processes a primitive constructor value.
@@ -82,7 +95,7 @@ function processPlainTextNode<T>(
   const fields = getAllFields(cls);
   const textField = fields.find((f) => f.kind === "text");
   if (textField) {
-    target[textField.key] = castValue(node, resolveType(textField.type));
+    target[textField.key] = castText(node, textField);
   }
   return inst;
 }
@@ -301,7 +314,7 @@ function xmlValueToObject<T>(
   // Bind text node
   const textField = fields.find((f) => f.kind === "text");
   if (textField && node["#text"] !== undefined) {
-    target[textField.key] = castValue(node["#text"], resolveType(textField.type));
+    target[textField.key] = castText(node["#text"], textField);
   }
 
   return inst;
@@ -343,7 +356,7 @@ function handleSimpleTextRoot<T>(node: ParsedXmlValue, cls: new () => T): T {
   initializeArrayFields(target, fields);
   const textField = fields.find((f) => f.kind === "text");
   if (textField) {
-    target[textField.key] = castValue(node, resolveType(textField.type));
+    target[textField.key] = castText(node, textField);
   }
   return inst;
 }
@@ -554,10 +567,7 @@ export function unmarshal<T>(cls: new () => T, xml: string): T {
   // Bind text node
   const textField = fields.find((f) => f.kind === "text");
   if (textField && node["#text"] !== undefined) {
-    target[textField.key] = castValue(
-      node["#text"],
-      resolveType(textField.type)
-    );
+    target[textField.key] = castText(node["#text"], textField);
   }
 
   return inst;

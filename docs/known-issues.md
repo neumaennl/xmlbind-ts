@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T13:36:01Z }
-verified: { by: human:neumaennl, at: 2026-11-11T13:48:37Z }
+generated: { by: human:neumaennl, at: 2026-11-11T17:42:26Z }
+verified: { by: human:neumaennl, at: 2026-11-11T17:49:16Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -70,9 +70,6 @@ sources:
   - id: xmlattribute
     resource: ../src/decorators/XmlAttribute.ts
     title: "@XmlAttribute"
-  - id: xmltext
-    resource: ../src/decorators/XmlText.ts
-    title: "@XmlText"
   - id: xmlenum
     resource: ../src/decorators/XmlEnum.ts
     title: "@XmlEnum"
@@ -194,14 +191,6 @@ Effort:
 - **Description:** The class of a restricted complex type gets the attributes of its base, except those that the restriction redefines. The generator recognizes a redefinition only by an attribute with a `name` directly in the restriction, not by an attribute group or an attribute `ref`.[^gen-restriction] A restriction that repeats the `<xs:attributeGroup ref="common"/>` of its base therefore gets each attribute of `common` twice, once from the base and once from the restriction, and TypeScript rejects the class with a duplicate identifier. For the same reason, `<xs:attribute ref="lang" use="prohibited"/>` would not remove `lang`; today this is hidden because attribute references of the base are dropped anyway (see [A restriction drops the attribute references of its base](#a-restriction-drops-the-attribute-references-of-its-base)).
 - **GitHub issue:** none
 
-## Element text that looks like a number is converted
-
-- **Location:** `src/marshalling/unmarshal.ts` (the `XMLParser` options)
-- **Severity:** High
-- **Effort:** M
-- **Description:** `unmarshal()` parses the document with `fast-xml-parser` and its default `parseTagValue: true`, which converts element text that looks like a number before the field's type is applied. `String(7)` cannot restore `007`, so text changes even in fields with `type: String`: `<code>007</code>` becomes `"7"`, `1.50` becomes `"1.5"`, `1.0` becomes `"1"` and `0x1A` becomes `"26"`. The same happens to `@XmlText()` fields and to enum values such as `"1.0"`, in both decorator modes; `marshal()` then writes the changed text. Attribute values are not affected.[^unmarshal] The fix is to parse with `parseTagValue: false` and let the field's type convert the text; fields without a type would then get strings instead of numbers and booleans, which changes the behavior for Stage 3 decorators and for fields declared as `unknown` or a union.
-- **GitHub issue:** [#275](https://github.com/neumaennl/xmlbind-ts/issues/275)
-
 ## Namespace declarations below the root are not kept
 
 - **Location:** `src/marshalling/unmarshal.ts`, `src/marshalling/marshal.ts`, `src/marshalling/marshalContext.ts`
@@ -223,7 +212,7 @@ Effort:
 - **Location:** `src/util/valueCasting.ts` (`castValue()`, `serializePrimitive()`), `src/xsd/tsgen/types.ts`
 - **Severity:** High
 - **Effort:** M
-- **Description:** `castValue()` reads a `Date` field with `new Date(value)`, and `serializePrimitive()` writes it with `toISOString()`. The generator maps both `xs:date` and `xs:dateTime` to `Date`. An `xs:date` such as `2026-01-02` is therefore written as `2026-01-02T00:00:00.000Z`, which is not a valid `xs:date`; an `xs:dateTime` without a time zone, such as `2026-01-02T10:00:00`, is read as local time and written in UTC, `2026-01-02T09:00:00.000Z` on a machine in Central Europe, so the value depends on the machine and gets a time zone it did not have. A time zone offset in the source, such as `+02:00`, is converted to UTC as well.[^value-casting] A fix needs to know the XSD type of a field and keep the source's form, for example with a dedicated type instead of `Date`.
+- **Description:** `castValue()` reads a `Date` field, whether element, attribute or `@XmlText()` field, with `new Date(value)`, and `serializePrimitive()` writes it with `toISOString()`. The generator maps both `xs:date` and `xs:dateTime` to `Date`. An `xs:date` such as `2026-01-02` is therefore written as `2026-01-02T00:00:00.000Z`, which is not a valid `xs:date`; an `xs:dateTime` without a time zone, such as `2026-01-02T10:00:00`, is read as local time and written in UTC, `2026-01-02T09:00:00.000Z` on a machine in Central Europe, so the value depends on the machine and gets a time zone it did not have. A time zone offset in the source, such as `+02:00`, is converted to UTC as well.[^value-casting] A fix needs to know the XSD type of a field and keep the source's form, for example with a dedicated type instead of `Date`.
 - **GitHub issue:** none
 
 ## List types are not supported
@@ -344,14 +333,6 @@ Effort:
 - **Severity:** Medium
 - **Effort:** S
 - **Description:** `castValue()` converts an empty attribute value or empty element with `Number("")`, which gives `0`, and treats it as `false` for `Boolean`; `marshal()` then writes a value that was not in the source, such as `<n>0</n>` for `<n/>`. For `Date`, `new Date("")` gives an invalid date, and `marshal()` throws `RangeError: Invalid time value` from `toISOString()`, so a document with `<d/>` cannot be written back. Empty values are not valid for these XSD types, but they occur in practice; `undefined`, or keeping the empty string, would not invent a value.[^value-casting]
-- **GitHub issue:** none
-
-## `@XmlText()` fields are not converted to their type
-
-- **Location:** `src/decorators/XmlText.ts`, `src/marshalling/unmarshal.ts`
-- **Severity:** Medium
-- **Effort:** S
-- **Description:** `@XmlText()` has no `type` option and records no type, so `unmarshal()` does not convert the text. The generator nevertheless declares such fields with the base type of the simple content, for example `value?: Date` for `xs:date` or `value?: number` for `xs:decimal`: the `Date` field holds a string, and the number is a number only because the parser converted it (see [Element text that looks like a number is converted](#element-text-that-looks-like-a-number-is-converted)).[^xmltext]
 - **GitHub issue:** none
 
 ## `@XmlEnum` has no effect
@@ -713,8 +694,6 @@ Effort:
 [^gen-schema]: Index of the schema
 
 [^toplevel]: Top-level elements
-
-[^xmltext]: @XmlText
 
 [^entity-decoder]: Entity decoder of unmarshalling
 

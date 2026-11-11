@@ -2,8 +2,13 @@
 
 ## Unreleased (since 2.3.0)
 
+### Added
+
+- `@XmlText()` takes the options `type` and `allowStringFallback`, like `@XmlAttribute`, and with legacy decorators and `emitDecoratorMetadata` takes the type from the field's declaration. `xsd2ts` passes the type of simple content and of top-level elements with a simple type, as in `@XmlText({ type: Number })` for `xs:decimal`.
+
 ### Fixed
 
+- `unmarshal()` no longer converts element text that looks like a number before the field's type is applied, so `<code>007</code>` stays `"007"` in a `String` field, an `@XmlText()` field or an enum, and `marshal()` writes it back unchanged ([#275](https://github.com/neumaennl/xmlbind-ts/issues/275)).
 - `unmarshal()` decodes character references such as `&#65;` and `&#x41;` in attribute values and element text, so `marshal()` no longer writes them back as `&amp;#65;` ([#287](https://github.com/neumaennl/xmlbind-ts/issues/287)). HTML entities that XML does not define, such as `&nbsp;`, are still not decoded.
 - `marshal()` writes carriage returns as character references, so that they are read back unchanged instead of being normalized to line feeds.
 - `marshal()` writes the text of comments as it is instead of escaping it, so `<!-- a & <b> -->` keeps its text. A comment that contains `--` or ends with `-`, which XML cannot represent, throws an error instead of producing a document that is not well-formed ([#292](https://github.com/neumaennl/xmlbind-ts/issues/292)).
@@ -12,6 +17,9 @@
 
 ### Changed
 
+- Element text of a field without a type stays a string: `<count>42</count>` gives `"42"` and `<flag>true</flag>` gives `"true"` instead of a number or boolean. This affects Stage 3 decorators without the `type` option, fields declared as `unknown` or as a union, and wildcard elements. Pass `type: Number` or `type: Boolean` to get the converted value.
+- `marshal()` writes the text of an `@XmlText()` field like the value of an element: a `Date` with `toISOString()` instead of `toString()`.
+- An `@XmlText()` field of type `Date`, such as the `value` that `xsd2ts` generates for simple content of `xs:date`, holds a `Date` instead of the string from the document. Like `Date` elements and attributes, it is written back as a date and time in UTC, so `2026-01-02` becomes `2026-01-02T00:00:00.000Z`.
 - The `position` of a comment in `_comments` counts the child elements that are written, not the element fields, also on objects that the application creates: a comment is written after that many elements, and unset fields do not count.
 - The output of `marshal()` starts with a line break unless it starts with the XML declaration, and no longer ends with one. In mixed content whose first child is an element, a line with only spaces is written before that element.
 - A wildcard element with the name of a mapped element is written after the mapped elements instead of being merged with them, and a wildcard element whose key starts with `@_` or is `#text` throws an error.

@@ -4,8 +4,8 @@ title: Code generation
 description: How xsd2ts turns an XSD into decorated TypeScript classes - the command line and generateFromXsd(), the generated files, the mapping of names, types, elements, attributes, groups, references and derivations, and the XSD constructs it does not support.
 tags: [xsd2ts, generator, xsd, code-generation, cli]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T13:05:00Z }
-verified: { by: human:neumaennl, at: 2026-11-11T13:12:15Z }
+generated: { by: human:neumaennl, at: 2026-11-11T14:21:59Z }
+verified: { by: human:neumaennl, at: 2026-11-11T15:35:16Z }
 sources:
   - id: cli
     resource: ../src/xsd/cli.ts
@@ -154,7 +154,7 @@ Each named complex type becomes a class, and so does each top-level element. Eve
 | an anonymous simple type | a class with an `@XmlText()` field `value` |
 | no type at all, or a type from another schema | nothing |
 
-The table follows the generator's code for top-level elements.[^toplevel]
+The table follows the generator's code for top-level elements.[^toplevel] The field `value` has the TypeScript type of the simple type, and its `@XmlText()` gets the same `type` and `allowStringFallback` options as an attribute of that type, such as `@XmlText({ type: Number })` for `xs:decimal`; an enumeration gets no `type`.
 
 The classes of top-level elements also declare the field `_namespacePrefixes`, which `marshal()` reads (see [Marshalling](marshalling.md#namespaces-and-prefixes)).
 
@@ -184,7 +184,7 @@ References to `xs:group` and `xs:attributeGroup` are expanded: their elements an
 ## Mixed and simple content
 
 - **Mixed content** (`mixed="true"`) adds an `@XmlText()` field `value?: string` to the class's other properties (see [Marshalling](marshalling.md#binding) for how text is read).
-- **Simple content** (`xs:simpleContent`) becomes a class with an `@XmlText()` field `value`, typed with the base type, and the attributes of the extension or restriction. The `@XmlText()` decorator has no `type` option, so the text is not converted to that type (see [`@XmlText()` fields are not converted to their type](known-issues.md#xmltext-fields-are-not-converted-to-their-type)). If the base is itself a complex type with simple content, the class gets neither the base's attributes nor a valid type for `value` (see [Simple content derived from a complex type is wrong](known-issues.md#simple-content-derived-from-a-complex-type-is-wrong)).[^classgen]
+- **Simple content** (`xs:simpleContent`) becomes a class with an `@XmlText()` field `value`, typed with the base type, with the same `@XmlText()` options as for top-level elements, and the attributes of the extension or restriction. If the base is itself a complex type with simple content, the class gets neither the base's attributes nor a valid type for `value` (see [Simple content derived from a complex type is wrong](known-issues.md#simple-content-derived-from-a-complex-type-is-wrong)).[^classgen]
 
 # Derivation
 

@@ -10,6 +10,7 @@ import { extractEnumValues, generateEnumCode } from "./enum.js";
 import { toClassName } from "./codegen.js";
 import { ensureClassNoRoot, injectNamespacePrefixesField } from "./classgen.js";
 import type { GeneratorState, GenUnit } from "./codegen.js";
+import { buildXmlTextDecorator } from "./decorator-type-helpers.js";
 
 /**
  * Processes all top-level element declarations in the schema.
@@ -231,7 +232,7 @@ function createTextWrapperClass(
     })`
   );
   unit.lines.push(`export class ${className} {`);
-  unit.lines.push(`  @XmlText()`);
+  unit.lines.push(buildXmlTextDecorator(tsType, state));
   unit.lines.push(`  value?: ${tsType};`);
   unit.lines.push("}");
   injectNamespacePrefixesField(unit.lines, className);
@@ -302,7 +303,7 @@ function processElementWithInlineSimpleType(
     })`
   );
   unit.lines.push(`export class ${className} {`);
-  unit.lines.push(`  @XmlText()`);
+  unit.lines.push(buildXmlTextDecorator(tsType, state));
   unit.lines.push(`  value?: ${tsType};`);
   unit.lines.push("}");
   injectNamespacePrefixesField(unit.lines, className);

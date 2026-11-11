@@ -147,7 +147,7 @@ describe("XSD Generator advanced features", () => {
         generateFromXsd(XSD, tmp);
         const content = readFileSync(path.join(tmp, "ShoeSize.ts"), "utf8");
 
-        expect(content).toContain("@XmlText()");
+        expect(content).toContain("@XmlText({ type: Number })");
         expect(content).toContain("value?: number;");
 
         expect(content).toContain("@XmlAttribute('country')");
@@ -176,6 +176,60 @@ describe("XSD Generator advanced features", () => {
         expect(content).toContain("value?: string;");
 
         expect(content).toContain("@XmlAttribute('region')");
+      });
+    });
+
+    test("passes the type of a union base and allowStringFallback to @XmlText", async () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:simpleType name="Limit">
+    <xsd:union memberTypes="xsd:int">
+      <xsd:simpleType>
+        <xsd:restriction base="xsd:string">
+          <xsd:enumeration value="unbounded"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+    </xsd:union>
+  </xsd:simpleType>
+  <xsd:complexType name="MaxValue">
+    <xsd:simpleContent>
+      <xsd:extension base="Limit">
+        <xsd:attribute name="unit" type="xsd:string"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  <xsd:element name="MaxValue" type="MaxValue"/>
+</xsd:schema>`;
+
+      await withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const content = readFileSync(path.join(tmp, "MaxValue.ts"), "utf8");
+
+        expect(content).toContain("@XmlText({ type: Number, allowStringFallback: true })");
+        expect(content).toContain("value?: Limit;");
+      });
+    });
+
+    test("passes the type of a top-level element of a simple type to @XmlText", async () => {
+      const XSD = `<?xml version="1.0"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:element name="Amount" type="xsd:decimal"/>
+  <xsd:element name="Level">
+    <xsd:simpleType>
+      <xsd:restriction base="xsd:boolean"/>
+    </xsd:simpleType>
+  </xsd:element>
+</xsd:schema>`;
+
+      await withTmpDir((tmp) => {
+        generateFromXsd(XSD, tmp);
+        const amount = readFileSync(path.join(tmp, "Amount.ts"), "utf8");
+        const level = readFileSync(path.join(tmp, "Level.ts"), "utf8");
+
+        expect(amount).toContain("@XmlText({ type: Number })");
+        expect(amount).toContain("value?: number;");
+        expect(level).toContain("@XmlText({ type: Boolean })");
+        expect(level).toContain("value?: boolean;");
       });
     });
 

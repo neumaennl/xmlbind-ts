@@ -1,36 +1,23 @@
-import "reflect-metadata";
 import { ensureMeta, registerStage3Field } from "../metadata/MetadataRegistry.js";
+import { resolveFieldType } from "./fieldType.js";
 
 /**
- * Resolves the type for an attribute field: the explicit `options.type` takes
- * precedence; otherwise the TypeScript design type emitted by the compiler
- * (when `emitDecoratorMetadata: true`) is used via `reflect-metadata`.
+ * Resolves the type that an attribute field records; see `resolveFieldType()`.
+ * The design type `Object`, which TypeScript emits for unions such as
+ * `number | "unbounded"`, is ignored.
  *
- * Throws a TypeError when an explicit `options.type` is provided but conflicts
- * with the concrete TypeScript design type (e.g. `{ type: Number }` on a
- * `string` property). When the design type is `Object` — which TypeScript emits
- * for union types such as `number | "unbounded"` — no conflict is reported,
- * because the explicit type is a valid member of the union.
+ * @param options - The decorator options
+ * @param target - The prototype that declares the field
+ * @param propertyKey - The name of the field
+ * @returns The type of the field, or `undefined` if there is none
+ * @throws {TypeError} If `options.type` contradicts the declared type of the field
  */
 function resolveAttributeType(
   options: { type?: any } | undefined,
   target: object,
   propertyKey: string | symbol
 ): any {
-  const reflectedType = Reflect.getMetadata("design:type", target, propertyKey);
-  if (
-    options?.type !== undefined &&
-    reflectedType !== undefined &&
-    reflectedType !== Object &&
-    options.type !== reflectedType
-  ) {
-    throw new TypeError(
-      `@XmlAttribute: explicit type option "${options.type?.name}" conflicts with the` +
-      ` declared TypeScript type "${reflectedType?.name}" for property` +
-      ` "${String(propertyKey)}". Remove the type option or align it with the property declaration.`
-    );
-  }
-  return options?.type ?? reflectedType;
+  return resolveFieldType("@XmlAttribute", options, target, propertyKey, [Object]);
 }
 
 /**
