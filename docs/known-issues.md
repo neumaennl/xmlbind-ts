@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T13:05:00Z }
-verified: { by: human:neumaennl, at: 2026-11-11T13:12:15Z }
+generated: { by: human:neumaennl, at: 2026-11-11T13:36:01Z }
+verified: { by: human:neumaennl, at: 2026-11-11T13:48:37Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -527,7 +527,7 @@ Effort:
 - **Location:** `src/decorators/`
 - **Severity:** Low
 - **Effort:** M
-- **Description:** Each of the seven decorators repeats the same three branches: one for Stage 3 decorators, one for legacy decorators, and a fallback that returns another decorator function. The legacy and fallback branches build the same field entry twice. The fallback cannot be reached through decorator syntax; only tests that call the decorator functions directly reach it.[^decorators] A shared helper that detects the kind of decorator and registers a field entry would remove the duplication.
+- **Description:** Each of the seven decorators repeats the same three branches: one for Stage 3 decorators, one for legacy decorators, and a fallback that returns another decorator function. The legacy and fallback branches build the same field entry twice. The fallback cannot be reached through decorator syntax; only tests that call the decorator functions directly reach it.[^decorators] A shared helper that detects the kind of decorator and registers a field entry would remove the duplication. Once duplicates are [detected automatically](#duplicated-code-is-not-detected-automatically), the fix also lowers the threshold of that check.
 - **GitHub issue:** none
 
 ## Unmarshalling duplicates code for the root and nested elements
@@ -535,7 +535,7 @@ Effort:
 - **Location:** `src/marshalling/unmarshal.ts`, `src/marshalling/elementOrderUtils.ts`, `src/marshalling/commentUtils.ts`, `src/marshalling/marshal.ts`
 - **Severity:** Low
 - **Effort:** M
-- **Description:** `unmarshal()` binds elements twice (`bindRootElements()` and `bindFieldsToTarget()`), and the walk through the document-order tree is written out five times. `marshal()` uses one code path for the root and nested elements, but `mergeChildPrefixes()` still runs only for the root's single-valued fields, which is probably accidental, and `valueEntries()` looks up the metadata of a class again for every occurrence of an element.[^unmarshal]
+- **Description:** `unmarshal()` binds elements twice (`bindRootElements()` and `bindFieldsToTarget()`), and the walk through the document-order tree is written out five times. `marshal()` uses one code path for the root and nested elements, but `mergeChildPrefixes()` still runs only for the root's single-valued fields, which is probably accidental, and `valueEntries()` looks up the metadata of a class again for every occurrence of an element.[^unmarshal] Once duplicates are [detected automatically](#duplicated-code-is-not-detected-automatically), the fix also lowers the threshold of that check.
 - **GitHub issue:** none
 
 ## Default and fixed values are ignored
