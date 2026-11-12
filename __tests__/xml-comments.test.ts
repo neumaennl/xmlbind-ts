@@ -432,4 +432,23 @@ describe("Positions of comments", () => {
       ]);
     });
   }, 30000);
+
+  test("keeps comments next to the elements from the source when elements are added", () => {
+    const obj = unmarshal(Repeated, "<R><!--c0--><b>x</b><!--c1--></R>");
+    obj.a = ["1"];
+    obj.c = "y";
+
+    expect(marshal(obj)).toBe(
+      "\n<R>\n  <a>1</a>\n  <!--c0-->\n  <b>x</b>\n  <c>y</c>\n  <!--c1-->\n</R>"
+    );
+  });
+
+  test("keeps a comment before the element it preceded when an element is added before it", () => {
+    const obj = unmarshal(Repeated, "<R><a>1</a><!--c--><c>y</c></R>");
+    obj.b = "x";
+
+    expect(marshal(obj)).toBe(
+      "\n<R>\n  <a>1</a>\n  <b>x</b>\n  <!--c-->\n  <c>y</c>\n</R>"
+    );
+  });
 });

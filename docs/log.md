@@ -1,5 +1,9 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-12
+* **Update**: [Known issues](known-issues.md#nested-objects-take-their-order-and-comments-from-another-element-with-the-same-local-name): new entry "Nested objects take their order and comments from another element with the same local name", found while analysing the round-trip design.
+* **Update**: [Marshalling](marshalling.md#order-and-comments) describes that `marshal()` writes a field whose element was not in the source before the earliest written field from the source that the class declares after it, and that elements of such fields do not count for the positions of comments. Removed "Children that were not in the source are written after all others" from [Known issues](known-issues.md) ([#296](https://github.com/neumaennl/xmlbind-ts/issues/296)), and "Comments move when elements are reordered or dropped" mentions occurrences added to a field from the source.
+
 ## 2026-11-11
 * **Update**: [Known issues](known-issues.md#children-that-were-not-in-the-source-are-written-after-all-others): "Children that were not in the source are written after all others" links [#296](https://github.com/neumaennl/xmlbind-ts/issues/296).
 * **Update**: [Known issues](known-issues.md#children-that-were-not-in-the-source-are-written-after-all-others): new entry "Children that were not in the source are written after all others", found in the editor, where an attribute added to a complex type with `xs:anyAttribute` is written after it.

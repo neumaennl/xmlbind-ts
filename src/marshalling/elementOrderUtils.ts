@@ -303,10 +303,24 @@ export function mergeElementsByDocumentOrder(
 }
 
 /**
- * Sort element fields by the stored element order
- * @param elementFields - Array of field metadata for element fields
- * @param elementOrder - Array of element names in the desired order
- * @returns Sorted array of field metadata
+ * Returns the local name of the element that a field maps.
+ * @param field - The field metadata
+ * @returns The local element name
+ */
+export function fieldLocalName(field: FieldMeta): string {
+  return getLocalName(field.name || field.key);
+}
+
+/**
+ * Sorts element fields by the stored element order. The fields whose element
+ * occurs in `elementOrder` are sorted by the position of its first
+ * occurrence. Each other field is placed before the earliest written of these
+ * fields that the class declares after it, or at the end if there is none, so that
+ * an element added to an unmarshalled object is written where the class
+ * declares it. Fields that share a place keep their declared order.
+ * @param elementFields - The element fields in declared order
+ * @param elementOrder - The local names of the child elements in document order
+ * @returns The sorted fields
  */
 export function sortFieldsByElementOrder(
   elementFields: FieldMeta[],
@@ -316,33 +330,27 @@ export function sortFieldsByElementOrder(
     return elementFields;
   }
 
-  // Create a map of element name to its first position in elementOrder
   const orderMap = new Map<string, number>();
   elementOrder.forEach((name, index) => {
     const localName = getLocalName(name);
-    if (!orderMap.has(localName)) {
-      orderMap.set(localName, index);
-    }
+    if (!orderMap.has(localName)) orderMap.set(localName, index);
+  });
+  const positions = elementFields.map((f) => orderMap.get(fieldLocalName(f)));
+
+  // A field that is not in the source gets the smallest position of the
+  // recorded fields declared after it, and goes before that field.
+  const places = positions.map((position, i) => {
+    if (position !== undefined) return { position, added: false, index: i };
+    const later = positions.slice(i + 1).filter((p) => p !== undefined);
+    const anchor = later.length > 0 ? Math.min(...later) : Infinity;
+    return { position: anchor, added: true, index: i };
   });
 
-  // Sort fields: those in elementOrder come first (by position), others come after (in original order)
-  const inOrder: Array<{ field: FieldMeta; position: number }> = [];
-  const notInOrder: FieldMeta[] = [];
-
-  elementFields.forEach(field => {
-    const fieldName = field.name || field.key;
-    const localName = getLocalName(fieldName);
-    const position = orderMap.get(localName);
-    
-    if (position !== undefined) {
-      inOrder.push({ field, position });
-    } else {
-      notInOrder.push(field);
-    }
-  });
-
-  // Sort fields in elementOrder by their position
-  inOrder.sort((a, b) => a.position - b.position);
-
-  return [...inOrder.map(item => item.field), ...notInOrder];
+  places.sort(
+    (a, b) =>
+      a.position - b.position ||
+      Number(b.added) - Number(a.added) ||
+      a.index - b.index
+  );
+  return places.map((p) => elementFields[p.index]);
 }

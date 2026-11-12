@@ -1,5 +1,12 @@
 import { unmarshal, marshal } from "../src/marshalling/index.js";
 import { XmlRoot, XmlElement } from "../src/decorators/index.js";
+import { readFileSync } from "fs";
+import path from "path";
+import { withTmpDir } from "./test-utils/temp-dir.js";
+import {
+  setupGeneratedRuntime,
+  loadGeneratedClasses,
+} from "./test-utils/generated-runtime.js";
 
 describe("Element Order Preservation", () => {
   test("should preserve element order in unmarshal/marshal roundtrip", () => {
@@ -60,7 +67,8 @@ describe("Element Order Preservation", () => {
     // Add C after unmarshalling
     obj.c = "value-c";
 
-    // Marshal should preserve B, A order and append C at the end
+    // Marshal should preserve B, A order and write C after them, because no
+    // field from the source is declared after it
     const outputXml = marshal(obj);
     
     const posB = outputXml.indexOf("<B>");
@@ -235,4 +243,88 @@ describe("Element Order Preservation", () => {
     expect(outputXml.indexOf("<B>")).toBe(-1);
     expect(outputXml.indexOf("<D>")).toBe(-1);
   });
+});
+
+@XmlRoot("R")
+class Declared {
+  @XmlElement("a")
+  a?: string;
+
+  @XmlElement("n")
+  n?: string;
+
+  @XmlElement("m")
+  m?: string;
+
+  @XmlElement("b")
+  b?: string;
+
+  @XmlElement("c", { type: String, array: true })
+  c?: string[];
+}
+
+/**
+ * Unmarshals a document of `Declared`, sets the given properties and marshals it.
+ *
+ * @param xml - The source document
+ * @param props - The element values to add
+ * @returns The marshalled document
+ */
+function addAndMarshal(xml: string, props: Partial<Declared>): string {
+  return marshal(Object.assign(unmarshal(Declared, xml), props));
+}
+
+describe("Elements that were not in the source", () => {
+  test("are written before the first field from the source that is declared after them", () => {
+    expect(addAndMarshal("<R><a>1</a><b>2</b></R>", { n: "x" })).toBe(
+      "\n<R>\n  <a>1</a>\n  <n>x</n>\n  <b>2</b>\n</R>"
+    );
+  });
+
+  test("are written first when they are declared before all fields from the source", () => {
+    expect(addAndMarshal("<R><b>2</b></R>", { a: "x" })).toBe(
+      "\n<R>\n  <a>x</a>\n  <b>2</b>\n</R>"
+    );
+  });
+
+  test("keep their declared order when they share a place", () => {
+    expect(addAndMarshal("<R><a>1</a><b>2</b></R>", { m: "y", n: "x" })).toBe(
+      "\n<R>\n  <a>1</a>\n  <n>x</n>\n  <m>y</m>\n  <b>2</b>\n</R>"
+    );
+  });
+
+  test("are written before the earliest written field that is declared after them", () => {
+    expect(addAndMarshal("<R><c>1</c><b>2</b></R>", { n: "x" })).toBe(
+      "\n<R>\n  <n>x</n>\n  <c>1</c>\n  <b>2</b>\n</R>"
+    );
+  });
+
+  test("are written before xs:anyAttribute with the classes generated from XMLSchema.xsd", async () => {
+    await withTmpDir(async (tmpDir) => {
+      const xsdPath = path.join(__dirname, "test-resources", "XMLSchema.xsd");
+      setupGeneratedRuntime(tmpDir, [readFileSync(xsdPath, "utf-8")]);
+      const { schema: Schema, attribute: Attribute } = await loadGeneratedClasses(tmpDir, [
+        "schema",
+        "attribute",
+      ]);
+      const xsd = `<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="t">
+    <xs:complexContent>
+      <xs:extension base="xs:anyType">
+        <xs:sequence/>
+        <xs:anyAttribute/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+</xs:schema>`;
+
+      const schema = unmarshal(Schema, xsd) as any;
+      const extension = schema.complexType[0].complexContent.extension;
+      extension.attribute = [Object.assign(new Attribute(), { name: "a" })];
+
+      expect(marshal(schema)).toMatch(
+        /<xs:sequence\/>\s*<xs:attribute name="a"\/>\s*<xs:anyAttribute\/>/
+      );
+    });
+  }, 30000);
 });

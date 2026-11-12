@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T19:44:14Z }
-verified: { by: human:neumaennl, at: 2026-11-11T19:45:16Z }
+generated: { by: human:neumaennl, at: 2026-11-12T08:38:06Z }
+verified: { by: human:neumaennl, at: 2026-11-12T08:38:06Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -246,7 +246,7 @@ Effort:
 - **Location:** `src/marshalling/commentUtils.ts`, `src/marshalling/marshal.ts` (`writeElements()`)
 - **Severity:** High
 - **Effort:** M
-- **Description:** `unmarshal()` records the position of a comment as the number of child elements before it, and `marshal()` writes the comment after the same number of mapped elements, or after the last one if it writes fewer. When `marshal()` writes the elements in a different order or leaves some out, the comment keeps its count but gets other neighbours: in `<a>1</a><b>x</b><!--c--><a>2</a>`, the occurrences of `a` are written together and `c` ends up between the second `a` and `b`. Wildcard and unmapped elements count as well, but wildcard elements are written after the mapped ones and unmapped ones not at all, so a comment after them moves forward: in `<a/><u/><!--c--><b/>` with an unmapped `u`, `c` is written after `b`.[^comments] The fix belongs together with [Elements are reordered when occurrences are not contiguous](#elements-are-reordered-when-occurrences-are-not-contiguous).
+- **Description:** `unmarshal()` records the position of a comment as the number of child elements before it, and `marshal()` writes the comment after the same number of mapped elements, or after the last one if it writes fewer. When `marshal()` writes the elements in a different order or leaves some out, the comment keeps its count but gets other neighbours: in `<a>1</a><b>x</b><!--c--><a>2</a>`, the occurrences of `a` are written together and `c` ends up between the second `a` and `b`. Wildcard and unmapped elements count as well, but wildcard elements are written after the mapped ones and unmapped ones not at all, so a comment after them moves forward: in `<a/><u/><!--c--><b/>` with an unmapped `u`, `c` is written after `b`. Occurrences that an application adds to a field from the source count as well, so a comment after them moves back: with `<a>1</a><!--c--><b/>`, adding a second `a` writes `c` between the two.[^comments] The fix belongs together with [Elements are reordered when occurrences are not contiguous](#elements-are-reordered-when-occurrences-are-not-contiguous).
 - **GitHub issue:** none
 
 ## Elements are reordered when occurrences are not contiguous
@@ -321,14 +321,6 @@ Effort:
 - **Description:** `castValue()` converts an empty attribute value or empty element with `Number("")`, which gives `0`, and treats it as `false` for `Boolean`; `marshal()` then writes a value that was not in the source, such as `<n>0</n>` for `<n/>`. For `Date`, `new Date("")` gives an invalid date, and `marshal()` throws `RangeError: Invalid time value` from `toISOString()`, so a document with `<d/>` cannot be written back. Empty values are not valid for these XSD types, but they occur in practice; `undefined`, or keeping the empty string, would not invent a value.[^value-casting]
 - **GitHub issue:** none
 
-## Children that were not in the source are written after all others
-
-- **Location:** `src/marshalling/elementOrderUtils.ts` (`sortFieldsByElementOrder()`)
-- **Severity:** Medium
-- **Effort:** S
-- **Description:** `marshal()` sorts the fields by the element order that `unmarshal()` recorded, and writes the fields whose elements were not in the source after all others, instead of at the place that the class declares for them. When an application adds the first child of a new kind to an unmarshalled object, it is written at the end, which the schema may not allow: adding an `xs:attribute` to `<xs:extension base="B"><xs:sequence/><xs:anyAttribute/></xs:extension>` with the classes generated from `XMLSchema.xsd` writes `<xs:sequence/><xs:anyAttribute/><xs:attribute name="a"/>`, which is invalid because attributes must come before `xs:anyAttribute`.[^element-order] The fix is to write such a field before the first recorded field that the class declares after it.
-- **GitHub issue:** [#296](https://github.com/neumaennl/xmlbind-ts/issues/296)
-
 ## `@XmlEnum` has no effect
 
 - **Location:** `src/decorators/XmlEnum.ts`
@@ -343,6 +335,14 @@ Effort:
 - **Severity:** Medium
 - **Effort:** M
 - **Description:** `unmarshal()` resolves the namespace of an unprefixed child element with the declarations of its parent, not with a default namespace declared on the element itself. In `<R xmlns="urn:a"><e xmlns="urn:z">3</e></R>`, the element `e` is in `urn:z`, but a field `@XmlElement("e", { namespace: "urn:a" })` reads it.[^namespace-helpers]
+- **GitHub issue:** none
+
+## Nested objects take their order and comments from another element with the same local name
+
+- **Location:** `src/marshalling/unmarshal.ts` (`attachObjectMetadata()`), `src/marshalling/elementOrderUtils.ts` (`extractNestedElementOrder()`), `src/marshalling/commentUtils.ts` (`extractNestedComments()`)
+- **Severity:** Medium
+- **Effort:** M
+- **Description:** `unmarshal()` reads the order of the child elements and the comments of a nested single-valued element from its second parse, by walking down the path of local names and taking the first element with each name. If an element in another namespace with the same local name comes first, the object gets that element's order and comments: with `<R xmlns:e="urn:e"><e:x><!--c--><b/><a/></e:x><x><a/><b/></x></R>`, a field `x` and a wildcard field, `x` gets the comment `c` and the order `b, a`, and `marshal()` writes `<x><!--c--><b/><a/></x>`.[^unmarshal] The values come from the right element, because the first parse matches namespaces.
 - **GitHub issue:** none
 
 ## Elements without a namespace are written into the default namespace

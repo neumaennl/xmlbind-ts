@@ -5,7 +5,11 @@ import { resolveType } from "../util/typeResolution.js";
 import { isNamespaceDeclaration } from "../util/namespaceUtils.js";
 import { isPrimitiveCtor } from "./types.js";
 import { hasPositionedComments, groupCommentsByPosition } from "./commentUtils.js";
-import { sortFieldsByElementOrder } from "./elementOrderUtils.js";
+import {
+  fieldLocalName,
+  getLocalName,
+  sortFieldsByElementOrder,
+} from "./elementOrderUtils.js";
 import { qName, type NsContext } from "./marshalContext.js";
 import {
   comment,
@@ -111,8 +115,11 @@ function writeCommentsAt(
 /**
  * Writes the element fields of an object in the order of `_elementOrder`,
  * with the comments of `_comments`. A comment with a position is written
- * after as many child elements as its position says, or after the last
- * element if there are fewer; plain comment texts are written after the
+ * before the element that follows as many counted elements as its position
+ * says, or after the last element if there are fewer. On an unmarshalled
+ * object, only the elements of fields that occur in `_elementOrder` count,
+ * so that elements the application adds do not move the comments; on other
+ * objects, all elements count. Plain comment texts are written after the
  * elements.
  * @param children - The child entries to add to
  * @param obj - The source object
@@ -128,10 +135,15 @@ function writeElements(
   ctx: NsContext,
   isRoot: boolean
 ): void {
+  const elementOrder: string[] | undefined = obj._elementOrder;
   const elementFields = sortFieldsByElementOrder(
     fields.filter((f) => f.kind === "element"),
-    obj._elementOrder
+    elementOrder
   );
+  const recorded =
+    Array.isArray(elementOrder) && elementOrder.length > 0
+      ? new Set(elementOrder.map(getLocalName))
+      : undefined;
   const commentsData = obj._comments;
   const positioned = hasPositionedComments(commentsData);
   const commentsByPosition = positioned
@@ -139,13 +151,13 @@ function writeElements(
     : new Map<number, string[]>();
 
   let written = 0;
-  writeCommentsAt(children, commentsByPosition, written);
   for (const f of elementFields) {
     const val = obj[f.key];
     if (val === undefined) continue;
+    const counted = !recorded || recorded.has(fieldLocalName(f));
     for (const entry of fieldEntries(f, val, ctx, isRoot)) {
+      if (counted) writeCommentsAt(children, commentsByPosition, written++);
       children.push(entry);
-      writeCommentsAt(children, commentsByPosition, ++written);
     }
   }
   const remaining = [...commentsByPosition.keys()]
