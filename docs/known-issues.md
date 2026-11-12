@@ -4,8 +4,8 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-12T08:38:06Z }
-verified: { by: human:neumaennl, at: 2026-11-12T08:38:06Z }
+generated: { by: human:neumaennl, at: 2026-11-12T10:52:14Z }
+verified: { by: human:neumaennl, at: 2026-11-12T10:55:02Z }
 sources:
   - id: registry
     resource: ../src/metadata/MetadataRegistry.ts
@@ -96,6 +96,8 @@ sources:
 # Purpose
 
 This list collects problems that were found but not fixed, so they are not forgotten. It grows when new problems are found and shrinks when they are fixed. Not every entry needs a GitHub issue; when one is created, it is linked from the entry.
+
+xmlbind-ts is reimplemented as version 3 ([#299](https://github.com/neumaennl/xmlbind-ts/issues/299)). The entries describe 2.x, which gets no more fixes after 2.4.0 ([#298](https://github.com/neumaennl/xmlbind-ts/issues/298)). They are requirements of version 3, and the GitHub issues of 2.x that were closed for it stay linked here.
 
 Rules:
 
