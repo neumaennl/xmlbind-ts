@@ -3,8 +3,9 @@ type: Guideline
 title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
-status: draft
-generated: { by: human:neumaennl, at: 2026-11-10T19:40:48Z }
+status: stable
+generated: { by: human:neumaennl, at: 2026-11-12T15:12:04Z }
+verified: { by: human:neumaennl, at: 2026-11-12T15:14:57Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -90,8 +91,13 @@ The documentation of the library and the generator is the knowledge bundle in `d
 - **Workarounds for dependencies.** A workaround for a problem in a dependency gets a known issue that links the upstream issue and lists what to remove, a test in `__tests__/upstream-behavior.test.ts` that fails when the dependency fixes the problem (see [Testing](testing.md#kinds-of-tests)), and a comment `Upstream: <repo>#<number>` at the code it affects.
 - **New documents** get front matter (`type`, `title`, a one-sentence `description`, `tags`, `status`, `generated`, `sources`), an entry in the index with the same description, and a log entry.
 - **Sources.** Each source has an `id`, a relative `resource` and a `title`. Important statements get a footnote `[^id]` whose text is the title of the source. Separate the footnote definitions with blank lines.
-- **Format.** Files use LF line endings, which `.gitattributes` (`* text=auto`) makes Git store for every text file. Links are relative; code and file paths are formatted as code, without line numbers. A document describes the current state and decided future work, not its own history; the history goes into the log. No volatile numbers such as test counts or durations.
+- **Format.** Files use LF line endings, which `.gitattributes` (`* text=auto`) makes Git store for every text file. Links are relative; code and file paths are formatted as code, without line numbers. A document describes the current state and decided future work, not its own history; the history goes into the log. The rejected alternatives of an ADR are reasons, not history. No volatile numbers such as test counts or durations.
 - **Diagrams.** Mermaid diagrams use one arrow with a combined label for both directions, so that labels do not overlap. Check that a diagram renders with `npx -y @mermaid-js/mermaid-cli -i diagram.mmd -o diagram.png`.
+- **Architecture decisions** are recorded as Architecture Decision Records (ADRs) in `docs/architecture/`, one decision per file, named `NNN-title.md` with a three-digit number in the order they are written. Numbers are not reused. A decision gets an ADR if it is hard to reverse, shapes several parts of the code or the public API, or has reasons that would otherwise get lost, such as an alternative that was rejected but may look attractive later. Smaller decisions are described in the document of the part they concern.
+  - **Form.** The front matter is that of every new document, with `type: Architecture Decision Record` and the title `ADR NNN: <title>`. Below the heading follow `**Status:**` (Proposed or Accepted), `**Date:**` (when the decision was accepted or last changed) and `**Issue:**` (the GitHub issue, if there is one). The sections are Context, Decision, Reasons, Consequences, Rejected alternatives and Review (when to check whether the decision still holds); further sections where the decision needs them.
+  - **Status.** A new ADR has the status Proposed and becomes Accepted when the maintainer approves the decision. Whether the text is approved is shown by `status` and `verified` in the front matter, as for every document.
+  - **Living documents.** When a decision changes, its ADR is updated in the same change. The former decision moves to the rejected alternatives, with the reason it was given up, and the log records the change. An ADR whose decision no longer applies at all is removed.
+  - **Links.** The documents that describe the code link the ADRs that explain why it is built that way, and do not repeat their reasons.
 - **README, contributing and changelog.** `README.md` is written for users and describes the state of the branch it is on; information for contributors goes into [`CONTRIBUTING.md`](../CONTRIBUTING.md). `CHANGELOG.md` records the functional changes of the package under "Unreleased"; changes of the documentation only go into [the log](log.md).
 
 # Before committing
