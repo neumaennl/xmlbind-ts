@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased (since 2.3.0)
+## Unreleased (since 2.4.0)
+
+## 2.4.0 (2026-11-12)
 
 ### Added
 
