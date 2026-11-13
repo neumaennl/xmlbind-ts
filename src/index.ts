@@ -1,43 +1,7 @@
 /**
- * @module @neumaennl/xmlbind-ts
+ * Entry point of `@neumaennl/xmlbind-ts`.
  *
- * TypeScript XML binding library with XSD schema code generation.
- *
- * This library provides:
- * - Decorators for defining XML mappings on TypeScript classes
- * - Marshal and unmarshal functions for XML serialization
- * - XSD-to-TypeScript code generator (xsd2ts)
- *
- * @example
- * ```typescript
- * import { XmlRoot, XmlElement, XmlAttribute, marshal, unmarshal } from '@neumaennl/xmlbind-ts';
- *
- * @XmlRoot('Person')
- * class Person {
- *   @XmlAttribute('id')
- *   id!: string;
- *
- *   @XmlElement('Name')
- *   name!: string;
- * }
- *
- * const person = new Person();
- * person.id = '123';
- * person.name = 'John';
- *
- * const xml = marshal(person);
- * const obj = unmarshal(Person, xml);
- * ```
+ * Version 3 is reimplemented in parts (see `docs/architecture/001-reimplementation.md`).
+ * The parts add their public API here; until then, the package exports nothing.
  */
-
-export * from "./decorators/index.js";
-export * from "./marshalling/index.js";
-// Explicit list, so internal helpers of the registry stay private.
-export {
-  ensureMeta,
-  getMeta,
-  allMeta,
-  META,
-  getAllFields,
-} from "./metadata/MetadataRegistry.js";
-export * from "./xsd/TsGenerator.js";
+export {};

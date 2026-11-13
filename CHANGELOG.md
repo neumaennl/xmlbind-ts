@@ -2,6 +2,10 @@
 
 ## Unreleased (since 2.4.0)
 
+### Removed
+
+- The implementation of 2.x: the decorators, `marshal()`, `unmarshal()`, the metadata registry, `generateFromXsd()` and the command `xsd2ts`, with all runtime dependencies. Version 3 reimplements xmlbind-ts in parts ([#299](https://github.com/neumaennl/xmlbind-ts/issues/299)); until then, the package exports nothing.
+
 ## 2.4.0 (2026-11-12)
 
 ### Added

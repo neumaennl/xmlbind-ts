@@ -4,8 +4,8 @@ title: "ADR 001: Reimplementation of xmlbind-ts as version 3"
 description: The decision to replace 2.x by a reimplementation as version 3.0.0 instead of fixing its known issues one by one, with the principles that version 3 follows, its parts and their order, how the branch starts, and the rejected alternatives.
 tags: [adr, architecture, reimplementation, roadmap, round-trip]
 status: stable
-generated: { by: human:neumaennl, at: 2026-11-13T09:58:53Z }
-verified: { by: human:neumaennl, at: 2026-11-13T10:31:53Z }
+generated: { by: human:neumaennl, at: 2026-11-13T13:07:55Z }
+verified: { by: human:neumaennl, at: 2026-11-13T13:07:55Z }
 sources:
   - id: issue-299
     resource: https://github.com/neumaennl/xmlbind-ts/issues/299
@@ -171,6 +171,7 @@ Each part then adds its code, its tests and the document that describes its code
 - Applications that use 2.x have to migrate to the new API of version 3.
 - Each part names the known issues of 2.4.0 that it handles. Part 11 checks that every entry is handled.
 - The documents of the knowledge bundle describe only what exists on the branch. Each part writes or updates the documents of its code.
+- Documents changed on the branch stay `status: draft` until they will not change much anymore; they are not set to `stable` after each approved step.
 - Decisions of the parts are recorded as further ADRs in this folder. They follow the principles of this ADR; where one cannot, this ADR is updated first.
 
 ## Rejected alternatives

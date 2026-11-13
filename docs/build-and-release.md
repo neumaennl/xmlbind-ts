@@ -3,9 +3,8 @@ type: Build
 title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
-status: stable
-generated: { by: human:neumaennl, at: 2026-11-11T17:58:47Z }
-verified: { by: human:neumaennl, at: 2026-11-11T18:00:25Z }
+status: draft
+generated: { by: human:neumaennl, at: 2026-11-13T12:50:20Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -76,7 +75,7 @@ This document describes how the package is built, checked, packaged and publishe
 | `tsconfig.scripts.json` | `scripts/` | type-checking the scripts, which Node.js runs directly as TypeScript; only erasable syntax is allowed |
 | `tsconfig.json` | — | references the build, test and scripts configurations, for editors and `tsc --build` |
 
-The build configuration enables `experimentalDecorators` and `emitDecoratorMetadata`, but the library itself declares no decorated classes, so these options do not affect the output.[^tsconfig-build] Which decorators an application uses depends on its own configuration (see [Decorators](decorators.md#legacy-and-stage-3-decorators)). No script or CI step uses `tsconfig.test.json` (see [Tests are not type-checked](known-issues.md#tests-are-not-type-checked)).[^tsconfig-test]
+The build configuration enables `experimentalDecorators` and `emitDecoratorMetadata`, but the library itself declares no decorated classes, so these options do not affect the output.[^tsconfig-build] Which decorators an application uses depends on its own configuration; both kinds are supported ([ADR 001](architecture/001-reimplementation.md#principles)). No script or CI step uses `tsconfig.test.json` (see [Tests are not type-checked](known-issues.md#tests-are-not-type-checked)).[^tsconfig-test]
 
 `tsconfig.target.json` contains only `target` and `lib`, both set to the ECMAScript edition of the supported Node.js version, for example `ES2024` for Node.js 24.[^tsconfig-target] The edition is the `target` of the [`@tsconfig/bases`](https://github.com/tsconfig/bases) configuration for that version. Its `ESNext.*` libraries are left out, because their content changes with every TypeScript release, and so are its other options, such as `module` and `strict`, because they change between Node.js versions and the project sets its own. The build and the scripts extend the file, the Vitest plugin compiles the tests with its target (see [Testing](testing.md#two-vitest-projects)), and the tests that compile generated classes use its target and libraries. The code therefore uses only syntax and library features that the oldest supported Node.js version has, and `dist/` needs no newer runtime than `engines.node` declares. `npm run node:update` writes the file and `npm run node:check` checks it (see [Node.js version](#nodejs-version)).
 
@@ -86,11 +85,10 @@ The scripts are TypeScript that Node.js runs without compiling, which it can fro
 
 The package `@neumaennl/xmlbind-ts` is an ES module only (`"type": "module"`):[^manifest]
 
-- `exports` has one entry, `.`, with `dist/index.js` and its declarations `dist/index.d.ts`; `main` and `types` point to the same files.
-- `bin` registers `xsd2ts` as `dist/xsd/cli.js`, which starts with `#!/usr/bin/env node`.
+- `exports` has one entry, `.`, with `dist/index.js` and its declarations `dist/index.d.ts`; `main` and `types` point to the same files. While version 3 is reimplemented, the entry point exports nothing, and the package has no runtime dependencies and no command; the parts add them ([ADR 001](architecture/001-reimplementation.md#how-the-branch-starts)).
 - CommonJS code can load it with `import()`, or with `require()` on Node.js versions that support `require()` of ES modules, which all supported versions do.
 
-What goes into the package is decided by `.npmignore`, a list of exclusions: everything that is not listed is packed.[^npmignore] Besides `dist/`, the package therefore also contains the documentation in `docs/`, `AGENTS.md`, `.github/`, `.gitattributes`, `tsconfig.build.json`, `tsconfig.target.json`, `tsconfig.test.json`, `vitest.setup.ts` and the TypeScript build information files, and any untracked files that happen to lie in the checkout (see [The package contents are defined by a list of exclusions](known-issues.md#the-package-contents-are-defined-by-a-list-of-exclusions)). `npm pack --dry-run` lists the files.
+What goes into the package is decided by `.npmignore`, a list of exclusions: everything that is not listed is packed.[^npmignore] Besides `dist/`, the package therefore also contains the documentation in `docs/`, `AGENTS.md`, `.github/`, `.gitattributes`, `tsconfig.build.json`, `tsconfig.target.json`, `tsconfig.test.json` and the TypeScript build information files, and any untracked files that happen to lie in the checkout (see [The package contents are defined by a list of exclusions](known-issues.md#the-package-contents-are-defined-by-a-list-of-exclusions)). `npm pack --dry-run` lists the files.
 
 # Publishing
 
@@ -135,7 +133,7 @@ The project's own settings:
 - `any` is allowed (see [`any` is used widely](known-issues.md#any-is-used-widely));
 - `vitest/expect-expect` accepts the assertion helpers of the tests;
 - `vitest/no-importing-vitest-globals` reports imports of `test`, `expect`, `vi` and the rest of Vitest's API, which the tests use as globals (`globals: true` in `vitest.config.ts`); types such as `Mock` are still imported;
-- `@typescript-eslint/no-floating-promises` reports promises that are neither awaited nor handled, because their errors would be lost; in the tests, a failing assertion in `withTmpDir()` would not fail its test. The rule needs type information, which ESLint takes from the projects that `tsconfig.json` references; `vitest.config.ts` and `vitest.setup.ts`, which none of them includes, are checked without a project;
+- `@typescript-eslint/no-floating-promises` reports promises that are neither awaited nor handled, because their errors would be lost; in the tests, a failing assertion in `withTmpDir()` would not fail its test. The rule needs type information, which ESLint takes from the projects that `tsconfig.json` references; `vitest.config.ts`, which none of them includes, is checked without a project;
 - `.js`, `.cjs`, `.mts` and `.cts` files are not allowed at all, because the package is an ES module and needs no other kinds of files;
 - `dist/`, `coverage/`, `test-results/` and folders named `generated/` are ignored.
 
@@ -143,7 +141,7 @@ ESLint does not check the size limits of the guidelines yet (see [ESLint does no
 
 # CI
 
-The workflow `CI` runs on pushes to `main`, on pull requests into `main`, and weekly on Mondays at 06:00 UTC.[^ci] It has two jobs:
+The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch of version 3 ([ADR 001](architecture/001-reimplementation.md)), on pull requests into `main`, and weekly on Mondays at 06:00 UTC.[^ci] It has two jobs:
 
 | Job | Runs | Steps |
 |---|---|---|

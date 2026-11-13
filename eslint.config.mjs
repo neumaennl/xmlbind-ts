@@ -20,8 +20,8 @@ export default defineConfig([
   // TypeScript. no-floating-promises reports promises that are neither awaited
   // nor handled, because their errors are lost, such as a failing assertion in
   // withTmpDir(). It needs type information from the projects that
-  // tsconfig.json references; the configuration files of Vitest are in none
-  // of them.
+  // tsconfig.json references; the configuration file of Vitest is in none of
+  // them.
   {
     files: ["**/*.ts"],
     extends: [js.configs.recommended, typescriptEslint.configs["flat/recommended"]],
@@ -29,7 +29,7 @@ export default defineConfig([
       parser: tsParser,
       sourceType: "module",
       parserOptions: {
-        projectService: { allowDefaultProject: ["vitest.config.ts", "vitest.setup.ts"] },
+        projectService: { allowDefaultProject: ["vitest.config.ts"] },
         tsconfigRootDir: import.meta.dirname,
       },
       globals: {

@@ -1,6 +1,8 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-13
+* **Update**: [ADR 001](architecture/001-reimplementation.md#consequences) says that documents changed on the branch `reimplementation` stay drafts until they will not change much anymore.
+* **Update**: The code of 2.x is removed, as [ADR 001](architecture/001-reimplementation.md#how-the-branch-starts) decided ([#300](https://github.com/neumaennl/xmlbind-ts/issues/300)). Removed the documents Decorators, Marshalling and Code generation and their entries in the [index](index.md). [Architecture](architecture.md) keeps only its purpose and scope; the runtime may know XSD, as ADR 001 says. [Testing](testing.md) no longer describes the tests and helpers of 2.x, and says that CI also runs on pushes to `reimplementation`. [Build and release](build-and-release.md) describes that the entry point exports nothing and that the package has no runtime dependencies and no command, and that CI runs on pushes to `reimplementation`. [Known issues](known-issues.md) link the code and documents of 2.x at the tag `2.4.0`, and the package contents no longer list `vitest.setup.ts`. `README.md` says that the branch holds version 3 in development and links the documentation of 2.4.0.
 * **Creation**: [ADR 001: Reimplementation of xmlbind-ts as version 3](architecture/001-reimplementation.md) records why 2.x is reimplemented instead of fixed, the principles of version 3, its parts and their order, and that the branch starts by removing the code of 2.x at once ([#300](https://github.com/neumaennl/xmlbind-ts/issues/300)). The [index](index.md#architecture-decisions) has a new section "Architecture decisions".
 
 ## 2026-11-12

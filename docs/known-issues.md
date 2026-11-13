@@ -3,75 +3,74 @@ type: Known Issues
 title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
-status: stable
-generated: { by: human:neumaennl, at: 2026-11-12T10:52:14Z }
-verified: { by: human:neumaennl, at: 2026-11-12T10:55:02Z }
+status: draft
+generated: { by: human:neumaennl, at: 2026-11-13T12:50:20Z }
 sources:
   - id: registry
-    resource: ../src/metadata/MetadataRegistry.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
     title: Metadata registry
   - id: entry
-    resource: ../src/index.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/index.ts
     title: Package entry point
   - id: unmarshal
-    resource: ../src/marshalling/unmarshal.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/marshalling/unmarshal.ts
     title: Unmarshalling
   - id: entity-decoder
-    resource: ../src/marshalling/entityDecoder.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/marshalling/entityDecoder.ts
     title: Entity decoder of unmarshalling
   - id: escaping
-    resource: ../src/marshalling/escaping.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/marshalling/escaping.ts
     title: Escaping of marshalling
   - id: marshal
-    resource: ../src/marshalling/marshal.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/marshalling/marshal.ts
     title: Marshalling
   - id: marshal-context
-    resource: ../src/marshalling/marshalContext.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/marshalling/marshalContext.ts
     title: Namespace context of marshalling
   - id: xml-tree
-    resource: ../src/marshalling/xmlTree.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/marshalling/xmlTree.ts
     title: Ordered tree of marshalling
   - id: upstream-tests
-    resource: ../__tests__/upstream-behavior.test.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/__tests__/upstream-behavior.test.ts
     title: Tests of upstream behavior
   - id: element-order
-    resource: ../src/marshalling/elementOrderUtils.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/marshalling/elementOrderUtils.ts
     title: Element order
   - id: comments
-    resource: ../src/marshalling/commentUtils.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/marshalling/commentUtils.ts
     title: Comments
   - id: classgen
-    resource: ../src/xsd/tsgen/classgen.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/xsd/tsgen/classgen.ts
     title: Generation of classes
   - id: gen-types
-    resource: ../src/xsd/tsgen/types.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/xsd/tsgen/types.ts
     title: Mapping of XSD types
   - id: gen-elements
-    resource: ../src/xsd/tsgen/elements.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/xsd/tsgen/elements.ts
     title: Elements and compositors
   - id: gen-schema
-    resource: ../src/xsd/tsgen/schema.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/xsd/tsgen/schema.ts
     title: Index of the schema
   - id: toplevel
-    resource: ../src/xsd/tsgen/toplevel.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/xsd/tsgen/toplevel.ts
     title: Top-level elements
   - id: writer
-    resource: ../src/xsd/tsgen/writer.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/xsd/tsgen/writer.ts
     title: Writer of the generated files
   - id: value-casting
-    resource: ../src/util/valueCasting.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/util/valueCasting.ts
     title: Value casting
   - id: namespace-helpers
-    resource: ../src/marshalling/namespaceHelpers.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/marshalling/namespaceHelpers.ts
     title: Namespace and wildcard helpers for unmarshalling
   - id: decorators
-    resource: ../src/decorators/XmlElement.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/decorators/XmlElement.ts
     title: "@XmlElement, as an example of the decorators"
   - id: xmlenum
-    resource: ../src/decorators/XmlEnum.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/decorators/XmlEnum.ts
     title: "@XmlEnum"
   - id: type-resolution
-    resource: ../src/util/typeResolution.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/util/typeResolution.ts
     title: Resolution of lazy type references
   - id: npmignore
     resource: ../.npmignore
@@ -86,10 +85,10 @@ sources:
     resource: ../vitest.config.ts
     title: Vitest configuration
   - id: gen-base-attributes
-    resource: ../src/xsd/tsgen/base-attribute-helpers.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/xsd/tsgen/base-attribute-helpers.ts
     title: Attributes of base types
   - id: gen-restriction
-    resource: ../src/xsd/tsgen/restriction-helpers.ts
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/xsd/tsgen/restriction-helpers.ts
     title: Attributes of restricted types
 ---
 
@@ -464,7 +463,7 @@ Effort:
 - **Location:** `src/marshalling/xmlTree.ts` (`writeXml()`)
 - **Severity:** Low
 - **Effort:** S
-- **Description:** In its ordered mode, `fast-xml-builder` starts the output with a line break, unless it starts with the XML declaration, and does not end it with one, while its keyed mode does the opposite ([NaturalIntelligence/fast-xml-builder#30](https://github.com/NaturalIntelligence/fast-xml-builder/issues/30)). `marshal()` returns this output as it is.[^xml-tree] When the builder changes, the first test in `__tests__/upstream-behavior.test.ts` fails; then update the exact expectations in `__tests__/xml-tree.test.ts` and `__tests__/issue-261-array-single-occurrence.test.ts`, decide whether `firstLine()` in `__tests__/test-utils/lines.ts` is still needed, and update [Marshalling](marshalling.md#output-format) and the TSDoc of `writeXml()`.
+- **Description:** In its ordered mode, `fast-xml-builder` starts the output with a line break, unless it starts with the XML declaration, and does not end it with one, while its keyed mode does the opposite ([NaturalIntelligence/fast-xml-builder#30](https://github.com/NaturalIntelligence/fast-xml-builder/issues/30)). `marshal()` returns this output as it is.[^xml-tree] When the builder changes, the first test in `__tests__/upstream-behavior.test.ts` fails; then update the exact expectations in `__tests__/xml-tree.test.ts` and `__tests__/issue-261-array-single-occurrence.test.ts`, decide whether `firstLine()` in `__tests__/test-utils/lines.ts` is still needed, and update [Marshalling](https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/docs/marshalling.md#output-format) and the TSDoc of `writeXml()`.
 - **GitHub issue:** none
 
 ## Mixed content gets a line with only spaces
@@ -472,7 +471,7 @@ Effort:
 - **Location:** `src/marshalling/xmlTree.ts` (`writeXml()`)
 - **Severity:** Low
 - **Effort:** S
-- **Description:** When an element's first child is an element and text follows, `fast-xml-builder` writes a line that contains only the indentation, which adds text to the element: `<M><i>a</i>b</M>` is written as `<M>\n  \n  <i>a</i>\n  b\n</M>` ([NaturalIntelligence/fast-xml-builder#31](https://github.com/NaturalIntelligence/fast-xml-builder/issues/31), fixed by [NaturalIntelligence/fast-xml-builder#32](https://github.com/NaturalIntelligence/fast-xml-builder/pull/32)). `unmarshal()` removes the whitespace again (see [Leading and trailing whitespace of element text is removed](#leading-and-trailing-whitespace-of-element-text-is-removed)).[^upstream-tests] When the builder changes, the second test in `__tests__/upstream-behavior.test.ts` fails; then remove it and update [Marshalling](marshalling.md#output-format) and the TSDoc of `writeXml()`.
+- **Description:** When an element's first child is an element and text follows, `fast-xml-builder` writes a line that contains only the indentation, which adds text to the element: `<M><i>a</i>b</M>` is written as `<M>\n  \n  <i>a</i>\n  b\n</M>` ([NaturalIntelligence/fast-xml-builder#31](https://github.com/NaturalIntelligence/fast-xml-builder/issues/31), fixed by [NaturalIntelligence/fast-xml-builder#32](https://github.com/NaturalIntelligence/fast-xml-builder/pull/32)). `unmarshal()` removes the whitespace again (see [Leading and trailing whitespace of element text is removed](#leading-and-trailing-whitespace-of-element-text-is-removed)).[^upstream-tests] When the builder changes, the second test in `__tests__/upstream-behavior.test.ts` fails; then remove it and update [Marshalling](https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/docs/marshalling.md#output-format) and the TSDoc of `writeXml()`.
 - **GitHub issue:** none
 
 ## `findElementOccurrences()` is never called
@@ -630,7 +629,7 @@ Effort:
 - **Location:** `.npmignore`, `package.json`
 - **Severity:** Medium
 - **Effort:** S
-- **Description:** `.npmignore` lists what to leave out, so everything else goes into the package. `npm pack --dry-run` in a checkout lists, besides `dist/`, `docs/`, `AGENTS.md`, `.github/`, `.gitattributes`, `tsconfig.build.json`, `tsconfig.test.json`, `vitest.setup.ts`, the TypeScript build information files (`*.tsbuildinfo`, also in `dist/`) and any untracked files in the checkout, such as caches and logs that `.gitignore` hides. Since a release is published from a checkout, such files can end up in a published version.[^npmignore] A `files` list in `package.json`, such as `["dist", "CHANGELOG.md"]`, would include only what is listed; npm always adds `package.json`, `README.md` and `LICENSE`.
+- **Description:** `.npmignore` lists what to leave out, so everything else goes into the package. `npm pack --dry-run` in a checkout lists, besides `dist/`, `docs/`, `AGENTS.md`, `.github/`, `.gitattributes`, `tsconfig.build.json`, `tsconfig.test.json`, the TypeScript build information files (`*.tsbuildinfo`, also in `dist/`) and any untracked files in the checkout, such as caches and logs that `.gitignore` hides. Since a release is published from a checkout, such files can end up in a published version.[^npmignore] A `files` list in `package.json`, such as `["dist", "CHANGELOG.md"]`, would include only what is listed; npm always adds `package.json`, `README.md` and `LICENSE`.
 - **GitHub issue:** none
 
 ## CI builds twice

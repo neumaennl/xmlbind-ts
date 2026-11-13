@@ -62,12 +62,8 @@ const githubActionsReporter: ["github-actions", { jobSummary: { enabled: boolean
 export default defineConfig({
   // TypeScript is compiled by the typescript-transpile plugin of each project.
   oxc: false,
-  ssr: {
-    noExternal: [/@neumaennl\/xmlbind-ts/],
-  },
   test: {
     environment: "node",
-    setupFiles: ["./vitest.setup.ts"],
     include: ["**/__tests__/**/*.test.ts"],
     globals: true,
     restoreMocks: true,
@@ -86,13 +82,8 @@ export default defineConfig({
         test: {
           name: "stage3-decorators",
           provide: { decoratorMode: "stage3" },
-          // Runs `npm pack`, which rebuilds dist/, and does not depend on how
-          // Vitest compiles decorators. The scripts use no decorators.
-          exclude: [
-            ...configDefaults.exclude,
-            "**/__tests__/cli-integration.test.ts",
-            "scripts/**",
-          ],
+          // The scripts use no decorators.
+          exclude: [...configDefaults.exclude, "scripts/**"],
         },
       },
     ],
