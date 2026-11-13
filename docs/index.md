@@ -6,6 +6,10 @@ okf_version: "0.2"
 
 * [Architecture](architecture.md) - What xmlbind-ts is responsible for and what belongs to the application, how the package is divided into the runtime library and the xsd2ts generator - their modules, the public API of the entry point, the runtime dependencies, and the principles the code follows.
 
+# Architecture decisions
+
+* [ADR 001: Reimplementation of xmlbind-ts as version 3](architecture/001-reimplementation.md) - The decision to replace 2.x by a reimplementation as version 3.0.0 instead of fixing its known issues one by one, with the principles that version 3 follows, its parts and their order, how the branch starts, and the rejected alternatives.
+
 # Working on the library
 
 * [Development guidelines](development-guidelines.md) - Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.

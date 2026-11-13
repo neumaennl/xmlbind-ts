@@ -1,5 +1,8 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-13
+* **Creation**: [ADR 001: Reimplementation of xmlbind-ts as version 3](architecture/001-reimplementation.md) records why 2.x is reimplemented instead of fixed, the principles of version 3, its parts and their order, and that the branch starts by removing the code of 2.x at once ([#300](https://github.com/neumaennl/xmlbind-ts/issues/300)). The [index](index.md#architecture-decisions) has a new section "Architecture decisions".
+
 ## 2026-11-12
 * **Update**: [Development guidelines](development-guidelines.md#documentation): new rule for Architecture Decision Records in `docs/architecture/`: when a decision gets one, its form, its status, that it is a living document whose rejected alternatives keep the reasons, and that the other documents link it ([#299](https://github.com/neumaennl/xmlbind-ts/issues/299)).
 * **Update**: [Known issues](known-issues.md#purpose) says that xmlbind-ts is reimplemented as version 3 ([#299](https://github.com/neumaennl/xmlbind-ts/issues/299)), that the entries describe 2.x, which gets no more fixes after 2.4.0, and that they are requirements of version 3. [#278](https://github.com/neumaennl/xmlbind-ts/issues/278) and [#288](https://github.com/neumaennl/xmlbind-ts/issues/288) are closed as not planned; their entries keep the links.
