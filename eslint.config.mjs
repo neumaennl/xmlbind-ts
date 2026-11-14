@@ -5,6 +5,31 @@ import vitest from "@vitest/eslint-plugin";
 import globals from "globals";
 import js from "@eslint/js";
 
+/** The most lines that a conditional expression (`a ? b : c`) may span. */
+const MAX_TERNARY_LINES = 3;
+
+/**
+ * Limits conditional expressions to a few lines; a longer one is easier to read as `if`/`else`
+ * (see "Code quality" in docs/development-guidelines.md).
+ */
+const maxTernaryLines = {
+  meta: {
+    type: "suggestion",
+    messages: { tooLong: "Conditional expression spans {{lines}} lines. Maximum allowed is {{max}}; use if/else instead." },
+    schema: [],
+  },
+  create(context) {
+    return {
+      ConditionalExpression(node) {
+        const lines = node.loc.end.line - node.loc.start.line + 1;
+        if (lines > MAX_TERNARY_LINES) {
+          context.report({ node, messageId: "tooLong", data: { lines, max: MAX_TERNARY_LINES } });
+        }
+      },
+    };
+  },
+};
+
 export default defineConfig([
   // JavaScript modules, such as this file.
   {
@@ -36,6 +61,9 @@ export default defineConfig([
         ...globals.node,
       },
     },
+    plugins: {
+      style: { rules: { "max-ternary-lines": maxTernaryLines } },
+    },
 
     rules: {
       "no-unused-vars": "off",
@@ -50,6 +78,8 @@ export default defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
 
       "@typescript-eslint/no-floating-promises": "error",
+
+      "style/max-ternary-lines": "error",
     },
   },
   // Tests and their helpers.

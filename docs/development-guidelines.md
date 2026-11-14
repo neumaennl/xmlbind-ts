@@ -4,7 +4,7 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-14T15:29:35Z }
+generated: { by: human:neumaennl, at: 2026-11-14T19:48:42Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -43,6 +43,7 @@ ESLint should check the limits with the rules `max-lines` and `max-lines-per-fun
 # Code quality
 
 - Avoid duplicated code. Move it into a shared function, class or module. `npm run lint` reports duplicated code with jscpd, also when names were changed (see [Build and release](build-and-release.md#duplicated-code)).[^jscpd]
+- A conditional expression (`a ? b : c`) spans at most three lines. Write a longer one, for example one with array or object literals in its branches or a nested one, as `if`/`else`. The local ESLint rule `style/max-ternary-lines` checks this.[^eslint]
 - `npm run lint` must report no errors, and as few warnings as possible. `npm run lint:fix` fixes what ESLint can.[^manifest]
 - Disable an ESLint rule only as a last resort, with an `eslint-disable-next-line` comment that gives the reason.
 - Exclude duplicated code from jscpd only as a last resort. Put `// jscpd:ignore-start` and `// jscpd:ignore-end` around it, with a comment that gives the reason.
@@ -81,6 +82,7 @@ Every function has an up-to-date TSDoc comment: what it does, each parameter wit
 
 - New and changed code is tested.
 - Test cases use `test()`, not `it()` (see [Test files use both `test()` and `it()`](known-issues.md#test-files-use-both-test-and-it)).
+- A unit test tests one module and calls that module directly. A test that reaches a module only through another module is an integration test (see [Kinds of tests](testing.md#kinds-of-tests)).
 - A test file tests one feature. Tests for the same feature are not scattered over several test files.
 - Two tests do not test exactly the same thing.
 - Bigger XML or XSD snippets go into `__tests__/test-resources` and are reused where possible.

@@ -4,7 +4,7 @@ title: Testing
 description: How xmlbind-ts is tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-13T12:50:20Z }
+generated: { by: human:neumaennl, at: 2026-11-14T19:48:42Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -94,6 +94,8 @@ Larger XSD and XML snippets are kept in `__tests__/test-resources/`:
 
 # Kinds of tests
 
+- **Unit tests** test one module or class. They import that module and call it directly. What the module imports may be mocked, so that the test depends only on the unit, or used as it is.
+- **Integration tests** test several modules together. A test that reaches a module only through another module is an integration test of both, even if it is meant to test the inner one; to test that module as a unit, call it directly.
 - **Script tests** check the Node.js version scripts with stubbed network access.
 
 The parts of version 3 add the kinds of tests they need. The tests of 2.x at the tag `2.4.0` are a list of cases to look at, not code to port ([ADR 001](architecture/001-reimplementation.md#how-the-branch-starts)).

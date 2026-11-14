@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-14T15:29:35Z }
+generated: { by: human:neumaennl, at: 2026-11-14T19:48:42Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -147,6 +147,7 @@ The project's own settings:
 - `vitest/expect-expect` accepts the assertion helpers of the tests;
 - `vitest/no-importing-vitest-globals` reports imports of `test`, `expect`, `vi` and the rest of Vitest's API, which the tests use as globals (`globals: true` in `vitest.config.ts`); types such as `Mock` are still imported;
 - `@typescript-eslint/no-floating-promises` reports promises that are neither awaited nor handled, because their errors would be lost; in the tests, a failing assertion in `withTmpDir()` would not fail its test. The rule needs type information, which ESLint takes from the projects that `tsconfig.json` references; `vitest.config.ts`, which none of them includes, is checked without a project;
+- the local rule `style/max-ternary-lines`, defined in `eslint.config.mjs`, reports conditional expressions that span more than three lines, which the guidelines ask to write as `if`/`else` (see [Code quality](development-guidelines.md#code-quality));
 - `.js`, `.cjs`, `.mts` and `.cts` files are not allowed at all, because the package is an ES module and needs no other kinds of files;
 - `dist/`, `coverage/`, `test-results/` and folders named `generated/` are ignored.
 
