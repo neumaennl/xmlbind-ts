@@ -1,0 +1,12 @@
+{
+  "path": ["."],
+  "format": ["typescript", "javascript"],
+  "minTokens": 50,
+  "minLines": 5,
+  "ignoreIdentifiers": true,
+  "ignoreLiterals": false,
+  "exitCode": 1,
+  "failOnEmpty": true,
+  "reporters": ["console"],
+  "noTips": true
+}

@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-13T12:50:20Z }
+generated: { by: human:neumaennl, at: 2026-11-14T15:29:35Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -39,6 +39,9 @@ sources:
   - id: eslint
     resource: ../eslint.config.mjs
     title: ESLint configuration
+  - id: jscpd
+    resource: ../.jscpd.json
+    title: jscpd configuration
   - id: ci
     resource: ../.github/workflows/ci.yml
     title: CI workflow
@@ -58,8 +61,8 @@ This document describes how the package is built, checked, packaged and publishe
 | `npm run build` | compiles `src/` to `dist/` with `tsconfig.build.json` |
 | `npm run typecheck` | type-checks `scripts/` with `tsconfig.scripts.json` |
 | `npm test` | runs `build` and `typecheck` (`pretest`), then Vitest |
-| `npm run lint` | runs ESLint on the whole repository |
-| `npm run lint:fix` | the same, fixing what ESLint can fix |
+| `npm run lint` | runs ESLint and jscpd on the whole repository, see [Lint](#lint) |
+| `npm run lint:fix` | runs ESLint and fixes what it can fix |
 | `npm run node:check` | checks the Node.js version, see [Node.js version](#nodejs-version) |
 | `npm run node:update` | changes the Node.js version, see [Node.js version](#nodejs-version) |
 
@@ -119,6 +122,16 @@ The scripts read the release schedule from the Node.js release repository on Git
 
 # Lint
 
+`npm run lint` runs ESLint and the copy-paste detector jscpd in parallel, with concurrently:[^manifest]
+
+- both tools always run to the end, so one run reports all problems;
+- the run fails if one of them fails;
+- `--group` prints the output of each tool as one block, labeled `[eslint]` and `[jscpd]`.
+
+To run one tool alone, use `npx eslint .` or `npx jscpd`. They read the same configuration as `npm run lint`.
+
+## ESLint
+
 ESLint gives each kind of file the rules that fit it:[^eslint]
 
 | Files | Rules |
@@ -139,6 +152,20 @@ The project's own settings:
 
 ESLint does not check the size limits of the guidelines yet (see [ESLint does not check the size limits](known-issues.md#eslint-does-not-check-the-size-limits)).
 
+## Duplicated code
+
+jscpd checks the TypeScript and JavaScript files of the whole repository. It skips what `.gitignore` excludes, such as `dist/`, `coverage/` and `node_modules/`. Its settings:[^jscpd]
+
+- **Size.** A clone is a block of at least 50 tokens and 5 lines that appears more than once. Tokens are keywords, names, operators, punctuation and literals; whitespace and comments do not count. 50 tokens are about 5 to 7 lines of code. Below that, jscpd mostly finds repetition that is fine, such as the setup of tests.
+- **Names.** Names are ignored, so a copy with renamed variables is found. Each name must stand for one name in the other block: `a = b + c` matches `x = y + z`, but not `x = x + x`.
+- **Literals.** Strings and numbers are compared. Code that differs only in them is not a clone, such as the cases of a `switch` or tests with different data.
+- **Failing.** Every clone fails the run. There is no threshold of duplicated lines, because a percentage changes as the code grows.
+- **No files.** A run that finds no files fails, so that a broken configuration does not pass unnoticed.
+
+The tests are checked with the same settings. Whether they need settings of their own is decided again with the first tests of version 3.
+
+Code that has to stay duplicated is put between `// jscpd:ignore-start` and `// jscpd:ignore-end`, with a comment that gives the reason (see [Development guidelines](development-guidelines.md#code-quality)).
+
 # CI
 
 The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch of version 3 ([ADR 001](architecture/001-reimplementation.md)), on pull requests into `main`, and weekly on Mondays at 06:00 UTC.[^ci] It has two jobs:
@@ -146,7 +173,7 @@ The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch
 | Job | Runs | Steps |
 |---|---|---|
 | Check Node versions | always | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life |
-| Install, build and test | not on the weekly run | `npm ci`, `npm run lint`, `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
+| Install, build and test | not on the weekly run | `npm ci`, `npm run lint` (ESLint and jscpd), `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
 
 Both jobs use the latest release of the major version in `.nvmrc` (`check-latest: true`), on Ubuntu only. A warning of `node:check` appears as an annotation of the run. GitHub pauses scheduled workflows of a public repository after 60 days without activity; the workflow then has to be enabled again in the Actions tab.
 
@@ -181,6 +208,8 @@ Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot
 [^compiler-target]: ECMAScript edition per Node.js version
 
 [^eslint]: ESLint configuration
+
+[^jscpd]: jscpd configuration
 
 [^ci]: CI workflow
 

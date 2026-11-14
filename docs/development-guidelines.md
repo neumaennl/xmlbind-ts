@@ -4,7 +4,7 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-14T13:57:05Z }
+generated: { by: human:neumaennl, at: 2026-11-14T15:29:35Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -12,6 +12,9 @@ sources:
   - id: eslint
     resource: ../eslint.config.mjs
     title: ESLint configuration
+  - id: jscpd
+    resource: ../.jscpd.json
+    title: jscpd configuration
   - id: tsconfig
     resource: ../tsconfig.build.json
     title: TypeScript configuration of the library
@@ -27,7 +30,7 @@ sources:
 
 These rules apply to everyone who changes the library, the `xsd2ts` generator or the scripts, people and AI coding agents alike. Agents get them through `AGENTS.md`, which adds only what is specific to agents: their role, how they work with the maintainer, and a few rules for their own work.[^agents]
 
-Topics that have their own document are only linked here: the structure of the code in [Architecture](architecture.md), tests in [Testing](testing.md), and building, ESLint and CI in [Build and release](build-and-release.md).
+Topics that have their own document are only linked here: the structure of the code in [Architecture](architecture.md), tests in [Testing](testing.md), and building, ESLint, the check for duplicated code and CI in [Build and release](build-and-release.md).
 
 # Code size
 
@@ -39,9 +42,10 @@ ESLint should check the limits with the rules `max-lines` and `max-lines-per-fun
 
 # Code quality
 
-- Avoid duplicated code. Move it into a shared function, class or module.
-- `npm run lint` must report no errors, and as few warnings as possible. `npm run lint:fix` fixes what it can.[^manifest]
+- Avoid duplicated code. Move it into a shared function, class or module. `npm run lint` reports duplicated code with jscpd, also when names were changed (see [Build and release](build-and-release.md#duplicated-code)).[^jscpd]
+- `npm run lint` must report no errors, and as few warnings as possible. `npm run lint:fix` fixes what ESLint can.[^manifest]
 - Disable an ESLint rule only as a last resort, with an `eslint-disable-next-line` comment that gives the reason.
+- Exclude duplicated code from jscpd only as a last resort. Put `// jscpd:ignore-start` and `// jscpd:ignore-end` around it, with a comment that gives the reason.
 - Have the changes reviewed by Copilot code review and handle its comments. If you do not follow a comment, give the reason.
 
 # TypeScript
@@ -120,6 +124,8 @@ The documentation of the library and the generator is the knowledge bundle in `d
 [^manifest]: Package manifest (scripts)
 
 [^eslint]: ESLint configuration
+
+[^jscpd]: jscpd configuration
 
 [^tsconfig]: TypeScript configuration of the library
 

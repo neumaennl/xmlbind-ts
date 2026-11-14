@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-13T12:50:20Z }
+generated: { by: human:neumaennl, at: 2026-11-14T15:29:35Z }
 sources:
   - id: registry
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
@@ -503,7 +503,7 @@ Effort:
 - **Location:** `src/decorators/`
 - **Severity:** Low
 - **Effort:** M
-- **Description:** Each of the seven decorators repeats the same three branches: one for Stage 3 decorators, one for legacy decorators, and a fallback that returns another decorator function. The legacy and fallback branches build the same field entry twice. The fallback cannot be reached through decorator syntax; only tests that call the decorator functions directly reach it.[^decorators] A shared helper that detects the kind of decorator and registers a field entry would remove the duplication. Once duplicates are [detected automatically](#duplicated-code-is-not-detected-automatically), the fix also lowers the threshold of that check.
+- **Description:** Each of the seven decorators repeats the same three branches: one for Stage 3 decorators, one for legacy decorators, and a fallback that returns another decorator function. The legacy and fallback branches build the same field entry twice. The fallback cannot be reached through decorator syntax; only tests that call the decorator functions directly reach it.[^decorators] A shared helper that detects the kind of decorator and registers a field entry would remove the duplication. In version 3, `npm run lint` reports such duplicates (see [Build and release](build-and-release.md#duplicated-code)).
 - **GitHub issue:** none
 
 ## Unmarshalling duplicates code for the root and nested elements
@@ -511,7 +511,7 @@ Effort:
 - **Location:** `src/marshalling/unmarshal.ts`, `src/marshalling/elementOrderUtils.ts`, `src/marshalling/commentUtils.ts`, `src/marshalling/marshal.ts`
 - **Severity:** Low
 - **Effort:** M
-- **Description:** `unmarshal()` binds elements twice (`bindRootElements()` and `bindFieldsToTarget()`), and the walk through the document-order tree is written out five times. `marshal()` uses one code path for the root and nested elements, but `mergeChildPrefixes()` still runs only for the root's single-valued fields, which is probably accidental, and `valueEntries()` looks up the metadata of a class again for every occurrence of an element.[^unmarshal] Once duplicates are [detected automatically](#duplicated-code-is-not-detected-automatically), the fix also lowers the threshold of that check.
+- **Description:** `unmarshal()` binds elements twice (`bindRootElements()` and `bindFieldsToTarget()`), and the walk through the document-order tree is written out five times. `marshal()` uses one code path for the root and nested elements, but `mergeChildPrefixes()` still runs only for the root's single-valued fields, which is probably accidental, and `valueEntries()` looks up the metadata of a class again for every occurrence of an element.[^unmarshal] In version 3, `npm run lint` reports such duplicates (see [Build and release](build-and-release.md#duplicated-code)).
 - **GitHub issue:** none
 
 ## Default and fixed values are ignored
@@ -579,14 +579,6 @@ Effort:
 - **Effort:** S
 - **Description:** The [development guidelines](development-guidelines.md#tests) ask for `test()`, but these files use `it()`. Once they are converted, the rule `vitest/consistent-test-it` can enforce `test()`.
 - **GitHub issue:** none
-
-## Duplicated code is not detected automatically
-
-- **Location:** `src/`, `scripts/`, `package.json`, `.github/workflows/ci.yml`
-- **Severity:** Low
-- **Effort:** S
-- **Description:** The [development guidelines](development-guidelines.md#code-quality) ask to avoid duplicated code, but only reviews check this, and duplicates got through, such as [The decorators duplicate their code](#the-decorators-duplicate-their-code) and [Unmarshalling duplicates code for the root and nested elements](#unmarshalling-duplicates-code-for-the-root-and-nested-elements). The coverage report cannot find duplicates, because V8 coverage only records which code runs. A copy-paste detector such as [jscpd](https://github.com/kucherenko/jscpd) can check the code in `npm run lint` and in CI and fail the run above a threshold of duplicated lines.
-- **GitHub issue:** [#295](https://github.com/neumaennl/xmlbind-ts/issues/295)
 
 ## Source files are longer than 500 lines
 
