@@ -1,6 +1,7 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-14
+* **Update**: [Known issues](known-issues.md#unused-code-is-not-detected-automatically): new entry "Unused code is not detected automatically".
 * **Update**: [Build and release](build-and-release.md#lint) describes that `npm run lint` runs ESLint and jscpd in parallel with concurrently, and the settings of jscpd in a new section [Duplicated code](build-and-release.md#duplicated-code). The [development guidelines](development-guidelines.md#code-quality) say that `npm run lint` reports duplicated code, and how to exclude code from the check. `CONTRIBUTING.md` follows. Removed "Duplicated code is not detected automatically" from [Known issues](known-issues.md) ([#295](https://github.com/neumaennl/xmlbind-ts/issues/295)); "The decorators duplicate their code" and "Unmarshalling duplicates code for the root and nested elements" say that `npm run lint` reports such duplicates in version 3.
 * **Update**: [Development guidelines](development-guidelines.md#documentation): new rule that documents mention GitHub issues only where a reader needs them, and that the project board tracks which issue does which work.
 * **Update**: [ADR 002](architecture/002-xml-library.md#consequences) no longer lists the issues of the parts that go on while the binder waits for the ranges.

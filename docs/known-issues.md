@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-14T15:29:35Z }
+generated: { by: human:neumaennl, at: 2026-11-14T17:03:55Z }
 sources:
   - id: registry
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
@@ -579,6 +579,20 @@ Effort:
 - **Effort:** S
 - **Description:** The [development guidelines](development-guidelines.md#tests) ask for `test()`, but these files use `it()`. Once they are converted, the rule `vitest/consistent-test-it` can enforce `test()`.
 - **GitHub issue:** none
+
+## Unused code is not detected automatically
+
+- **Location:** `src/`, `scripts/`, `package.json`, `.github/workflows/ci.yml`
+- **Severity:** Low
+- **Effort:** S
+- **Description:** ESLint and TypeScript only find unused code within one file: unused variables, imports and parameters. Nothing finds code that is unused across files:
+  - exports that no module imports, and files that nothing imports;
+  - class members and enum members that are never used;
+  - code that only tests call;
+  - dependencies in `package.json` that no code uses.
+
+  2.x had such code: [`findElementOccurrences()` is never called](#findelementoccurrences-is-never-called). A tool such as [knip](https://knip.dev) checks the whole project. In production mode, it ignores the tests, so it also finds code that only tests use. It can run in `npm run lint` and in CI.
+- **GitHub issue:** [#313](https://github.com/neumaennl/xmlbind-ts/issues/313)
 
 ## Source files are longer than 500 lines
 
