@@ -1,6 +1,8 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-14
+* **Update**: [Development guidelines](development-guidelines.md#documentation): new rule that documents mention GitHub issues only where a reader needs them, and that the project board tracks which issue does which work.
+* **Update**: [ADR 002](architecture/002-xml-library.md#consequences) no longer lists the issues of the parts that go on while the binder waits for the ranges.
 * **Creation**: [ADR 002: slimdom as the XML library](architecture/002-xml-library.md) records that version 3 parses and writes XML with slimdom and supports XML 1.0 only. The source ranges of the nodes come from a pull request to slimdom ([bwrrp/slimdom.js#148](https://github.com/bwrrp/slimdom.js/issues/148)), with a temporary fork if no released version has them when the binder needs them. It also records the measurements of the candidates and the rejected alternatives ([#301](https://github.com/neumaennl/xmlbind-ts/issues/301)). The [index](index.md#architecture-decisions) lists it.
 
 ## 2026-11-13

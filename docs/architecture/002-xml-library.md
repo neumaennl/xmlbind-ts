@@ -4,7 +4,7 @@ title: "ADR 002: slimdom as the XML library"
 description: The decision to parse and write XML with slimdom, to support XML 1.0 only, and to get the source ranges of the nodes through a pull request to slimdom, with the measurements of the candidates and the rejected alternatives.
 tags: [adr, architecture, xml, parser, serializer, dom, source-ranges]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-14T13:34:30Z }
+generated: { by: human:neumaennl, at: 2026-11-14T13:57:05Z }
 sources:
   - id: issue-301
     resource: https://github.com/neumaennl/xmlbind-ts/issues/301
@@ -142,7 +142,7 @@ The binder ([#303](https://github.com/neumaennl/xmlbind-ts/issues/303)) covers e
 - The DOM does not keep the XML declaration or the internal subset of the document type. Writing only the changes keeps their text through the ranges.
 - The serializer writes a carriage return in text as it is, as the [DOM Parsing standard](https://w3c.github.io/DOM-Parsing/) says, so it becomes a line feed when the document is parsed again.[^dom-parsing] The binder decides how to write such values.
 - A document with `version="1.1"` is rejected, even where its content would also be valid XML 1.0.
-- The binder waits for the ranges. Parts that don't need them go on: #295, #297, #302 and #306.
+- The binder waits for the ranges. Parts that don't need them go on.
 
 ## Rejected alternatives
 

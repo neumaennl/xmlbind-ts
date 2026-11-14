@@ -3,9 +3,8 @@ type: Guideline
 title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
-status: stable
-generated: { by: human:neumaennl, at: 2026-11-12T15:12:04Z }
-verified: { by: human:neumaennl, at: 2026-11-12T15:14:57Z }
+status: draft
+generated: { by: human:neumaennl, at: 2026-11-14T13:57:05Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -90,6 +89,10 @@ The documentation of the library and the generator is the knowledge bundle in `d
 - **Known issues.** Record problems you find outside the current task in [Known issues](known-issues.md), sorted by severity and effort, and remove them when they are fixed. A change to the known issues is a change like any other.
 - **Workarounds for dependencies.** A workaround for a problem in a dependency gets a known issue that links the upstream issue and lists what to remove, a test in `__tests__/upstream-behavior.test.ts` that fails when the dependency fixes the problem (see [Testing](testing.md#kinds-of-tests)), and a comment `Upstream: <repo>#<number>` at the code it affects.
 - **New documents** get front matter (`type`, `title`, a one-sentence `description`, `tags`, `status`, `generated`, `sources`), an entry in the index with the same description, and a log entry.
+- **GitHub issues.** Documents mention GitHub issues only where a reader needs them. Which issue does which work is tracked on the [project board](agent-instructions/project-board.md), not in the documents. Examples where issues are needed:
+  - known issues link the GitHub issue that tracks them;
+  - an ADR names the issue it comes from (`**Issue:**`) and may link the issues of the parts it affects;
+  - an issue of a dependency can be a source.
 - **Sources.** Each source has an `id`, a relative `resource` and a `title`. Important statements get a footnote `[^id]` whose text is the title of the source. Separate the footnote definitions with blank lines.
 - **Format.** Files use LF line endings, which `.gitattributes` (`* text=auto`) makes Git store for every text file. Links are relative; code and file paths are formatted as code, without line numbers. A document describes the current state and decided future work, not its own history; the history goes into the log. The rejected alternatives of an ADR are reasons, not history. No volatile numbers such as test counts or durations.
 - **Diagrams.** Mermaid diagrams use one arrow with a combined label for both directions, so that labels do not overlap. Check that a diagram renders with `npx -y @mermaid-js/mermaid-cli -i diagram.mmd -o diagram.png`.
