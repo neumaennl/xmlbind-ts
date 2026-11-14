@@ -9,6 +9,7 @@ okf_version: "0.2"
 # Architecture decisions
 
 * [ADR 001: Reimplementation of xmlbind-ts as version 3](architecture/001-reimplementation.md) - The decision to replace 2.x by a reimplementation as version 3.0.0 instead of fixing its known issues one by one, with the principles that version 3 follows, its parts and their order, how the branch starts, and the rejected alternatives.
+* [ADR 002: slimdom as the XML library](architecture/002-xml-library.md) - The decision to parse and write XML with slimdom, to support XML 1.0 only, and to get the source ranges of the nodes through a pull request to slimdom, with the measurements of the candidates and the rejected alternatives.
 
 # Working on the library
 
