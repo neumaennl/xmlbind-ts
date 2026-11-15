@@ -207,6 +207,9 @@ export default defineConfig([
       // The defaults require it() inside describe(). Setting fn alone would be enough, because
       // withinDescribe then takes its value, but both are set to make the intent obvious.
       "vitest/consistent-test-it": ["error", { fn: "test", withinDescribe: "test" }],
+      // Test names describe the intended behavior: test("should …") (see "Tests" in docs/development-guidelines.md).
+      // The other options of the recommended setting stay as they are.
+      "vitest/valid-title": ["error", { mustMatch: { test: "^should " } }],
       // Vitest provides its API as globals (globals: true in vitest.config.ts).
       "vitest/no-importing-vitest-globals": "error",
       "vitest/expect-expect": [
