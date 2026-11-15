@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T17:40:00Z }
+generated: { by: human:neumaennl, at: 2026-11-15T18:05:00Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -156,6 +156,7 @@ The project's own settings:
 - `vitest/no-importing-vitest-globals` reports imports of `test`, `expect`, `vi` and the rest of Vitest's API, which the tests use as globals (`globals: true` in `vitest.config.ts`); types such as `Mock` are still imported;
 - among the strict rules, `@typescript-eslint/no-floating-promises` reports promises that are neither awaited nor handled, because their errors would be lost; in the tests, a failing assertion in `withTmpDir()` would not fail its test;
 - the local rule `style/max-ternary-lines`, defined in `eslint.config.mjs`, reports conditional expressions that span more than three lines, which the guidelines ask to write as `if`/`else` (see [Code quality](development-guidelines.md#code-quality));
+- TSDoc, as the [development guidelines](development-guidelines.md#tsdoc) ask: `tsdoc/syntax` of `eslint-plugin-tsdoc` checks the syntax of the comments; the rules of `eslint-plugin-jsdoc` check that function declarations, methods and classes have a comment, and that it describes every parameter, the return value and the errors thrown; `tsdoc/syntax` also reports a missing hyphen between the name and the description of a parameter. Arrow functions and function expressions, mostly small local helpers and callbacks, need no comment. Destructured parameters are not checked, because TSDoc describes their fields at their type;
 - the size limits of the [development guidelines](development-guidelines.md#code-size): `max-lines` allows 500 lines per file and `max-lines-per-function` 120 lines per function; test files may have 1000 lines, and instead of the limit for functions, the local rule `tests/max-lines-per-test`, defined in `eslint.config.mjs`, allows 50 lines per test, because `max-lines-per-function` would also count the `describe` callbacks that hold the tests;
 - `.js`, `.cjs`, `.mts` and `.cts` files are not allowed at all, because the package is an ES module and needs no other kinds of files;
 - `dist/`, `coverage/`, `test-results/` and folders named `generated/` are ignored.

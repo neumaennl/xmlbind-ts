@@ -29,7 +29,7 @@ export const URLS = {
 };
 
 /**
- * The target and libraries of the @tsconfig/bases configurations, per Node major
+ * The target and libraries of the `@tsconfig/bases` configurations, per Node major
  * version. The scripts take only the target; the libraries show that the rest is ignored.
  */
 export const BASE_OPTIONS = {
@@ -39,7 +39,7 @@ export const BASE_OPTIONS = {
 };
 
 /**
- * Builds a @tsconfig/bases configuration.
+ * Builds a `@tsconfig/bases` configuration.
  *
  * @param major - The major version of Node, one of the keys of `BASE_OPTIONS`
  * @returns The configuration

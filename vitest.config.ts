@@ -8,6 +8,9 @@ type DecoratorMode = "legacy" | "stage3";
  * Converts the target of `tsconfig.target.json` to the value that
  * `ts.transpileModule` expects, so that the tests are compiled with the same
  * target as the build.
+ *
+ * @returns The target of `tsconfig.target.json`
+ * @throws An {@link Error} if `tsconfig.target.json` does not set a valid target
  */
 function scriptTarget(): ts.ScriptTarget {
   const { options, errors } = ts.convertCompilerOptionsFromJson({ target: compilerTarget().target }, ".");
@@ -23,6 +26,9 @@ const target = scriptTarget();
  * Compiles TypeScript with `ts.transpileModule`, because Oxc (Vite 8,
  * Vitest 5) does not lower Stage 3 decorators. `enforce: "pre"` makes it run
  * before Vite's own transforms, so the decorators are compiled here.
+ *
+ * @param decoratorMode - Whether to compile legacy or Stage 3 decorators
+ * @returns The Vite plugin
  */
 function typescriptTranspile(decoratorMode: DecoratorMode): Plugin {
   const legacy = decoratorMode === "legacy";

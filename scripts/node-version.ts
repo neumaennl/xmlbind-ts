@@ -43,7 +43,7 @@ import {
 } from "./lib/node-releases.ts";
 import { latestOfMajor } from "./lib/versions.ts";
 
-/** The ECMAScript edition per Node major version, undefined for those without a @tsconfig/bases configuration. */
+/** The ECMAScript edition per Node major version, undefined for those without a `@tsconfig/bases` configuration. */
 type Editions = Map<number, string | undefined>;
 
 /** The terminal interface; only `question()` is used. */
@@ -85,7 +85,7 @@ const STEPS = ["npm install", "npm run lint", "npm test"];
  * @param header - The column titles
  * @param rows - The cells
  * @returns The table
- * @throws {Error} If a row does not have as many cells as the header
+ * @throws An {@link Error} if a row does not have as many cells as the header
  */
 export function formatTable(header: string[], rows: string[][]): string {
   for (const row of rows) {
@@ -394,7 +394,7 @@ function runSteps(version: string): number {
  * @param dir - The folder with `package.json`, `package-lock.json` and `.nvmrc`
  * @param today - The day as `YYYY-MM-DD`
  * @returns The exit code
- * @throws {Error} If no version is given and there is no terminal to ask, or the given version is not accepted
+ * @throws An {@link Error} if no version is given and there is no terminal to ask, or the given version is not accepted
  */
 export async function update(requested: string | undefined, dir = ".", today = todayUtc()): Promise<number> {
   if (!requested && !process.stdin.isTTY) {

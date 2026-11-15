@@ -8,7 +8,7 @@
  *
  * @param line - The line of text to search in
  * @param expectedStrings - Array of strings that should appear consecutively on the same line
- * @throws Error if any expected string is not found or if they don't appear consecutively
+ * @throws An {@link Error} if any expected string is not found or if they don't appear consecutively
  *
  * @example
  * ```typescript
@@ -44,7 +44,7 @@ export function expectStringsOnSameLine(
  *
  * @param text - The multi-line text to search in
  * @param expectedStrings - Array of strings that should appear on consecutive lines
- * @throws Error if any expected string is not found or if they don't appear on consecutive lines
+ * @throws An {@link Error} if any expected string is not found or if they don't appear on consecutive lines
  *
  * @example
  * ```typescript

@@ -144,7 +144,7 @@ export function runtimeConstraints(lock: PackageLock): Constraint[] {
  * @param major - The major version of Node
  * @param constraints - The constraints
  * @returns The violated constraints
- * @throws {Error} If a range has an unknown form, naming the constraint
+ * @throws An {@link Error} if a range has an unknown form, naming the constraint
  */
 export function violated(major: number, constraints: Constraint[]): Constraint[] {
   return constraints.filter((c) => {
@@ -297,7 +297,7 @@ export function newestLts(data: NodeData, today: string): number | undefined {
  * @param url - The URL
  * @param headers - Additional request headers
  * @returns The parsed body
- * @throws {Error} If the request fails
+ * @throws An {@link Error} if the request fails
  */
 async function downloadJson<T>(url: string, headers: Record<string, string> = {}): Promise<T> {
   const response = await fetch(url, { headers });

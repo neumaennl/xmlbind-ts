@@ -4,7 +4,7 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T17:40:00Z }
+generated: { by: human:neumaennl, at: 2026-11-15T18:05:00Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -65,7 +65,7 @@ One Node.js major version is used for `engines.node`, `@types/node` and `.nvmrc`
 
 # TSDoc
 
-Every function has an up-to-date TSDoc comment: what it does, each parameter with `@param name - description`, the return value with `@returns` (functions without a return value have none), and the errors it throws with `@throws`. Complex functions also get an `@example`.
+Every function, method and class has an up-to-date TSDoc comment: what it does, each parameter with `@param name - description`, the return value with `@returns` (functions without a return value have none), and the errors it throws with `@throws An {@link Error} if …`. Complex functions also get an `@example`.
 
 ```typescript
 /**
@@ -74,9 +74,14 @@ Every function has an up-to-date TSDoc comment: what it does, each parameter wit
  * @param value - The text from the XML document
  * @param type - The constructor of the field's type, such as `Number`
  * @returns The converted value
- * @throws {Error} If the value cannot be converted
+ * @throws An {@link Error} if the value cannot be converted
  */
 ```
+
+- `@throws` does not start with `{`: TypeScript, and so the hover of editors, reads a `{` right after `@throws` as the type of the error, and breaks `{@link Error}` there into two tags.
+- TSDoc has no dotted parameter names such as `@param options.name`. Describe the fields of a destructured parameter at its type, with a comment per field.
+- Package names that start with `@`, such as `@types/node`, are written as code, so that TSDoc does not read them as tags.
+- ESLint checks the syntax with `eslint-plugin-tsdoc`, and with `eslint-plugin-jsdoc` that the comments and their tags exist (see [Build and release](build-and-release.md#eslint)).[^eslint]
 
 # Tests
 

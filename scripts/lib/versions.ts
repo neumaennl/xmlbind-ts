@@ -9,7 +9,7 @@ export type Version = [number, number, number];
  *
  * @param text - The version
  * @returns Major, minor and patch
- * @throws {Error} If the text is not a version
+ * @throws An {@link Error} if the text is not a version
  */
 export function parseVersion(text: string): Version {
   const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(text.trim());
@@ -53,7 +53,7 @@ interface Comparator {
  * @param text - The partial version
  * @returns The given parts, without the wildcards and what follows them, and
  *   whether the version has a pre-release tag
- * @throws {Error} If the text is not a partial version
+ * @throws An {@link Error} if the text is not a partial version
  */
 function parsePartial(text: string): { parts: number[]; pre: boolean } {
   const match = /^v?(\d+|[xX*])?(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*])(-[0-9A-Za-z.-]+)?)?(?:\+[0-9A-Za-z.-]+)?$/.exec(text);
@@ -135,7 +135,7 @@ function parseSet(set: string): Comparator[] {
  * @param version - The version, for example `24.0.0`
  * @param range - The range
  * @returns Whether the version is in the range
- * @throws {Error} If the range has an unknown form
+ * @throws An {@link Error} if the range has an unknown form
  */
 export function satisfies(version: string, range: string): boolean {
   const v = parseVersion(version);

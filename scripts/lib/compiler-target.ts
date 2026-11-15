@@ -15,7 +15,7 @@ export const TARGET_FILE = "tsconfig.target.json";
 const EDITION = /^es\d{4}$/i;
 
 /**
- * Returns the URL of the @tsconfig/bases configuration for a Node major version.
+ * Returns the URL of the `@tsconfig/bases` configuration for a Node major version.
  *
  * @param major - The major version of Node
  * @returns The URL
@@ -25,12 +25,12 @@ export function baseUrl(major: number): string {
 }
 
 /**
- * Takes the ECMAScript edition from the `target` of a @tsconfig/bases configuration.
+ * Takes the ECMAScript edition from the `target` of a `@tsconfig/bases` configuration.
  *
  * @param text - The configuration
  * @param url - Where it comes from, for messages
  * @returns The edition in upper case, for example `ES2024`
- * @throws {Error} If the text is not JSON or its target is not an edition `ESxxxx`
+ * @throws An {@link Error} if the text is not JSON or its target is not an edition `ESxxxx`
  */
 export function parseBaseEdition(text: string, url: string): string {
   let config: { compilerOptions?: { target?: unknown } };
@@ -47,11 +47,11 @@ export function parseBaseEdition(text: string, url: string): string {
 }
 
 /**
- * Downloads the ECMAScript edition of the @tsconfig/bases configuration for a Node major version.
+ * Downloads the ECMAScript edition of the `@tsconfig/bases` configuration for a Node major version.
  *
  * @param major - The major version of Node
  * @returns The edition, or undefined if there is no configuration for the version
- * @throws {Error} If the request fails for another reason or the configuration has no edition
+ * @throws An {@link Error} if the request fails for another reason or the configuration has no edition
  */
 export async function loadEdition(major: number): Promise<string | undefined> {
   const url = baseUrl(major);
@@ -92,7 +92,7 @@ export function missingEdition(major: number): string {
  *
  * @param dir - The folder with `tsconfig.target.json`
  * @param major - The major version of Node
- * @param edition - Its edition from @tsconfig/bases, or undefined if there is none
+ * @param edition - Its edition from `@tsconfig/bases`, or undefined if there is none
  * @returns One message per problem, empty if `target` and `lib` name the edition
  */
 export function editionProblems(dir: string, major: number, edition: string | undefined): string[] {

@@ -2,6 +2,8 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import tsParser from "@typescript-eslint/parser";
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import vitest from "@vitest/eslint-plugin";
+import jsdoc from "eslint-plugin-jsdoc";
+import tsdoc from "eslint-plugin-tsdoc";
 import globals from "globals";
 import js from "@eslint/js";
 
@@ -104,7 +106,12 @@ export default defineConfig([
       },
     },
     plugins: {
+      jsdoc,
+      tsdoc,
       style: { rules: { "max-ternary-lines": maxTernaryLines } },
+    },
+    settings: {
+      jsdoc: { mode: "typescript" },
     },
 
     rules: {
@@ -152,6 +159,33 @@ export default defineConfig([
       ],
 
       "style/max-ternary-lines": "error",
+
+      // TSDoc (see "TSDoc" in docs/development-guidelines.md): tsdoc/syntax checks
+      // the syntax of the comments, the rules of jsdoc check that functions,
+      // methods and classes have them, with every parameter, the return value and
+      // the errors thrown.
+      "tsdoc/syntax": "error",
+      "jsdoc/require-jsdoc": [
+        "error",
+        {
+          publicOnly: false,
+          require: {
+            ArrowFunctionExpression: false,
+            ClassDeclaration: true,
+            FunctionDeclaration: true,
+            FunctionExpression: false,
+            MethodDefinition: true,
+          },
+        },
+      ],
+      // Destructured parameters are described at their type, because TSDoc has no
+      // dotted parameter names such as `options.name`.
+      "jsdoc/require-param": ["error", { checkDestructured: false }],
+      "jsdoc/check-param-names": ["error", { checkDestructured: false }],
+      "jsdoc/require-param-description": "error",
+      "jsdoc/require-returns": "error",
+      "jsdoc/require-returns-check": "error",
+      "jsdoc/require-throws": "error",
 
       // Size limits (see "Code size" in docs/development-guidelines.md).
       // Blank lines and comments count as well.
