@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T12:40:00Z }
+generated: { by: human:neumaennl, at: 2026-11-15T17:10:00Z }
 sources:
   - id: registry
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
@@ -548,20 +548,12 @@ Effort:
 
 # Code size and style
 
-## ESLint does not check the size limits
-
-- **Location:** `eslint.config.mjs`
-- **Severity:** Low
-- **Effort:** S
-- **Description:** The [development guidelines](development-guidelines.md#code-size) limit files to 500 lines and functions to 120, with an exception for tests, but ESLint does not check them.[^eslint] The rules `max-lines` and `max-lines-per-function` can do so. Switched on as errors, they make `npm run lint` fail until [Source files are longer than 500 lines](#source-files-are-longer-than-500-lines) and [`emitElementRef()` is longer than 120 lines](#emitelementref-is-longer-than-120-lines) are fixed, unless they start as warnings.
-- **GitHub issue:** none
-
 ## `emitElementRef()` is longer than 120 lines
 
 - **Location:** `src/xsd/tsgen/element-refs.ts` (`emitElementRef()`)
 - **Severity:** Low
 - **Effort:** S
-- **Description:** The function has 143 lines, more than the 120 that the [development guidelines](development-guidelines.md#code-size) allow.
+- **Description:** The function has 143 lines, more than the 120 that the [development guidelines](development-guidelines.md#code-size) allow. Version 3 does not have this problem: ESLint reports such functions (`max-lines-per-function`).[^eslint]
 - **GitHub issue:** none
 
 ## Function names are longer than 30 characters
@@ -574,7 +566,7 @@ Effort:
 
 ## Test files use both `test()` and `it()`
 
-- **Location:** `__tests__/decorator-edge-cases.test.ts`, `__tests__/decorators.test.ts`, `__tests__/enums.test.ts`, `__tests__/value-casting.test.ts`, `__tests__/xsd-parser.test.ts`, `scripts/__tests__/node-releases.test.ts`, `scripts/__tests__/node-setup.test.ts`, `scripts/__tests__/node-version.test.ts`
+- **Location:** `__tests__/decorator-edge-cases.test.ts`, `__tests__/decorators.test.ts`, `__tests__/enums.test.ts`, `__tests__/value-casting.test.ts`, `__tests__/xsd-parser.test.ts`, `scripts/__tests__/node-releases.test.ts`, `scripts/__tests__/node-setup.test.ts`, `scripts/__tests__/node-version.test.ts`, `scripts/__tests__/versions.test.ts`
 - **Severity:** Low
 - **Effort:** S
 - **Description:** The [development guidelines](development-guidelines.md#tests) ask for `test()`, but these files use `it()`. Once they are converted, the rule `vitest/consistent-test-it` can enforce `test()`.
@@ -596,10 +588,10 @@ Effort:
 
 ## Source files are longer than 500 lines
 
-- **Location:** `src/marshalling/unmarshal.ts`, `scripts/lib/node-releases.ts`
+- **Location:** `src/marshalling/unmarshal.ts`
 - **Severity:** Low
 - **Effort:** M
-- **Description:** These files have more than the 500 lines that the [development guidelines](development-guidelines.md#code-size) allow.
+- **Description:** The file has more than the 500 lines that the [development guidelines](development-guidelines.md#code-size) allow. Version 3 does not have this problem: ESLint reports such files (`max-lines`).[^eslint]
 - **GitHub issue:** none
 
 # Tests

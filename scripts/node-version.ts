@@ -26,7 +26,6 @@ import {
   endOfLife,
   enginesMajor,
   exclusions,
-  latestOfMajor,
   listLines,
   loadData,
   loadSchedule,
@@ -42,6 +41,7 @@ import {
   type PackageLock,
   type Schedule,
 } from "./lib/node-releases.ts";
+import { latestOfMajor } from "./lib/versions.ts";
 
 /** The ECMAScript edition per Node major version, undefined for those without a @tsconfig/bases configuration. */
 type Editions = Map<number, string | undefined>;

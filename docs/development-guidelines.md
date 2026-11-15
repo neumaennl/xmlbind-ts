@@ -4,7 +4,7 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T11:57:47Z }
+generated: { by: human:neumaennl, at: 2026-11-15T17:10:00Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -36,9 +36,9 @@ Topics that have their own document are only linked here: the structure of the c
 
 - A TypeScript file has at most 500 lines. When it grows beyond that, move related code into a module of its own with a clear name.
 - A function has at most 120 lines. Split longer functions into smaller helpers with one responsibility each.
-- For now, test files are exempt from both limits.
+- A test file has at most 1000 lines, and a single test at most 50. The limit for functions does not apply to test files, because their `describe` callbacks hold many tests. Helpers of the tests have the limits of other code.
 
-ESLint should check the limits with the rules `max-lines` and `max-lines-per-function`, but does not do so yet, and some code exceeds them (see [ESLint does not check the size limits](known-issues.md#eslint-does-not-check-the-size-limits)).[^eslint]
+Blank lines and comments count as well. ESLint checks the limits with the rules `max-lines` and `max-lines-per-function`, and the single tests with the local rule `tests/max-lines-per-test` (see [Build and release](build-and-release.md#eslint)).[^eslint]
 
 # Code quality
 

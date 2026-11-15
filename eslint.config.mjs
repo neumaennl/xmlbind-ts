@@ -5,6 +5,43 @@ import vitest from "@vitest/eslint-plugin";
 import globals from "globals";
 import js from "@eslint/js";
 
+/** The most lines that the callback of a single test may have. */
+const MAX_LINES_PER_TEST = 50;
+
+/**
+ * Limits the length of single tests: the callbacks of `test()`, `test.each()` and the like.
+ * `max-lines-per-function` cannot do this, because it also counts the `describe` callbacks that hold the tests.
+ */
+const maxLinesPerTest = {
+  meta: {
+    type: "suggestion",
+    messages: { tooLong: "Test has {{lines}} lines. Maximum allowed is {{max}}." },
+    schema: [],
+  },
+  create(context) {
+    const isTestCall = (callee) => {
+      let node = callee;
+      while (node.type === "CallExpression" || node.type === "MemberExpression") {
+        node = node.type === "CallExpression" ? node.callee : node.object;
+      }
+      return node.type === "Identifier" && node.name === "test";
+    };
+    return {
+      CallExpression(node) {
+        if (!isTestCall(node.callee)) return;
+        const callback = node.arguments.find(
+          (arg) => arg.type === "ArrowFunctionExpression" || arg.type === "FunctionExpression"
+        );
+        if (!callback) return;
+        const lines = callback.loc.end.line - callback.loc.start.line + 1;
+        if (lines > MAX_LINES_PER_TEST) {
+          context.report({ node: callback, messageId: "tooLong", data: { lines, max: MAX_LINES_PER_TEST } });
+        }
+      },
+    };
+  },
+};
+
 /** The most lines that a conditional expression (`a ? b : c`) may span. */
 const MAX_TERNARY_LINES = 3;
 
@@ -115,12 +152,20 @@ export default defineConfig([
       ],
 
       "style/max-ternary-lines": "error",
+
+      // Size limits (see "Code size" in docs/development-guidelines.md).
+      // Blank lines and comments count as well.
+      "max-lines": ["error", { max: 500 }],
+      "max-lines-per-function": ["error", { max: 120 }],
     },
   },
   // Tests and their helpers.
   {
     files: ["**/__tests__/**/*.ts"],
     extends: [vitest.configs.recommended],
+    plugins: {
+      tests: { rules: { "max-lines-per-test": maxLinesPerTest } },
+    },
     rules: {
       // Empty mock implementations, such as mockImplementation(() => {}), are intended.
       "@typescript-eslint/no-empty-function": ["error", { allow: ["arrowFunctions"] }],
@@ -136,6 +181,18 @@ export default defineConfig([
           ],
         },
       ],
+    },
+  },
+  // Size limits of test files (see "Code size" in
+  // docs/development-guidelines.md). max-lines-per-function would count the
+  // describe callbacks that hold the tests, so the local rule limits the single
+  // tests instead. Helpers of the tests keep the limits of other code.
+  {
+    files: ["**/__tests__/**/*.test.ts"],
+    rules: {
+      "max-lines": ["error", { max: 1000 }],
+      "max-lines-per-function": "off",
+      "tests/max-lines-per-test": "error",
     },
   },
   // Allow only .ts and .mjs files: the package is an ES module, so .js would
