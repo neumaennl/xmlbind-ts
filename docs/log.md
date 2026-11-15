@@ -1,6 +1,7 @@
 # Knowledge Bundle Update Log
 
 ## 2026-11-15
+* **Update**: [Testing](testing.md#kinds-of-tests): each module is tested by its unit tests first; an integration test only checks what the modules do together, such as the round trip of a whole document, and does not repeat the cases of the unit tests.
 * **Update**: The [development guidelines](development-guidelines.md#tests) ask for test titles that describe the intended behavior and start with "should"; [Build and release](build-and-release.md#eslint) describes the rule `vitest/valid-title` that checks it.
 * **Update**: The [development guidelines](development-guidelines.md#tsdoc) ask for TSDoc comments on methods and classes as well, write errors as `@throws An {@link Error} if …`, because TypeScript misreads a `{` right after `@throws`, describe the fields of destructured parameters at their type, and write package names that start with `@` as code. [Build and release](build-and-release.md#eslint) describes the rules of `eslint-plugin-tsdoc` and `eslint-plugin-jsdoc` that check this.
 * **Update**: The tests use `test()` instead of `it()`, and ESLint checks this with `vitest/consistent-test-it`, as the [development guidelines](development-guidelines.md#tests) and [Build and release](build-and-release.md#eslint) describe. Removed "Test files use both `test()` and `it()`" from [Known issues](known-issues.md).
