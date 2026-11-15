@@ -85,10 +85,17 @@ const STEPS = ["npm install", "npm run lint", "npm test"];
  * @param header - The column titles
  * @param rows - The cells
  * @returns The table
+ * @throws {Error} If a row does not have as many cells as the header
  */
 export function formatTable(header: string[], rows: string[][]): string {
-  const widths = header.map((h, i) => Math.max(h.length, ...rows.map((r) => r[i].length)));
-  const line = (cells: string[]): string => cells.map((c, i) => c.padEnd(widths[i])).join("  ").trimEnd();
+  for (const row of rows) {
+    if (row.length !== header.length) {
+      throw new Error(`Table row has ${row.length} cells, but the header has ${header.length}: ${row.join(" | ")}`);
+    }
+  }
+  // The check above makes the fallbacks after ?? unreachable; TypeScript cannot see that.
+  const widths = header.map((h, i) => Math.max(h.length, ...rows.map((r) => (r[i] ?? "").length)));
+  const line = (cells: string[]): string => cells.map((c, i) => c.padEnd(widths[i] ?? 0)).join("  ").trimEnd();
   return [line(header), line(widths.map((w) => "-".repeat(w))), ...rows.map(line)].join("\n");
 }
 
@@ -209,7 +216,7 @@ export async function check(dir = ".", today = todayUtc(), strict = false): Prom
   if (message) {
     (message.level === "error" || strict ? problems : warnings).push(message.text);
   }
-  console.log(`Supported Node version: ${major} (engines.node ${current.engines}).`);
+  console.log(`Supported Node version: ${major} (engines.node ${current.engines ?? "-"}).`);
   for (const text of warnings) {
     report("warning", text);
   }
@@ -450,11 +457,12 @@ export async function main(args: string[]): Promise<number> {
   return 2;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+const script = process.argv[1];
+if (script !== undefined && import.meta.url === pathToFileURL(script).href) {
   main(process.argv.slice(2)).then(
     (code) => process.exit(code),
-    (error: Error) => {
-      console.error(error.message);
+    (error: unknown) => {
+      console.error(error instanceof Error ? error.message : String(error));
       process.exit(1);
     },
   );

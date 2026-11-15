@@ -28,11 +28,12 @@ export function detectDecoratorMode(): DecoratorMode {
   function probe(_target: unknown, contextOrKey: unknown): void {
     detected = typeof contextOrKey === "object" ? "stage3" : "legacy";
   }
-  class Probe {
+  // Declared only so that the compiler calls its decorator. The leading _
+  // keeps @typescript-eslint/no-unused-vars from reporting the unused class.
+  class _Probe {
     @probe
     value?: string;
   }
-  void Probe;
   if (detected === undefined) throw new Error("Probe decorator was not called");
   return detected;
 }

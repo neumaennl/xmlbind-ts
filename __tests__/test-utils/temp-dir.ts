@@ -10,7 +10,7 @@ import { tmpdir } from "os";
  */
 export async function withTmpDir(
   callback: (dir: string) => void | Promise<void>,
-  prefix: string = "xmlbind-test-"
+  prefix = "xmlbind-test-"
 ): Promise<void> {
   const tmpDir = mkdtempSync(join(tmpdir(), prefix));
   try {

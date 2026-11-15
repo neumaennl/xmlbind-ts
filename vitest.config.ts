@@ -29,7 +29,7 @@ function typescriptTranspile(decoratorMode: DecoratorMode): Plugin {
   return {
     name: `typescript-transpile-${decoratorMode}`,
     enforce: "pre",
-    transform(code, id) {
+    transform(code, id): { code: string; map: string | null } | undefined {
       if (id.endsWith(".ts")) {
         const result = ts.transpileModule(code, {
           compilerOptions: {
@@ -43,7 +43,7 @@ function typescriptTranspile(decoratorMode: DecoratorMode): Plugin {
         });
         return {
           code: result.outputText,
-          map: result.sourceMapText ? JSON.parse(result.sourceMapText) : null,
+          map: result.sourceMapText ?? null,
         };
       }
     },

@@ -22,12 +22,11 @@ export function expectStringsOnSameLine(
 ): void {
   let searchStartIndex = 0;
   
-  for (let i = 0; i < expectedStrings.length; i++) {
-    const expectedStr = expectedStrings[i];
+  for (const [i, expectedStr] of expectedStrings.entries()) {
     const index = line.indexOf(expectedStr, searchStartIndex);
     
     if (index === -1) {
-      const previous = i > 0 ? expectedStrings[i - 1] : "(start of line)";
+      const previous = expectedStrings[i - 1] ?? "(start of line)";
       throw new Error(
         `Expected string "${expectedStr}" not found after "${previous}" on the same line. ` +
         `Searched from position ${searchStartIndex} in line of length ${line.length}.`
@@ -60,21 +59,12 @@ export function expectStringsOnConsecutiveLines(
   const lines = text.split('\n');
   let currentLineIndex = 0;
 
-  for (let i = 0; i < expectedStrings.length; i++) {
-    const expectedStr = expectedStrings[i];
-    let found = false;
-
+  for (const [i, expectedStr] of expectedStrings.entries()) {
     // Search for the expected string starting from currentLineIndex
-    for (let lineIdx = currentLineIndex; lineIdx < lines.length; lineIdx++) {
-      if (lines[lineIdx].includes(expectedStr)) {
-        found = true;
-        currentLineIndex = lineIdx + 1; // Move to next line for next search
-        break;
-      }
-    }
+    const lineIdx = lines.findIndex((line, idx) => idx >= currentLineIndex && line.includes(expectedStr));
 
-    if (!found) {
-      const previous = i > 0 ? expectedStrings[i - 1] : "(start of text)";
+    if (lineIdx === -1) {
+      const previous = expectedStrings[i - 1] ?? "(start of text)";
       const searchContext = lines.slice(Math.max(0, currentLineIndex - 2), currentLineIndex + 3).join('\n');
       throw new Error(
         `Expected string "${expectedStr}" not found on consecutive lines after "${previous}".\n` +
@@ -82,5 +72,6 @@ export function expectStringsOnConsecutiveLines(
         `Context:\n${searchContext}`
       );
     }
+    currentLineIndex = lineIdx + 1; // Move to next line for next search
   }
 }

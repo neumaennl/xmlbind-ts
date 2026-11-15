@@ -5,6 +5,7 @@
     "moduleResolution": "nodenext",
     "types": [ "node", "vitest/globals" ],
     "strict": true,
+    "noUncheckedIndexedAccess": true,
     "composite": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,

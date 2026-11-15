@@ -105,7 +105,12 @@ export function editionProblems(dir: string, major: number, edition: string | un
   } catch {
     return [`${TARGET_FILE}: missing or not valid JSON, expected target and lib ${edition}`];
   }
-  const show = (value: unknown): string => (typeof value === "string" ? value.toUpperCase() : JSON.stringify(value) ?? "missing");
+  const show = (value: unknown): string => {
+    if (value === undefined) {
+      return "missing";
+    }
+    return typeof value === "string" ? value.toUpperCase() : JSON.stringify(value);
+  };
   const problems: string[] = [];
   if (show(options.target) !== edition) {
     problems.push(`${TARGET_FILE}: target is ${show(options.target)}, expected ${edition}`);

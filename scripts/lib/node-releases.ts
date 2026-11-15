@@ -163,7 +163,7 @@ function parsePartial(text: string): { parts: number[]; pre: boolean } {
     throw new Error(`Not a version: "${text}"`);
   }
   const parts: number[] = [];
-  for (const part of match.slice(1, 4)) {
+  for (const part of [match[1], match[2], match[3]]) {
     if (part === undefined || /[xX*]/.test(part)) {
       break;
     }
@@ -182,7 +182,7 @@ function parsePartial(text: string): { parts: number[]; pre: boolean } {
  * @returns The simple comparators, which all have to match
  */
 function toComparators(token: string): Comparator[] {
-  const [, op = "", rest] = /^(>=|<=|>|<|=|\^|~)?(.*)$/.exec(token) ?? [];
+  const [, op = "", rest = ""] = /^(>=|<=|>|<|=|\^|~)?(.*)$/.exec(token) ?? [];
   const { parts, pre } = parsePartial(rest);
   const [a = 0, b = 0, c = 0] = parts;
   const lower: Version = [a, b, c];
@@ -221,10 +221,11 @@ function toComparators(token: string): Comparator[] {
  */
 function parseSet(set: string): Comparator[] {
   const tokens = set.replace(/(>=|<=|>|<|=|\^|~)\s+/g, "$1").split(/\s+/).filter(Boolean);
-  if (tokens.length === 3 && tokens[1] === "-") {
-    const full = parsePartial(tokens[2]).parts.length === 3;
-    const upper = full ? toComparators(`<=${tokens[2]}`) : toComparators(tokens[2]).slice(1);
-    return [...toComparators(`>=${tokens[0]}`), ...upper];
+  const [from, dash, to] = tokens;
+  if (tokens.length === 3 && from !== undefined && dash === "-" && to !== undefined) {
+    const full = parsePartial(to).parts.length === 3;
+    const upper = full ? toComparators(`<=${to}`) : toComparators(to).slice(1);
+    return [...toComparators(`>=${from}`), ...upper];
   }
   return tokens.flatMap(toComparators);
 }

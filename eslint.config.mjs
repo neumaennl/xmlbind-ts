@@ -42,14 +42,19 @@ export default defineConfig([
       },
     },
   },
-  // TypeScript. no-floating-promises reports promises that are neither awaited
-  // nor handled, because their errors are lost, such as a failing assertion in
-  // withTmpDir(). It needs type information from the projects that
-  // tsconfig.json references; the configuration file of Vitest is in none of
-  // them.
+  // TypeScript, with the strict and stylistic rules of typescript-eslint that
+  // need type information. They take it from the projects that tsconfig.json
+  // references; the configuration file of Vitest is in none of them. Among
+  // them, no-floating-promises reports promises that are neither awaited nor
+  // handled, because their errors are lost, such as a failing assertion in
+  // withTmpDir().
   {
     files: ["**/*.ts"],
-    extends: [js.configs.recommended, typescriptEslint.configs["flat/recommended"]],
+    extends: [
+      js.configs.recommended,
+      typescriptEslint.configs["flat/strict-type-checked"],
+      typescriptEslint.configs["flat/stylistic-type-checked"],
+    ],
     languageOptions: {
       parser: tsParser,
       sourceType: "module",
@@ -72,12 +77,42 @@ export default defineConfig([
         "error",
         {
           argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
         },
       ],
 
-      "@typescript-eslint/no-explicit-any": "off",
+      // Numbers in messages are fine; other types, such as undefined, are not.
+      // The options of the strict preset are repeated, because options given
+      // here replace them.
+      "@typescript-eslint/restrict-template-expressions": [
+        "error",
+        {
+          allowAny: false,
+          allowBoolean: false,
+          allowNever: false,
+          allowNullish: false,
+          allowNumber: true,
+          allowRegExp: false,
+        },
+      ],
 
-      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/explicit-function-return-type": "error",
+
+      "@typescript-eslint/switch-exhaustiveness-check": "error",
+
+      // Leaves files with decorators alone while emitDecoratorMetadata is on,
+      // so it does not break the metadata of the decorators.
+      "@typescript-eslint/consistent-type-imports": "error",
+
+      // `x as unknown` and `const x: unknown` bypass type checks.
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            'TSAsExpression[typeAnnotation.type="TSUnknownKeyword"], VariableDeclarator[id.typeAnnotation.typeAnnotation.type="TSUnknownKeyword"]',
+          message: "Avoid `unknown` in type assertions and variable-type annotations. If unavoidable, add eslint-disable-next-line with a justification.",
+        },
+      ],
 
       "style/max-ternary-lines": "error",
     },
@@ -87,6 +122,8 @@ export default defineConfig([
     files: ["**/__tests__/**/*.ts"],
     extends: [vitest.configs.recommended],
     rules: {
+      // Empty mock implementations, such as mockImplementation(() => {}), are intended.
+      "@typescript-eslint/no-empty-function": ["error", { allow: ["arrowFunctions"] }],
       // Vitest provides its API as globals (globals: true in vitest.config.ts).
       "vitest/no-importing-vitest-globals": "error",
       "vitest/expect-expect": [

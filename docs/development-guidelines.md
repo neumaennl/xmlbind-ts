@@ -4,7 +4,7 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-14T19:48:42Z }
+generated: { by: human:neumaennl, at: 2026-11-15T11:57:47Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -52,12 +52,12 @@ ESLint should check the limits with the rules `max-lines` and `max-lines-per-fun
 # TypeScript
 
 - Follow the established best practices for TypeScript.
-- The TypeScript configuration is `strict`.[^tsconfig]
+- The TypeScript configuration is `strict` and sets `noUncheckedIndexedAccess`, so that indexed access, such as `array[i]`, includes `undefined`.[^tsconfig]
 - Define interfaces or types for data structures.
 - Define a type in the module that owns the data it describes. Put types that several modules share in a `types.ts` of their folder; `src/types.ts` holds the metadata types.
 - Names: PascalCase for classes, interfaces, types and decorators; camelCase for functions, methods and variables; UPPER_CASE for module-level constants. Names say what something is or does.
 - Length of names: clarity comes first, but keep them short. Aim for less than 15 characters; 25 to 30 is the upper limit. `createElement` is better than `createElementWithChildren`; `createElementNodeWithProcessingOfAnonymousTypes` is too long, `cen` too cryptic.
-- Avoid `any` where possible; use a specific type or `unknown` instead. ESLint does not report `any` (see [`any` is used widely](known-issues.md#any-is-used-widely)).[^eslint]
+- Do not use `any`; use a specific type or `unknown` instead. ESLint reports `any`, and `unknown` in type assertions and in the types of variables.[^eslint]
 
 # Node version
 

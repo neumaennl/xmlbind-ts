@@ -35,23 +35,32 @@ const realIsTTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY") ?? { v
 
 let dir: string;
 
+/** What writeProject() changes in the files of the test folder. */
+interface ProjectChanges {
+  /** Replaces fields of `package.json` */
+  pkg?: object;
+  /** The content of `.nvmrc`, or null for no file */
+  nvmrc?: string | null;
+  /** The line endings */
+  eol?: string;
+  /** The `package-lock.json` */
+  lock?: object;
+  /** The content of `tsconfig.target.json`, or null for no file */
+  target?: object | null;
+}
+
 /**
  * Writes `package.json`, `package-lock.json`, `.nvmrc` and `tsconfig.target.json` into the test folder.
  *
- * @param options - What to change in the files
- * @param options.pkg - Replaces fields of `package.json`
- * @param options.nvmrc - The content of `.nvmrc`, or null for no file
- * @param options.eol - The line endings
- * @param options.lock - The `package-lock.json`
- * @param options.target - The content of `tsconfig.target.json`, or null for no file
+ * @param changes - What to change in the files
  */
 function writeProject({
   pkg = {},
-  nvmrc = "24" as string | null,
+  nvmrc = "24",
   eol = "\n",
-  lock = PACKAGE_LOCK as object,
-  target = ES2024 as object | null,
-} = {}): void {
+  lock = PACKAGE_LOCK,
+  target = ES2024,
+}: ProjectChanges = {}): void {
   writeFileSync(join(dir, "package.json"), `${JSON.stringify({ ...PACKAGE_JSON, ...pkg }, null, 2)}\n`.replace(/\n/g, eol));
   writeFileSync(join(dir, "package-lock.json"), JSON.stringify(lock));
   if (nvmrc !== null) {
@@ -105,6 +114,13 @@ describe("node-version", () => {
   describe("formatTable", () => {
     it("should align the columns and underline the header", () => {
       expect(formatTable(["A", "Long"], [["xyz", "1"]])).toBe("A    Long\n---  ----\nxyz  1");
+    });
+
+    it.each([
+      ["fewer", ["xyz"]],
+      ["more", ["xyz", "1", "2"]],
+    ])("should throw if a row has %s cells than the header", (_, row) => {
+      expect(() => formatTable(["A", "Long"], [row])).toThrow(`Table row has ${row.length} cells, but the header has 2`);
     });
   });
 
@@ -324,7 +340,7 @@ describe("node-version", () => {
       expect(output).toContain("Node 22.0.0 by commander 15.0.0 (>=22.12.0), require() of ES modules");
       expect(output).toContain("Enter a major version, for example 24.");
       expect(asker.question).toHaveBeenCalledWith("Node major version [24]: ");
-      expect(JSON.parse(read("package.json")).engines.node).toBe(">=24");
+      expect((JSON.parse(read("package.json")) as typeof PACKAGE_JSON).engines.node).toBe(">=24");
       expect(read(".nvmrc")).toBe("24\n");
       expect(JSON.parse(read("tsconfig.target.json"))).toEqual({ compilerOptions: ES2024 });
       expect(installNode).toHaveBeenCalledWith("24.21.0");

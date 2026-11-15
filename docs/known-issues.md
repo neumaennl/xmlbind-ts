@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-14T17:03:55Z }
+generated: { by: human:neumaennl, at: 2026-11-15T11:57:47Z }
 sources:
   - id: registry
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
@@ -535,7 +535,7 @@ Effort:
 - **Location:** most files in `src/`, in particular `src/marshalling/marshal.ts`, `src/marshalling/unmarshal.ts` and `src/decorators/`
 - **Severity:** Low
 - **Effort:** L
-- **Description:** The [development guidelines](development-guidelines.md#typescript) ask to avoid `any`, but `src/` uses it for field metadata (although `FieldMeta` exists), for parsed XML nodes, for the `schema as any` casts around xmldom's types, in `Constructor` and in the signatures of the decorators, which serve legacy and Stage 3 decorators at once. Each of these can have a specific type: `FieldMeta`, a type for parsed nodes or `Record<string, unknown>`, xmldom's own types, `new (...args: never[]) => T`, and overloads for the two decorator forms. Since ESLint does not report `any` (`@typescript-eslint/no-explicit-any` is off), the rule could be switched on once the code is converted.[^eslint]
+- **Description:** The [development guidelines](development-guidelines.md#typescript) ask to avoid `any`, but `src/` uses it for field metadata (although `FieldMeta` exists), for parsed XML nodes, for the `schema as any` casts around xmldom's types, in `Constructor` and in the signatures of the decorators, which serve legacy and Stage 3 decorators at once. Each of these can have a specific type: `FieldMeta`, a type for parsed nodes or `Record<string, unknown>`, xmldom's own types, `new (...args: never[]) => T`, and overloads for the two decorator forms. Version 3 does not have this problem: ESLint reports `any` (`@typescript-eslint/no-explicit-any`).[^eslint]
 - **GitHub issue:** none
 
 ## `unmarshal()` parses every document twice

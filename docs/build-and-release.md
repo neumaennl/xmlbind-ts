@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-14T19:48:42Z }
+generated: { by: human:neumaennl, at: 2026-11-15T11:57:47Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -73,9 +73,9 @@ This document describes how the package is built, checked, packaged and publishe
 | File | Covers | Purpose |
 |---|---|---|
 | `tsconfig.target.json` | — | the ECMAScript edition of the supported Node.js version as `target` and `lib`; the build and the scripts extend it |
-| `tsconfig.build.json` | `src/` | the build: `NodeNext` modules, `strict`, declarations, output in `dist/` |
+| `tsconfig.build.json` | `src/` | the build: `NodeNext` modules, `strict`, `noUncheckedIndexedAccess`, declarations, output in `dist/` |
 | `tsconfig.test.json` | `src/`, `__tests__/` | type-checking the tests in an editor; extends the build configuration and emits nothing |
-| `tsconfig.scripts.json` | `scripts/` | type-checking the scripts, which Node.js runs directly as TypeScript; only erasable syntax is allowed |
+| `tsconfig.scripts.json` | `scripts/` | type-checking the scripts, which Node.js runs directly as TypeScript; `strict`, `noUncheckedIndexedAccess`, and only erasable syntax is allowed |
 | `tsconfig.json` | — | references the build, test and scripts configurations, for editors and `tsc --build` |
 
 The build configuration enables `experimentalDecorators` and `emitDecoratorMetadata`, but the library itself declares no decorated classes, so these options do not affect the output.[^tsconfig-build] Which decorators an application uses depends on its own configuration; both kinds are supported ([ADR 001](architecture/001-reimplementation.md#principles)). No script or CI step uses `tsconfig.test.json` (see [Tests are not type-checked](known-issues.md#tests-are-not-type-checked)).[^tsconfig-test]
@@ -136,17 +136,23 @@ ESLint gives each kind of file the rules that fit it:[^eslint]
 
 | Files | Rules |
 |---|---|
-| `.ts` | the recommended rules of ESLint and `typescript-eslint`, with type information (see below) |
+| `.ts` | the recommended rules of ESLint, and the strict and stylistic rules of `typescript-eslint` with type information (see below) |
 | `.ts` in `__tests__` folders | in addition, the recommended rules of the Vitest plugin |
 | `.mjs`, such as `eslint.config.mjs` | the recommended rules of ESLint |
 
 The project's own settings:
 
-- unused variables are errors, except parameters whose names start with `_`;
-- `any` is allowed (see [`any` is used widely](known-issues.md#any-is-used-widely));
+- the rules of `typescript-eslint` need type information, which ESLint takes from the projects that `tsconfig.json` references; `vitest.config.ts`, which none of them includes, is checked without a project;
+- unused variables are errors, except parameters and variables whose names start with `_`;
+- `@typescript-eslint/restrict-template-expressions` allows numbers in template literals, but no other types that are not strings, such as `undefined`;
+- `@typescript-eslint/explicit-function-return-type` asks for the return type of every function;
+- `@typescript-eslint/switch-exhaustiveness-check` reports a `switch` on a union or enum that misses cases;
+- `@typescript-eslint/consistent-type-imports` asks for `import type` when only types are imported; it leaves files with decorators alone while `emitDecoratorMetadata` is on, because the metadata needs the values;
+- `unknown` is not allowed in type assertions (`x as unknown`) and in the types of variables (`const x: unknown`), because both bypass type checks;
+- in the tests, `@typescript-eslint/no-empty-function` allows empty arrow functions, such as empty mock implementations;
 - `vitest/expect-expect` accepts the assertion helpers of the tests;
 - `vitest/no-importing-vitest-globals` reports imports of `test`, `expect`, `vi` and the rest of Vitest's API, which the tests use as globals (`globals: true` in `vitest.config.ts`); types such as `Mock` are still imported;
-- `@typescript-eslint/no-floating-promises` reports promises that are neither awaited nor handled, because their errors would be lost; in the tests, a failing assertion in `withTmpDir()` would not fail its test. The rule needs type information, which ESLint takes from the projects that `tsconfig.json` references; `vitest.config.ts`, which none of them includes, is checked without a project;
+- among the strict rules, `@typescript-eslint/no-floating-promises` reports promises that are neither awaited nor handled, because their errors would be lost; in the tests, a failing assertion in `withTmpDir()` would not fail its test;
 - the local rule `style/max-ternary-lines`, defined in `eslint.config.mjs`, reports conditional expressions that span more than three lines, which the guidelines ask to write as `if`/`else` (see [Code quality](development-guidelines.md#code-quality));
 - `.js`, `.cjs`, `.mts` and `.cts` files are not allowed at all, because the package is an ES module and needs no other kinds of files;
 - `dist/`, `coverage/`, `test-results/` and folders named `generated/` are ignored.
