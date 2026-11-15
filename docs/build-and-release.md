@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T11:57:47Z }
+generated: { by: human:neumaennl, at: 2026-11-15T12:40:00Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -73,9 +73,9 @@ This document describes how the package is built, checked, packaged and publishe
 | File | Covers | Purpose |
 |---|---|---|
 | `tsconfig.target.json` | — | the ECMAScript edition of the supported Node.js version as `target` and `lib`; the build and the scripts extend it |
-| `tsconfig.build.json` | `src/` | the build: `NodeNext` modules, `strict`, `noUncheckedIndexedAccess`, declarations, output in `dist/` |
+| `tsconfig.build.json` | `src/` | the build: `NodeNext` modules, `strict`, `noUncheckedIndexedAccess`, unreachable code as an error, declarations, output in `dist/` |
 | `tsconfig.test.json` | `src/`, `__tests__/` | type-checking the tests in an editor; extends the build configuration and emits nothing |
-| `tsconfig.scripts.json` | `scripts/` | type-checking the scripts, which Node.js runs directly as TypeScript; `strict`, `noUncheckedIndexedAccess`, and only erasable syntax is allowed |
+| `tsconfig.scripts.json` | `scripts/` | type-checking the scripts, which Node.js runs directly as TypeScript; `strict`, `noUncheckedIndexedAccess`, unreachable code as an error, and only erasable syntax is allowed |
 | `tsconfig.json` | — | references the build, test and scripts configurations, for editors and `tsc --build` |
 
 The build configuration enables `experimentalDecorators` and `emitDecoratorMetadata`, but the library itself declares no decorated classes, so these options do not affect the output.[^tsconfig-build] Which decorators an application uses depends on its own configuration; both kinds are supported ([ADR 001](architecture/001-reimplementation.md#principles)). No script or CI step uses `tsconfig.test.json` (see [Tests are not type-checked](known-issues.md#tests-are-not-type-checked)).[^tsconfig-test]
@@ -143,7 +143,8 @@ ESLint gives each kind of file the rules that fit it:[^eslint]
 The project's own settings:
 
 - the rules of `typescript-eslint` need type information, which ESLint takes from the projects that `tsconfig.json` references; `vitest.config.ts`, which none of them includes, is checked without a project;
-- unused variables are errors, except parameters and variables whose names start with `_`;
+- unused variables, imports and parameters are errors, except parameters and variables whose names start with `_`; ESLint checks them, not TypeScript, so that they are reported once;
+- unreachable code is reported by TypeScript (`allowUnreachableCode: false`), not by ESLint: TypeScript knows types such as `never`, so `typescript-eslint` turns `no-unreachable` off;
 - `@typescript-eslint/restrict-template-expressions` allows numbers in template literals, but no other types that are not strings, such as `undefined`;
 - `@typescript-eslint/explicit-function-return-type` asks for the return type of every function;
 - `@typescript-eslint/switch-exhaustiveness-check` reports a `switch` on a union or enum that misses cases;

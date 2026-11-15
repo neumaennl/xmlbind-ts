@@ -6,12 +6,12 @@
     "types": [ "node", "vitest/globals" ],
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    "allowUnreachableCode": false,
     "composite": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
-    "noUnusedLocals": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },

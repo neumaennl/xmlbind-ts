@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T11:57:47Z }
+generated: { by: human:neumaennl, at: 2026-11-15T12:40:00Z }
 sources:
   - id: registry
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
@@ -585,7 +585,7 @@ Effort:
 - **Location:** `src/`, `scripts/`, `package.json`, `.github/workflows/ci.yml`
 - **Severity:** Low
 - **Effort:** S
-- **Description:** ESLint and TypeScript only find unused code within one file: unused variables, imports and parameters. Nothing finds code that is unused across files:
+- **Description:** Within one file, ESLint finds unused variables, imports, parameters and private class members, and TypeScript finds unreachable code. Nothing finds code that is unused across files:
   - exports that no module imports, and files that nothing imports;
   - class members and enum members that are never used;
   - code that only tests call;
