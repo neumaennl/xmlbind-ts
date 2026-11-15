@@ -1,5 +1,8 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-15
+* **Update**: [ADR 002](architecture/002-xml-library.md#decision) follows the design that the maintainer of slimdom agreed to on [bwrrp/slimdom.js#148](https://github.com/bwrrp/slimdom.js/issues/148). The ranges of a node are a tagged union with one variant per kind of node. The text declaration of a fragment gets a range on the document fragment. Line and column of parse errors are not part of the pull request. Removed the plan for the case that the maintainer does not answer, and the review point for the answer.
+
 ## 2026-11-14
 * **Update**: New rule in the [Development guidelines](development-guidelines.md#tests): a unit test tests one module and calls it directly; a test that reaches a module only through another module is an integration test. [Testing](testing.md#kinds-of-tests) defines unit and integration tests. Taken over from the editor, where tests of the properties panel tabs turned out to test the whole panel.
 * **Update**: New rule in the [Development guidelines](development-guidelines.md#code-quality): a conditional expression spans at most three lines, a longer one is written as `if`/`else`; [Build and release](build-and-release.md#eslint) describes the local ESLint rule `style/max-ternary-lines` that checks it. Taken over from the editor.

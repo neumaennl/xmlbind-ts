@@ -4,7 +4,7 @@ title: "ADR 002: slimdom as the XML library"
 description: The decision to parse and write XML with slimdom, to support XML 1.0 only, and to get the source ranges of the nodes through a pull request to slimdom, with the measurements of the candidates and the rejected alternatives.
 tags: [adr, architecture, xml, parser, serializer, dom, source-ranges]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-14T13:57:05Z }
+generated: { by: human:neumaennl, at: 2026-11-15T10:42:34Z }
 sources:
   - id: issue-301
     resource: https://github.com/neumaennl/xmlbind-ts/issues/301
@@ -38,7 +38,7 @@ sources:
 # ADR 002: slimdom as the XML library
 
 **Status:** Accepted  
-**Date:** 2026-11-14  
+**Date:** 2026-11-15  
 **Issue:** [#301](https://github.com/neumaennl/xmlbind-ts/issues/301)
 
 ## Context
@@ -57,7 +57,7 @@ All offsets must refer to the string that the application passed in.[^issue-301]
 
 - **slimdom** parses and writes XML in version 3. It is used through `parseXmlDocument()`, `parseXmlFragment()` and `serializeToWellFormedString()`, and otherwise through the standard DOM API.
 - **XML 1.0 only.** `unmarshal()` rejects a document that declares `version="1.1"` and reports why. This does not exclude XSD 1.1: its schema documents are XML 1.0 documents.
-- **The source ranges come from slimdom.** xmlbind-ts implements [slimdom#148](https://github.com/bwrrp/slimdom.js/issues/148) as a pull request.[^slimdom-148] The issue is the maintainer's own plan. The parser fills an optional map from nodes to their ranges:
+- **The source ranges come from slimdom.** xmlbind-ts implements [slimdom#148](https://github.com/bwrrp/slimdom.js/issues/148) as a pull request.[^slimdom-148] The issue is the maintainer's own plan. The parser fills an optional map from nodes to their ranges. The ranges of a node are a tagged union with one variant per kind of node:
 
   | Node | Ranges |
   |---|---|
@@ -66,12 +66,11 @@ All offsets must refer to the string that the application passed in.[^issue-301]
   | Text | from the start of its first piece to the end of its last piece |
   | CDATA section, comment, processing instruction, document type | the whole node |
   | XML declaration | the whole declaration, kept for the document because it is not a node |
+  | Text declaration of a fragment | the whole declaration, kept for the document fragment |
 
   - Nodes from the replacement text of an entity get no range of their own. Neither do attributes that the DTD adds as defaults.
   - The offsets refer to the original string, before the byte order mark is removed and the line ends are normalized.
-- **If no released version of slimdom has the ranges when the binder ([#303](https://github.com/neumaennl/xmlbind-ts/issues/303)) needs them,** xmlbind-ts uses the change from a temporary fork of slimdom until it is released.
-  - If the maintainer has not answered by then, the fork follows the design proposed on slimdom#148.
-  - The pull request stays open upstream.
+- **If no released version of slimdom has the ranges when the binder ([#303](https://github.com/neumaennl/xmlbind-ts/issues/303)) needs them,** xmlbind-ts uses the change from a temporary fork of slimdom until it is released. The pull request stays open upstream.
 
   The fork gets:
   - a known issue that links slimdom#148 and lists what to remove;
@@ -133,12 +132,12 @@ The binder ([#303](https://github.com/neumaennl/xmlbind-ts/issues/303)) covers e
   - `@rgrove/parse-xml` and `sax` record whole nodes or events, but are not DOMs.
 - slimdom#148 plans exactly this feature, in the form the binder needs: an optional map from nodes to ranges.[^slimdom-148]
 - The grammar of slimdom already records offsets for names, references, CDATA sections and end tags. The pull request extends this to the other productions. It translates the offsets back to the original string.
-- The design of the pull request is agreed with the maintainer on slimdom#148 before the code is written.
+- The maintainer agreed to the design of the pull request on slimdom#148.
 
 ## Consequences
 
 - `slimdom` becomes a runtime dependency of xmlbind-ts. The binder adds it to `package.json`.
-- Parse errors give their line and column only in the message text. The pull request for slimdom#148 can add them as properties, as the maintainer offered.
+- Parse errors give their line and column only in the message text. The pull request for slimdom#148 does not change this. If xmlbind-ts needs them as properties, this is a separate change to slimdom.
 - The DOM does not keep the XML declaration or the internal subset of the document type. Writing only the changes keeps their text through the ranges.
 - The serializer writes a carriage return in text as it is, as the [DOM Parsing standard](https://w3c.github.io/DOM-Parsing/) says, so it becomes a line feed when the document is parsed again.[^dom-parsing] The binder decides how to write such values.
 - A document with `version="1.1"` is rejected, even where its content would also be valid XML 1.0.
@@ -175,7 +174,6 @@ The binder ([#303](https://github.com/neumaennl/xmlbind-ts/issues/303)) covers e
 
 ## Review
 
-- **When the maintainer answers on slimdom#148:** adjust the ranges to the design agreed there.
 - **When work on the binder starts,** if the change is not released: switch to the temporary fork.
 - **When the change is released:** remove the fork, its known issue and its upstream test.
 - **When slimdom stops being maintained,** for example when security problems stay unfixed: measure the candidates again.
