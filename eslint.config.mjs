@@ -169,6 +169,10 @@ export default defineConfig([
     rules: {
       // Empty mock implementations, such as mockImplementation(() => {}), are intended.
       "@typescript-eslint/no-empty-function": ["error", { allow: ["arrowFunctions"] }],
+      // Test cases use test(), not it() (see "Tests" in docs/development-guidelines.md).
+      // The defaults require it() inside describe(). Setting fn alone would be enough, because
+      // withinDescribe then takes its value, but both are set to make the intent obvious.
+      "vitest/consistent-test-it": ["error", { fn: "test", withinDescribe: "test" }],
       // Vitest provides its API as globals (globals: true in vitest.config.ts).
       "vitest/no-importing-vitest-globals": "error",
       "vitest/expect-expect": [

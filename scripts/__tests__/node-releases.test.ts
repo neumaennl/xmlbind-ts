@@ -25,35 +25,35 @@ afterEach(() => {
 
 describe("node-releases", () => {
   describe("enginesMajor", () => {
-    it("should read the major version of >=N", () => {
+    test("should read the major version of >=N", () => {
       expect(enginesMajor(">=24")).toBe(24);
       expect(enginesMajor(">= 24")).toBe(24);
     });
 
-    it.each([undefined, "^24", ">=24.0.0", ">=24 <26"])("should return undefined for %s", (engines) => {
+    test.each([undefined, "^24", ">=24.0.0", ">=24 <26"])("should return undefined for %s", (engines) => {
       expect(enginesMajor(engines)).toBeUndefined();
     });
   });
 
   describe("typesNodeMajor", () => {
-    it("should read the major version of ^N.x.y", () => {
+    test("should read the major version of ^N.x.y", () => {
       expect(typesNodeMajor("^24.19.2")).toBe(24);
     });
 
-    it.each([undefined, "~24.19.0", "^24", "24.19.2"])("should return undefined for %s", (range) => {
+    test.each([undefined, "~24.19.0", "^24", "24.19.2"])("should return undefined for %s", (range) => {
       expect(typesNodeMajor(range)).toBeUndefined();
     });
   });
 
   describe("typesNodeRange", () => {
-    it("should return ^ and the latest @types/node of the major version", () => {
+    test("should return ^ and the latest @types/node of the major version", () => {
       expect(typesNodeRange(24, TYPES_NODE)).toBe("^24.12.0");
       expect(typesNodeRange(23, TYPES_NODE)).toBeUndefined();
     });
   });
 
   describe("runtimeConstraints", () => {
-    it("should collect the engines.node of the runtime dependencies and add require() of ES modules", () => {
+    test("should collect the engines.node of the runtime dependencies and add require() of ES modules", () => {
       const lock = {
         packages: {
           "": { engines: { node: ">=24" } },
@@ -77,7 +77,7 @@ describe("node-releases", () => {
   });
 
   describe("violated", () => {
-    it("should name the constraints that exclude the first version of the major version", () => {
+    test("should name the constraints that exclude the first version of the major version", () => {
       const constraints = [{ name: "commander 15.0.0", range: ">=22.12.0" }, REQUIRE_ESM];
 
       expect(violated(22, constraints)).toEqual(constraints);
@@ -85,7 +85,7 @@ describe("node-releases", () => {
       expect(violated(24, constraints)).toEqual([]);
     });
 
-    it("should name the constraint whose range it cannot read", () => {
+    test("should name the constraint whose range it cannot read", () => {
       expect(() => violated(24, [{ name: "some-dep 1.0.0", range: "node >= 22" }])).toThrow(
         'some-dep 1.0.0: cannot read the Node range "node >= 22" (Not a version: "node")',
       );
@@ -93,14 +93,14 @@ describe("node-releases", () => {
   });
 
   describe("supportedLines", () => {
-    it("should list the lines that have started and not reached their end of life", () => {
+    test("should list the lines that have started and not reached their end of life", () => {
       expect(supportedLines(SCHEDULE, "2026-10-14")).toEqual([22, 24, 26]);
       expect(supportedLines(SCHEDULE, "2026-05-01")).toEqual([22, 24, 25]);
     });
   });
 
   describe("exclusions", () => {
-    it("should find the first versions of the major version and of newer supported lines that a constraint excludes", () => {
+    test("should find the first versions of the major version and of newer supported lines that a constraint excludes", () => {
       const upper = { name: "foo 1.0.0", range: ">=24 <26" };
       const commander = { name: "commander 15.0.0", range: ">=22.12.0" };
 
@@ -114,7 +114,7 @@ describe("node-releases", () => {
       ]);
     });
 
-    it("should describe exclusions for a message", () => {
+    test("should describe exclusions for a message", () => {
       const excluded = [
         { version: "22.0.0", excludedBy: [{ name: "a 1.0.0", range: ">=22.12.0" }, { name: "b", range: ">=24" }] },
         { version: "26.0.0", excludedBy: [{ name: "c", range: "<26" }] },
@@ -125,7 +125,7 @@ describe("node-releases", () => {
   });
 
   describe("lineStatus", () => {
-    it.each([
+    test.each([
       ["2027-05-01", "v27", "Current"],
       ["2027-04-01", "v27", "Planned"],
       ["2026-10-14", "v24", "Active LTS"],
@@ -138,23 +138,23 @@ describe("node-releases", () => {
   });
 
   describe("endOfLife", () => {
-    it("should be ok more than 90 days before the end of life", () => {
+    test("should be ok more than 90 days before the end of life", () => {
       expect(endOfLife(24, SCHEDULE, "2028-01-30")).toEqual({ end: "2028-04-30", days: 91, level: "ok" });
     });
 
-    it("should warn in the 90 days before the end of life", () => {
+    test("should warn in the 90 days before the end of life", () => {
       expect(endOfLife(24, SCHEDULE, "2028-01-31").level).toBe("warning");
       expect(endOfLife(24, SCHEDULE, "2028-04-29")).toEqual({ end: "2028-04-30", days: 1, level: "warning" });
     });
 
-    it("should be an error from the end of life on, and for an unknown line", () => {
+    test("should be an error from the end of life on, and for an unknown line", () => {
       expect(endOfLife(24, SCHEDULE, "2028-04-30").level).toBe("error");
       expect(endOfLife(99, SCHEDULE, "2026-10-14")).toEqual({ level: "error" });
     });
   });
 
   describe("listLines", () => {
-    it("should list the released lines before their end of life and tell which constraints exclude them", () => {
+    test("should list the released lines before their end of life and tell which constraints exclude them", () => {
       const commander = { name: "commander 15.0.0", range: ">=22.12.0" };
 
       expect(listLines(DATA, [commander], "2026-10-14")).toEqual([
@@ -166,20 +166,20 @@ describe("node-releases", () => {
   });
 
   describe("newestLts", () => {
-    it("should return the newest LTS line", () => {
+    test("should return the newest LTS line", () => {
       expect(newestLts(DATA, "2026-10-14")).toBe(24);
       expect(newestLts(DATA, "2026-10-28")).toBe(26);
     });
   });
 
   describe("loadData", () => {
-    it("should download the schedule, the releases oldest first and the @types/node versions", async () => {
+    test("should download the schedule, the releases oldest first and the @types/node versions", async () => {
       stubNodeData();
 
       await expect(loadData()).resolves.toEqual(DATA);
     });
 
-    it("should fail if a download fails", async () => {
+    test("should fail if a download fails", async () => {
       stubFetch({ [URLS.index]: [] });
 
       await expect(loadData()).rejects.toThrow(`${URLS.schedule}: HTTP 404`);

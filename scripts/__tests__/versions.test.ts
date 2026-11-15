@@ -2,18 +2,18 @@ import { latestOfMajor, parseVersion, satisfies } from "../lib/versions.ts";
 
 describe("versions", () => {
   describe("parseVersion", () => {
-    it("should parse a version with or without v", () => {
+    test("should parse a version with or without v", () => {
       expect(parseVersion("22.12.0")).toEqual([22, 12, 0]);
       expect(parseVersion("v24.21.0")).toEqual([24, 21, 0]);
     });
 
-    it("should reject a partial version", () => {
+    test("should reject a partial version", () => {
       expect(() => parseVersion("22.12")).toThrow('Not a version: "22.12"');
     });
   });
 
   describe("satisfies", () => {
-    it.each([
+    test.each([
       ["22.12.0", ">=22.12.0", true],
       ["22.11.9", ">=22.12.0", false],
       ["20.19.0", "^20.19.0 || >=22.12.0", true],
@@ -60,13 +60,13 @@ describe("versions", () => {
       expect(satisfies(version, range)).toBe(expected);
     });
 
-    it("should reject an unknown range", () => {
+    test("should reject an unknown range", () => {
       expect(() => satisfies("22.12.0", "node >= 22")).toThrow("Not a version");
     });
   });
 
   describe("latestOfMajor", () => {
-    it("should find the latest version of a major version, without pre-releases", () => {
+    test("should find the latest version of a major version, without pre-releases", () => {
       expect(latestOfMajor(["24.12.0", "24.19.2", "24.20.0-rc.1", "26.6.5"], 24)).toBe("24.19.2");
       expect(latestOfMajor(["24.12.0"], 26)).toBeUndefined();
     });

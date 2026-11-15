@@ -4,7 +4,7 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T17:10:00Z }
+generated: { by: human:neumaennl, at: 2026-11-15T17:40:00Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -81,7 +81,7 @@ Every function has an up-to-date TSDoc comment: what it does, each parameter wit
 # Tests
 
 - New and changed code is tested.
-- Test cases use `test()`, not `it()` (see [Test files use both `test()` and `it()`](known-issues.md#test-files-use-both-test-and-it)).
+- Test cases use `test()`, not `it()`. ESLint checks this with the rule `vitest/consistent-test-it`.[^eslint]
 - A unit test tests one module and calls that module directly. A test that reaches a module only through another module is an integration test (see [Kinds of tests](testing.md#kinds-of-tests)).
 - A test file tests one feature. Tests for the same feature are not scattered over several test files.
 - Two tests do not test exactly the same thing.

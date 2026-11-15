@@ -26,11 +26,11 @@ afterEach(() => {
 
 describe("compiler-target", () => {
   describe("parseBaseEdition", () => {
-    it("should take the edition from the target in upper case and ignore the libraries", () => {
+    test("should take the edition from the target in upper case and ignore the libraries", () => {
       expect(parseBaseEdition(JSON.stringify(base(24)), "node24.json")).toBe("ES2024");
     });
 
-    it.each([
+    test.each([
       ["{ not json", "node24.json: not valid JSON."],
       ['{ "compilerOptions": { "target": "esnext" } }', 'node24.json: expected a target ESxxxx, found "esnext".'],
       ['{ "compilerOptions": {} }', "node24.json: expected a target ESxxxx, found undefined."],
@@ -40,7 +40,7 @@ describe("compiler-target", () => {
   });
 
   describe("loadEdition and loadEditions", () => {
-    it("should load the editions once per major version and return undefined for a version without a configuration", async () => {
+    test("should load the editions once per major version and return undefined for a version without a configuration", async () => {
       const fetchMock = stubFetch({ [URLS.base(24)]: base(24), [URLS.base(26)]: base(26) });
 
       await expect(loadEdition(24)).resolves.toBe("ES2024");
@@ -48,7 +48,7 @@ describe("compiler-target", () => {
       expect(fetchMock).toHaveBeenCalledTimes(4);
     });
 
-    it("should fail if the request fails for another reason", async () => {
+    test("should fail if the request fails for another reason", async () => {
       vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false, status: 500 })));
 
       await expect(loadEdition(24)).rejects.toThrow(`${URLS.base(24)}: HTTP 500`);
@@ -56,13 +56,13 @@ describe("compiler-target", () => {
   });
 
   describe("editionProblems", () => {
-    it("should accept target and lib with the edition in any case", () => {
+    test("should accept target and lib with the edition in any case", () => {
       writeConfig({ target: "es2024", lib: ["ES2024"] });
 
       expect(editionProblems(dir, 24, "ES2024")).toEqual([]);
     });
 
-    it("should name target and lib if they differ", () => {
+    test("should name target and lib if they differ", () => {
       writeConfig({ target: "ES2022", lib: ["ES2024", "ESNext.Array"] });
 
       expect(editionProblems(dir, 24, "ES2024")).toEqual([
@@ -71,7 +71,7 @@ describe("compiler-target", () => {
       ]);
     });
 
-    it("should name missing settings and a missing file", () => {
+    test("should name missing settings and a missing file", () => {
       writeConfig({});
       expect(editionProblems(dir, 24, "ES2024")).toEqual([
         "tsconfig.target.json: target is missing, expected ES2024",
@@ -82,14 +82,14 @@ describe("compiler-target", () => {
       expect(editionProblems(dir, 24, "ES2024")).toEqual(["tsconfig.target.json: missing or not valid JSON, expected target and lib ES2024"]);
     });
 
-    it("should report a major version without a configuration", () => {
+    test("should report a major version without a configuration", () => {
       expect(editionProblems(dir, 28, undefined)).toEqual([missingEdition(28)]);
       expect(missingEdition(28)).toBe("There is no @tsconfig/bases configuration for Node 28.");
     });
   });
 
   describe("writeEdition", () => {
-    it("should write the edition as target and lib with CRLF line endings", () => {
+    test("should write the edition as target and lib with CRLF line endings", () => {
       writeEdition(dir, "ES2024", true);
 
       const text = readFileSync(join(dir, "tsconfig.target.json"), "utf8");

@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T17:10:00Z }
+generated: { by: human:neumaennl, at: 2026-11-15T17:40:00Z }
 sources:
   - id: registry
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
@@ -562,14 +562,6 @@ Effort:
 - **Severity:** Low
 - **Effort:** S
 - **Description:** The [development guidelines](development-guidelines.md#typescript) set 30 characters as the upper limit for names; these four functions have between 32 and 43.
-- **GitHub issue:** none
-
-## Test files use both `test()` and `it()`
-
-- **Location:** `__tests__/decorator-edge-cases.test.ts`, `__tests__/decorators.test.ts`, `__tests__/enums.test.ts`, `__tests__/value-casting.test.ts`, `__tests__/xsd-parser.test.ts`, `scripts/__tests__/node-releases.test.ts`, `scripts/__tests__/node-setup.test.ts`, `scripts/__tests__/node-version.test.ts`, `scripts/__tests__/versions.test.ts`
-- **Severity:** Low
-- **Effort:** S
-- **Description:** The [development guidelines](development-guidelines.md#tests) ask for `test()`, but these files use `it()`. Once they are converted, the rule `vitest/consistent-test-it` can enforce `test()`.
 - **GitHub issue:** none
 
 ## Unused code is not detected automatically

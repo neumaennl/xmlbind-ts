@@ -112,11 +112,11 @@ afterEach(() => {
 
 describe("node-version", () => {
   describe("formatTable", () => {
-    it("should align the columns and underline the header", () => {
+    test("should align the columns and underline the header", () => {
       expect(formatTable(["A", "Long"], [["xyz", "1"]])).toBe("A    Long\n---  ----\nxyz  1");
     });
 
-    it.each([
+    test.each([
       ["fewer", ["xyz"]],
       ["more", ["xyz", "1", "2"]],
     ])("should throw if a row has %s cells than the header", (_, row) => {
@@ -125,7 +125,7 @@ describe("node-version", () => {
   });
 
   describe("check", () => {
-    it("should return 0 if everything matches and the end of life is far away", async () => {
+    test("should return 0 if everything matches and the end of life is far away", async () => {
       writeProject();
       const fetchMock = stubFetch({ [URLS.schedule]: SCHEDULE, [URLS.base(24)]: base(24) });
 
@@ -136,14 +136,14 @@ describe("node-version", () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
-    it("should return 1 if engines.node is missing or not of the form >=N", async () => {
+    test("should return 1 if engines.node is missing or not of the form >=N", async () => {
       writeProject({ pkg: { engines: { node: ">=24.0.0" } } });
 
       await expect(check(dir, TODAY)).resolves.toBe(1);
       expect(console.error).toHaveBeenCalledWith('engines.node: is ">=24.0.0", expected ">=" and a major version, for example ">=24".');
     });
 
-    it("should return 1 and name each value that does not match", async () => {
+    test("should return 1 and name each value that does not match", async () => {
       writeProject({ pkg: { devDependencies: { "@types/node": "^26.4.0" } }, nvmrc: "24.21.0" });
       stubNodeData();
 
@@ -153,7 +153,7 @@ describe("node-version", () => {
       expect(console.error).toHaveBeenCalledWith("Run `npm run node:update` to fix this.");
     });
 
-    it("should return 1 and name target and lib if tsconfig.target.json names another edition", async () => {
+    test("should return 1 and name target and lib if tsconfig.target.json names another edition", async () => {
       writeProject({ target: ES2022 });
       stubNodeData();
 
@@ -162,7 +162,7 @@ describe("node-version", () => {
       expect(console.error).toHaveBeenCalledWith("tsconfig.target.json: lib is ES2022, expected ES2024");
     });
 
-    it("should return 1 if there is no @tsconfig/bases configuration for the major version", async () => {
+    test("should return 1 if there is no @tsconfig/bases configuration for the major version", async () => {
       writeProject();
       stubNodeData([URLS.base(24)]);
 
@@ -170,7 +170,7 @@ describe("node-version", () => {
       expect(console.error).toHaveBeenCalledWith("There is no @tsconfig/bases configuration for Node 24.");
     });
 
-    it("should return 1 if .nvmrc is missing", async () => {
+    test("should return 1 if .nvmrc is missing", async () => {
       writeProject({ nvmrc: null });
       stubNodeData();
 
@@ -178,7 +178,7 @@ describe("node-version", () => {
       expect(console.error).toHaveBeenCalledWith('.nvmrc: is "", expected "24".');
     });
 
-    it("should return 1 if a runtime dependency excludes the first version of the major version", async () => {
+    test("should return 1 if a runtime dependency excludes the first version of the major version", async () => {
       const lock = { packages: { "node_modules/commander": { version: "16.0.0", engines: { node: ">=24.3.0" } } } };
       writeProject({ lock });
       stubNodeData();
@@ -189,7 +189,7 @@ describe("node-version", () => {
       );
     });
 
-    it("should return 1 if a runtime dependency excludes a newer line before its end of life", async () => {
+    test("should return 1 if a runtime dependency excludes a newer line before its end of life", async () => {
       const lock = { packages: { "node_modules/foo": { version: "1.0.0", engines: { node: ">=24 <26" } } } };
       writeProject({ lock });
       stubNodeData();
@@ -200,7 +200,7 @@ describe("node-version", () => {
       );
     });
 
-    it("should ignore newer lines past their end of life that a runtime dependency excludes", async () => {
+    test("should ignore newer lines past their end of life that a runtime dependency excludes", async () => {
       const lock = { packages: { "node_modules/foo": { version: "1.0.0", engines: { node: "^22.12.0 || ^24.0.0 || >=26" } } } };
       writeProject({ lock });
       stubNodeData();
@@ -208,7 +208,7 @@ describe("node-version", () => {
       await expect(check(dir, TODAY)).resolves.toBe(0);
     });
 
-    it("should warn in the 90 days before the end of life and still return 0", async () => {
+    test("should warn in the 90 days before the end of life and still return 0", async () => {
       writeProject();
       stubNodeData();
 
@@ -217,7 +217,7 @@ describe("node-version", () => {
       expect(console.log).toHaveBeenCalledWith("Raise the Node version with `npm run node:update` before the end of life.");
     });
 
-    it("should return 1 in the 90 days before the end of life if strict", async () => {
+    test("should return 1 in the 90 days before the end of life if strict", async () => {
       writeProject();
       stubNodeData();
 
@@ -226,7 +226,7 @@ describe("node-version", () => {
       expect(console.warn).not.toHaveBeenCalled();
     });
 
-    it("should return 1 from the end of life on, as a GitHub annotation in GitHub Actions", async () => {
+    test("should return 1 from the end of life on, as a GitHub annotation in GitHub Actions", async () => {
       vi.stubEnv("GITHUB_ACTIONS", "true");
       writeProject();
       stubNodeData();
@@ -237,7 +237,7 @@ describe("node-version", () => {
   });
 
   describe("rejectMajor", () => {
-    it.each([
+    test.each([
       [24, undefined],
       [23, "Node 23 has no release."],
       [25, "Node 25 has reached its end of life or is not in the Node release schedule."],
@@ -246,17 +246,17 @@ describe("node-version", () => {
       expect(rejectMajor(major, DATA, CONSTRAINTS, TODAY, EDITIONS)).toBe(expected);
     });
 
-    it("should reject a major version without @types/node", () => {
+    test("should reject a major version without @types/node", () => {
       expect(rejectMajor(24, { ...DATA, typesNode: [] }, CONSTRAINTS, TODAY, EDITIONS)).toBe("There is no @types/node 24.x.");
     });
 
-    it("should reject a major version without an ECMAScript edition", () => {
+    test("should reject a major version without an ECMAScript edition", () => {
       expect(rejectMajor(24, DATA, CONSTRAINTS, TODAY, new Map())).toBe("There is no @tsconfig/bases configuration for Node 24.");
     });
   });
 
   describe("writeValues", () => {
-    it("should write the values and keep the other fields and the CRLF line endings", () => {
+    test("should write the values and keep the other fields and the CRLF line endings", () => {
       const pkg = { devDependencies: { "@types/node": "^26.4.0", typescript: "^6.0.3" } };
 
       writeValues({ pkg, crlf: true }, { major: 24, typesNode: "^24.12.0", edition: "ES2024" }, dir);
@@ -273,11 +273,11 @@ describe("node-version", () => {
   });
 
   describe("update", () => {
-    it("should fail without a version if there is no terminal", async () => {
+    test("should fail without a version if there is no terminal", async () => {
       await expect(update(undefined, dir, TODAY)).rejects.toThrow("Not running in a terminal");
     });
 
-    it("should write the given major version and print the steps without a terminal", async () => {
+    test("should write the given major version and print the steps without a terminal", async () => {
       writeProject({ pkg: { engines: {}, devDependencies: { "@types/node": "^26.4.0" } }, nvmrc: null, target: null });
       stubNodeData();
 
@@ -296,7 +296,7 @@ describe("node-version", () => {
       expect(installNode).not.toHaveBeenCalled();
     });
 
-    it.each([
+    test.each([
       ["22", "Node 22.0.0 by commander 15.0.0 (>=22.12.0), require() of ES modules"],
       ["24.21.0", 'Not a major version: "24.21.0"'],
     ])("should reject the given version %s and write nothing", async (requested, message) => {
@@ -307,7 +307,7 @@ describe("node-version", () => {
       expect(read(".nvmrc")).toBe("24\n");
     });
 
-    it("should reject a version without a @tsconfig/bases configuration and write nothing", async () => {
+    test("should reject a version without a @tsconfig/bases configuration and write nothing", async () => {
       writeProject({ target: ES2022 });
       stubNodeData([URLS.base(24)]);
 
@@ -315,7 +315,7 @@ describe("node-version", () => {
       expect(JSON.parse(read("tsconfig.target.json"))).toEqual({ compilerOptions: ES2022 });
     });
 
-    it("should warn when the chosen version ends within 90 days", async () => {
+    test("should warn when the chosen version ends within 90 days", async () => {
       writeProject();
       stubNodeData();
 
@@ -323,7 +323,7 @@ describe("node-version", () => {
       expect(console.warn).toHaveBeenCalledWith("Warning: Node 24 reaches its end of life on 2028-04-30, in 60 days.");
     });
 
-    it("should show the release lines, ask until the answer is accepted, and run the steps with the latest release", async () => {
+    test("should show the release lines, ask until the answer is accepted, and run the steps with the latest release", async () => {
       stubTerminal(true);
       writeProject({ pkg: { engines: { node: ">=22" } }, nvmrc: "22", target: ES2022 });
       stubNodeData();
@@ -347,7 +347,7 @@ describe("node-version", () => {
       expect(runWith).toHaveBeenCalledWith("/node/24.21.0/bin", ["npm install", "npm run lint", "npm test"]);
     });
 
-    it("should stop with exit code 1 if the Node version cannot be installed", async () => {
+    test("should stop with exit code 1 if the Node version cannot be installed", async () => {
       stubTerminal(true);
       writeProject();
       stubNodeData();
@@ -359,7 +359,7 @@ describe("node-version", () => {
       expect(runWith).not.toHaveBeenCalled();
     });
 
-    it("should return the exit code of a failed step", async () => {
+    test("should return the exit code of a failed step", async () => {
       stubTerminal(true);
       writeProject();
       stubNodeData();
@@ -372,7 +372,7 @@ describe("node-version", () => {
   });
 
   describe("main", () => {
-    it.each([[["unknown"]], [["check", "--bogus"]], [["update", "24", "26"]]])("should print the usage and return 2 for %j", async (args) => {
+    test.each([[["unknown"]], [["check", "--bogus"]], [["update", "24", "26"]]])("should print the usage and return 2 for %j", async (args) => {
       await expect(main(args)).resolves.toBe(2);
       expect(console.error).toHaveBeenCalledWith("Usage: node scripts/node-version.ts check [--strict] | update [major]");
     });
