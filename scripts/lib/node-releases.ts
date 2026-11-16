@@ -4,7 +4,7 @@
 import { compareVersions, isVersion, latestOfMajor, parseVersion, satisfies } from "./versions.ts";
 
 /** A release line of Node as the Node release schedule lists it. */
-export interface ReleaseLine {
+interface ReleaseLine {
   start: string;
   lts?: string;
   maintenance?: string;
@@ -62,7 +62,7 @@ export const WARN_DAYS = 90;
  * The library is an ES module only. CommonJS consumers load it with `require()`,
  * which Node supports without a flag from these versions on.
  */
-export const REQUIRE_ESM: Constraint = { name: "require() of ES modules", range: "^20.19.0 || >=22.12.0" };
+const REQUIRE_ESM: Constraint = { name: "require() of ES modules", range: "^20.19.0 || >=22.12.0" };
 
 interface NodeIndexEntry {
   version: string;
@@ -146,7 +146,7 @@ export function runtimeConstraints(lock: PackageLock): Constraint[] {
  * @returns The violated constraints
  * @throws An {@link Error} if a range has an unknown form, naming the constraint
  */
-export function violated(major: number, constraints: Constraint[]): Constraint[] {
+function violated(major: number, constraints: Constraint[]): Constraint[] {
   return constraints.filter((c) => {
     try {
       return !satisfies(`${major}.0.0`, c.range);
@@ -204,7 +204,7 @@ export function describeExclusions(list: Exclusion[]): string {
  * @param today - The day as `YYYY-MM-DD`
  * @returns `Planned`, `Current`, `Active LTS`, `Maintenance LTS`, `Maintenance` or `End of life`
  */
-export function lineStatus(line: ReleaseLine, today: string): string {
+function lineStatus(line: ReleaseLine, today: string): string {
   if (today < line.start) {
     return "Planned";
   }
@@ -321,7 +321,7 @@ export function loadSchedule(): Promise<Schedule> {
  *
  * @returns The versions
  */
-export async function loadTypesNode(): Promise<string[]> {
+async function loadTypesNode(): Promise<string[]> {
   const accept = { Accept: "application/vnd.npm.install-v1+json" };
   return Object.keys((await downloadJson<NpmDocument>(SOURCES.npmPackage("@types/node"), accept)).versions);
 }
@@ -331,7 +331,7 @@ export async function loadTypesNode(): Promise<string[]> {
  *
  * @returns The versions without `v`, oldest first
  */
-export async function loadReleases(): Promise<string[]> {
+async function loadReleases(): Promise<string[]> {
   const index = await downloadJson<NodeIndexEntry[]>(SOURCES.nodeIndex);
   return index
     .map((r) => r.version.replace(/^v/, ""))

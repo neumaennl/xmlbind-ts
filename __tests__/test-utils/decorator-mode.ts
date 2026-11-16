@@ -1,3 +1,5 @@
+// fallow-ignore-file unused-file -- the tests of version 3 will use it; remove this comment when one does
+
 import { inject } from "vitest";
 
 export type DecoratorMode = "legacy" | "stage3";

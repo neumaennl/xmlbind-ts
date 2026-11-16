@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T19:20:00Z }
+generated: { by: human:neumaennl, at: 2026-11-16T14:40:00Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -42,6 +42,9 @@ sources:
   - id: jscpd
     resource: ../.jscpd.json
     title: jscpd configuration
+  - id: fallow
+    resource: ../.fallowrc.jsonc
+    title: fallow configuration
   - id: ci
     resource: ../.github/workflows/ci.yml
     title: CI workflow
@@ -61,7 +64,7 @@ This document describes how the package is built, checked, packaged and publishe
 | `npm run build` | compiles `src/` to `dist/` with `tsconfig.build.json` |
 | `npm run typecheck` | type-checks `scripts/` with `tsconfig.scripts.json` |
 | `npm test` | runs `build` and `typecheck` (`pretest`), then Vitest |
-| `npm run lint` | runs ESLint and jscpd on the whole repository, see [Lint](#lint) |
+| `npm run lint` | runs ESLint, jscpd and fallow on the whole repository, see [Lint](#lint) |
 | `npm run lint:fix` | runs ESLint and fixes what it can fix |
 | `npm run node:check` | checks the Node.js version, see [Node.js version](#nodejs-version) |
 | `npm run node:update` | changes the Node.js version, see [Node.js version](#nodejs-version) |
@@ -122,13 +125,19 @@ The scripts read the release schedule from the Node.js release repository on Git
 
 # Lint
 
-`npm run lint` runs ESLint and the copy-paste detector jscpd in parallel, with concurrently:[^manifest]
+`npm run lint` runs these checks in parallel, with concurrently:[^manifest]
 
-- both tools always run to the end, so one run reports all problems;
+- ESLint;
+- the copy-paste detector jscpd (see [Duplicated code](#duplicated-code));
+- fallow, once for the whole project and once in production mode (see [Unused code](#unused-code)).
+
+How concurrently runs them:
+
+- all checks always run to the end, so one run reports all problems;
 - the run fails if one of them fails;
-- `--group` prints the output of each tool as one block, labeled `[eslint]` and `[jscpd]`.
+- `--group` prints the output of each check as one block, labeled `[eslint]`, `[jscpd]`, `[fallow]` and `[fallow-production]`.
 
-To run one tool alone, use `npx eslint .` or `npx jscpd`. They read the same configuration as `npm run lint`.
+To run one check alone, use `npx eslint .`, `npx jscpd`, `npx fallow dead-code --no-cache --fail-on-issues` or `npx fallow dead-code --production --no-cache --fail-on-issues`. They read the same configuration as `npm run lint`.
 
 ## ESLint
 
@@ -176,6 +185,45 @@ The tests are checked with the same settings. Whether they need settings of thei
 
 Code that has to stay duplicated is put between `// jscpd:ignore-start` and `// jscpd:ignore-end`, with a comment that gives the reason (see [Development guidelines](development-guidelines.md#code-quality)).
 
+fallow, which checks for [unused code](#unused-code), can find duplicates as well. None of its settings matches the settings above, though:
+
+- it either misses copies with renamed variables, or also reports code that differs only in literals;
+- it does not check that the renaming is consistent;
+- it does not fail a run that finds no files.
+
+So jscpd stays until fallow can do the same.
+
+## Unused code
+
+ESLint and TypeScript only find unused code within one file (see [ESLint](#eslint)). [fallow](https://fallow.tools) checks the whole project.[^fallow] It finds:
+
+- files that nothing imports;
+- exports and types that no other module imports, also when the same file uses them;
+- public and static class members and enum members that nothing uses;
+- dependencies in `package.json` that no code uses, and packages that code uses but `package.json` does not list.
+
+fallow finds the entry points itself, in `package.json` and in the configurations of the tools, such as Vitest. It reads the code without type information.
+
+`npm run lint` runs it twice:
+
+- **`fallow dead-code`** checks the whole project, including the tests.
+- **`fallow dead-code --production`** leaves out the tests and the devDependencies. It finds code that only tests use, such as an export that only a test imports, or a method that only tests call.
+
+Both runs use `--fail-on-issues`, so every finding fails the run, also the kinds that fallow only reports as warnings by default, such as an unused devDependency. There is no baseline. `--no-cache` keeps fallow from writing a cache into the checkout.
+
+`.fallowrc.jsonc` adds two rules:[^fallow]
+
+- `require-suppression-reason`: an ignore comment must give its reason after `--`, as in `// fallow-ignore-next-line unused-export -- <reason>`;
+- `stale-suppressions` as an error: an ignore comment that no longer suppresses anything fails the run, so it is removed when it is no longer needed.
+
+The test helpers in `__tests__/test-utils/` are not used yet. The tests of version 3 will use them, so they have the comment `// fallow-ignore-file unused-file` with this reason. Once a test imports a helper, the comment becomes stale and has to be removed.
+
+Its limits:
+
+- fallow does not check protected class members (see [Unused protected class members are not detected](known-issues.md#unused-protected-class-members-are-not-detected)). ESLint checks private members.
+- Without type information, fallow does not see that a member is used when it is called by a computed name, such as `obj[name]()`. Such a member needs an ignore comment with the reason.
+- Members with decorators are not checked, because a decorator can use them.
+
 # CI
 
 The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch of version 3 ([ADR 001](architecture/001-reimplementation.md)), on pull requests into `main`, and weekly on Mondays at 06:00 UTC.[^ci] It has two jobs:
@@ -183,7 +231,7 @@ The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch
 | Job | Runs | Steps |
 |---|---|---|
 | Check Node versions | always | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life |
-| Install, build and test | not on the weekly run | `npm ci`, `npm run lint` (ESLint and jscpd), `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
+| Install, build and test | not on the weekly run | `npm ci`, `npm run lint` (ESLint, jscpd and fallow), `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
 
 Both jobs use the latest release of the major version in `.nvmrc` (`check-latest: true`), on Ubuntu only. A warning of `node:check` appears as an annotation of the run. GitHub pauses scheduled workflows of a public repository after 60 days without activity; the workflow then has to be enabled again in the Actions tab.
 
@@ -220,6 +268,8 @@ Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot
 [^eslint]: ESLint configuration
 
 [^jscpd]: jscpd configuration
+
+[^fallow]: fallow configuration
 
 [^ci]: CI workflow
 

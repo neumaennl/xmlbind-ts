@@ -32,7 +32,7 @@ export const URLS = {
  * The target and libraries of the `@tsconfig/bases` configurations, per Node major
  * version. The scripts take only the target; the libraries show that the rest is ignored.
  */
-export const BASE_OPTIONS = {
+const BASE_OPTIONS = {
   22: { target: "es2022", lib: ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"] },
   24: { target: "es2024", lib: ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Error", "ESNext.Iterator", "ESNext.Promise"] },
   26: { target: "es2025", lib: ["es2025", "ESNext.Collection", "ESNext.Temporal"] },

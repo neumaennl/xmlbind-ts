@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { editionProblems, loadEdition, loadEditions, missingEdition, parseBaseEdition, writeEdition } from "../lib/compiler-target.ts";
+import { editionProblems, loadEdition, loadEditions, missingEdition, writeEdition } from "../lib/compiler-target.ts";
 import { base, stubFetch, URLS } from "./testHelpers.ts";
 
 let dir: string;
@@ -25,20 +25,6 @@ afterEach(() => {
 });
 
 describe("compiler-target", () => {
-  describe("parseBaseEdition", () => {
-    test("should take the edition from the target in upper case and ignore the libraries", () => {
-      expect(parseBaseEdition(JSON.stringify(base(24)), "node24.json")).toBe("ES2024");
-    });
-
-    test.each([
-      ["{ not json", "node24.json: not valid JSON."],
-      ['{ "compilerOptions": { "target": "esnext" } }', 'node24.json: expected a target ESxxxx, found "esnext".'],
-      ['{ "compilerOptions": {} }', "node24.json: expected a target ESxxxx, found undefined."],
-    ])("should reject %s", (text, message) => {
-      expect(() => parseBaseEdition(text, "node24.json")).toThrow(message);
-    });
-  });
-
   describe("loadEdition and loadEditions", () => {
     test("should load the editions once per major version and return undefined for a version without a configuration", async () => {
       const fetchMock = stubFetch({ [URLS.base(24)]: base(24), [URLS.base(26)]: base(26) });
@@ -46,6 +32,22 @@ describe("compiler-target", () => {
       await expect(loadEdition(24)).resolves.toBe("ES2024");
       await expect(loadEditions([24, 25, 26, 24])).resolves.toEqual(new Map([[24, "ES2024"], [25, undefined], [26, "ES2025"]]));
       expect(fetchMock).toHaveBeenCalledTimes(4);
+    });
+
+    test("should take the edition from the target in upper case and ignore the libraries", async () => {
+      stubFetch({ [URLS.base(24)]: { compilerOptions: { target: "es2024", lib: ["ESNext.Array"] } } });
+
+      await expect(loadEdition(24)).resolves.toBe("ES2024");
+    });
+
+    test.each([
+      ["{ not json", "not valid JSON."],
+      ['{ "compilerOptions": { "target": "esnext" } }', 'expected a target ESxxxx, found "esnext".'],
+      ['{ "compilerOptions": {} }', "expected a target ESxxxx, found undefined."],
+    ])("should reject the configuration %s", async (text, message) => {
+      vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(text) })));
+
+      await expect(loadEdition(24)).rejects.toThrow(`${URLS.base(24)}: ${message}`);
     });
 
     test("should fail if the request fails for another reason", async () => {

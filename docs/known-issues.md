@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T17:40:00Z }
+generated: { by: human:neumaennl, at: 2026-11-16T14:40:00Z }
 sources:
   - id: registry
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
@@ -78,6 +78,9 @@ sources:
   - id: ci
     resource: ../.github/workflows/ci.yml
     title: CI workflow
+  - id: fallow
+    resource: ../.fallowrc.jsonc
+    title: fallow configuration
   - id: eslint
     resource: ../eslint.config.mjs
     title: ESLint configuration
@@ -564,19 +567,13 @@ Effort:
 - **Description:** The [development guidelines](development-guidelines.md#typescript) set 30 characters as the upper limit for names; these four functions have between 32 and 43.
 - **GitHub issue:** none
 
-## Unused code is not detected automatically
+## Unused protected class members are not detected
 
-- **Location:** `src/`, `scripts/`, `package.json`, `.github/workflows/ci.yml`
+- **Location:** `src/`, `scripts/`, `.fallowrc.jsonc`
 - **Severity:** Low
 - **Effort:** S
-- **Description:** Within one file, ESLint finds unused variables, imports, parameters and private class members, and TypeScript finds unreachable code. Nothing finds code that is unused across files:
-  - exports that no module imports, and files that nothing imports;
-  - class members and enum members that are never used;
-  - code that only tests call;
-  - dependencies in `package.json` that no code uses.
-
-  2.x had such code: [`findElementOccurrences()` is never called](#findelementoccurrences-is-never-called). A tool such as [knip](https://knip.dev) checks the whole project. In production mode, it ignores the tests, so it also finds code that only tests use. It can run in `npm run lint` and in CI.
-- **GitHub issue:** [#313](https://github.com/neumaennl/xmlbind-ts/issues/313)
+- **Description:** fallow finds unused public and static class members, but it skips protected members on purpose (see [Unused code](build-and-release.md#unused-code)). ESLint only finds unused private members. So a protected member that nothing uses goes unnoticed. [fallow-rs/fallow#4624](https://github.com/fallow-rs/fallow/issues/4624) asks fallow to report them. When a released version does, update fallow, remove the findings, and remove this entry.[^fallow]
+- **GitHub issue:** none
 
 ## Source files are longer than 500 lines
 
@@ -679,6 +676,8 @@ Effort:
 [^ci]: CI workflow
 
 [^eslint]: ESLint configuration
+
+[^fallow]: fallow configuration
 
 [^vitest-config]: Vitest configuration
 

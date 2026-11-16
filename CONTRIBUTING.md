@@ -16,7 +16,7 @@ No token is needed: all dependencies come from the npm registry.
 |---|---|
 | `npm test` | builds the library, type-checks the scripts and runs all tests |
 | `npx vitest run <file>` | runs one test file |
-| `npm run lint` | runs ESLint and the check for duplicated code; `npm run lint:fix` fixes what ESLint can |
+| `npm run lint` | runs ESLint and the checks for duplicated and unused code; `npm run lint:fix` fixes what ESLint can |
 | `npm run build` | compiles `src/` to `dist/` |
 
 [Build and release](docs/build-and-release.md#npm-scripts) lists all scripts, and [Testing](docs/testing.md) describes the tests, including the two Vitest projects that run every test with legacy and with Stage 3 decorators.

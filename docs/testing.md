@@ -3,9 +3,8 @@ type: Testing Strategy
 title: Testing
 description: How xmlbind-ts is tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
-status: stable
-generated: { by: human:neumaennl, at: 2026-11-15T20:24:44Z }
-verified: { by: human:neumaennl, at: 2026-11-15T20:28:10Z }
+status: draft
+generated: { by: human:neumaennl, at: 2026-11-16T14:40:00Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -71,7 +70,7 @@ Further settings:
 
 # Utilities and resources
 
-`__tests__/test-utils/index.ts` exports the helpers for the tests of the library:[^test-utils]
+`__tests__/test-utils/index.ts` exports the helpers for the tests of the library. No test of version 3 uses them yet; until one does, fallow is told not to report them (see [Unused code](build-and-release.md#unused-code)).[^test-utils]
 
 | Helper | Purpose |
 |---|---|
@@ -95,7 +94,7 @@ Larger XSD and XML snippets are kept in `__tests__/test-resources/`:
 
 # Kinds of tests
 
-- **Unit tests** test one module or class. They import that module and call it directly. What the module imports may be mocked, so that the test depends only on the unit, or used as it is.
+- **Unit tests** test one module or class. They import that module and call what it exports. A module exports nothing only for its tests (see [Code quality](development-guidelines.md#code-quality)). What the module imports may be mocked, so that the test depends only on the unit, or used as it is.
 - **Integration tests** test several modules together. Each module is tested by its unit tests first; an integration test only checks what the modules do together, such as the round trip of a whole document, and does not repeat the cases of the unit tests. A test that reaches a module only through another module is an integration test of both, even if it is meant to test the inner one; to test that module as a unit, call it directly.
 - **Script tests** check the Node.js version scripts with stubbed network access.
 

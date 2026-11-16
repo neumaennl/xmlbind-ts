@@ -1,5 +1,8 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-16
+* **Update**: `npm run lint` checks for unused code across files with fallow, once for the whole project and once in production mode, as [Build and release](build-and-release.md#unused-code) describes; [Duplicated code](build-and-release.md#duplicated-code) says why jscpd stays. The [development guidelines](development-guidelines.md#code-quality) ask to remove unused code, to export only what other modules use, and to give the reason when a finding of fallow is suppressed. [Testing](testing.md#kinds-of-tests) says that unit tests call what their module exports. Replaced "Unused code is not detected automatically" in [Known issues](known-issues.md) with [Unused protected class members are not detected](known-issues.md#unused-protected-class-members-are-not-detected).
+
 ## 2026-11-15
 * **Update**: [Testing](testing.md#kinds-of-tests): each module is tested by its unit tests first; an integration test only checks what the modules do together, such as the round trip of a whole document, and does not repeat the cases of the unit tests.
 * **Update**: The [development guidelines](development-guidelines.md#tests) ask for test titles that describe the intended behavior and start with "should"; [Build and release](build-and-release.md#eslint) describes the rule `vitest/valid-title` that checks it.

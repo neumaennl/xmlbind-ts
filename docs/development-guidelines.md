@@ -4,7 +4,7 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-15T19:20:00Z }
+generated: { by: human:neumaennl, at: 2026-11-16T14:40:00Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -15,6 +15,9 @@ sources:
   - id: jscpd
     resource: ../.jscpd.json
     title: jscpd configuration
+  - id: fallow
+    resource: ../.fallowrc.jsonc
+    title: fallow configuration
   - id: tsconfig
     resource: ../tsconfig.build.json
     title: TypeScript configuration of the library
@@ -43,10 +46,13 @@ Blank lines and comments count as well. ESLint checks the limits with the rules 
 # Code quality
 
 - Avoid duplicated code. Move it into a shared function, class or module. `npm run lint` reports duplicated code with jscpd, also when names were changed (see [Build and release](build-and-release.md#duplicated-code)).[^jscpd]
+- Remove code that nothing uses. `npm run lint` reports unused files, exports, class members and dependencies with fallow, also code that only tests use (see [Build and release](build-and-release.md#unused-code)).[^fallow]
+- Export only what other modules use. Tests use a module through its exports; do not export something only so that a test can call it.
 - A conditional expression (`a ? b : c`) spans at most three lines. Write a longer one, for example one with array or object literals in its branches or a nested one, as `if`/`else`. The local ESLint rule `style/max-ternary-lines` checks this.[^eslint]
 - `npm run lint` must report no errors, and as few warnings as possible. `npm run lint:fix` fixes what ESLint can.[^manifest]
 - Disable an ESLint rule only as a last resort, with an `eslint-disable-next-line` comment that gives the reason.
 - Exclude duplicated code from jscpd only as a last resort. Put `// jscpd:ignore-start` and `// jscpd:ignore-end` around it, with a comment that gives the reason.
+- Suppress a finding of fallow only as a last resort, with a `fallow-ignore-next-line` or `fallow-ignore-file` comment that gives the reason after `--`. fallow checks that the reason is there.[^fallow]
 - Have the changes reviewed by Copilot code review and handle its comments. If you do not follow a comment, give the reason.
 
 # TypeScript
@@ -134,6 +140,8 @@ The documentation of the library and the generator is the knowledge bundle in `d
 [^eslint]: ESLint configuration
 
 [^jscpd]: jscpd configuration
+
+[^fallow]: fallow configuration
 
 [^tsconfig]: TypeScript configuration of the library
 

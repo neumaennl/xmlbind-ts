@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 /** The file with the ECMAScript edition of the project. */
-export const TARGET_FILE = "tsconfig.target.json";
+const TARGET_FILE = "tsconfig.target.json";
 
 const EDITION = /^es\d{4}$/i;
 
@@ -20,7 +20,7 @@ const EDITION = /^es\d{4}$/i;
  * @param major - The major version of Node
  * @returns The URL
  */
-export function baseUrl(major: number): string {
+function baseUrl(major: number): string {
   return `https://raw.githubusercontent.com/tsconfig/bases/main/bases/node${major}.json`;
 }
 
@@ -32,7 +32,7 @@ export function baseUrl(major: number): string {
  * @returns The edition in upper case, for example `ES2024`
  * @throws An {@link Error} if the text is not JSON or its target is not an edition `ESxxxx`
  */
-export function parseBaseEdition(text: string, url: string): string {
+function parseBaseEdition(text: string, url: string): string {
   let config: { compilerOptions?: { target?: unknown } };
   try {
     config = JSON.parse(text) as typeof config;

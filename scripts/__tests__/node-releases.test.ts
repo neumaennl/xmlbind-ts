@@ -3,21 +3,21 @@ import {
   endOfLife,
   enginesMajor,
   exclusions,
-  lineStatus,
   listLines,
   loadData,
   newestLts,
-  REQUIRE_ESM,
   runtimeConstraints,
   supportedLines,
   typesNodeMajor,
   typesNodeRange,
-  violated,
   type NodeData,
 } from "../lib/node-releases.ts";
 import { RELEASES, SCHEDULE, stubFetch, stubNodeData, TYPES_NODE, URLS } from "./testHelpers.ts";
 
 const DATA: NodeData = { schedule: SCHEDULE, releases: RELEASES, typesNode: TYPES_NODE };
+
+/** The constraint that `runtimeConstraints()` adds for `require()` of ES modules. */
+const REQUIRE_ESM = { name: "require() of ES modules", range: "^20.19.0 || >=22.12.0" };
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -76,22 +76,6 @@ describe("node-releases", () => {
     });
   });
 
-  describe("violated", () => {
-    test("should name the constraints that exclude the first version of the major version", () => {
-      const constraints = [{ name: "commander 15.0.0", range: ">=22.12.0" }, REQUIRE_ESM];
-
-      expect(violated(22, constraints)).toEqual(constraints);
-      expect(violated(20, [REQUIRE_ESM])).toEqual([REQUIRE_ESM]);
-      expect(violated(24, constraints)).toEqual([]);
-    });
-
-    test("should name the constraint whose range it cannot read", () => {
-      expect(() => violated(24, [{ name: "some-dep 1.0.0", range: "node >= 22" }])).toThrow(
-        'some-dep 1.0.0: cannot read the Node range "node >= 22" (Not a version: "node")',
-      );
-    });
-  });
-
   describe("supportedLines", () => {
     test("should list the lines that have started and not reached their end of life", () => {
       expect(supportedLines(SCHEDULE, "2026-10-14")).toEqual([22, 24, 26]);
@@ -114,6 +98,25 @@ describe("node-releases", () => {
       ]);
     });
 
+    test("should name every constraint that excludes the first version of a line", () => {
+      const commander = { name: "commander 15.0.0", range: ">=22.12.0" };
+
+      expect(exclusions(22, SCHEDULE, [commander, REQUIRE_ESM], "2026-10-14")).toEqual([
+        { version: "22.0.0", excludedBy: [commander, REQUIRE_ESM] },
+      ]);
+      expect(exclusions(20, SCHEDULE, [REQUIRE_ESM], "2026-04-01")).toEqual([
+        { version: "20.0.0", excludedBy: [REQUIRE_ESM] },
+        { version: "22.0.0", excludedBy: [REQUIRE_ESM] },
+      ]);
+      expect(exclusions(24, SCHEDULE, [commander, REQUIRE_ESM], "2026-10-14")).toEqual([]);
+    });
+
+    test("should name the constraint whose range it cannot read", () => {
+      expect(() => exclusions(24, SCHEDULE, [{ name: "some-dep 1.0.0", range: "node >= 22" }], "2026-10-14")).toThrow(
+        'some-dep 1.0.0: cannot read the Node range "node >= 22" (Not a version: "node")',
+      );
+    });
+
     test("should describe exclusions for a message", () => {
       const excluded = [
         { version: "22.0.0", excludedBy: [{ name: "a 1.0.0", range: ">=22.12.0" }, { name: "b", range: ">=24" }] },
@@ -121,19 +124,6 @@ describe("node-releases", () => {
       ];
 
       expect(describeExclusions(excluded)).toBe("Node 22.0.0 by a 1.0.0 (>=22.12.0), b (>=24); Node 26.0.0 by c (<26)");
-    });
-  });
-
-  describe("lineStatus", () => {
-    test.each([
-      ["2027-05-01", "v27", "Current"],
-      ["2027-04-01", "v27", "Planned"],
-      ["2026-10-14", "v24", "Active LTS"],
-      ["2026-10-14", "v22", "Maintenance LTS"],
-      ["2026-05-01", "v25", "Maintenance"],
-      ["2026-04-30", "v20", "End of life"],
-    ] as const)("should on %s describe %s as %s", (today, line, expected) => {
-      expect(lineStatus(SCHEDULE[line], today)).toBe(expected);
     });
   });
 
@@ -162,6 +152,27 @@ describe("node-releases", () => {
         { major: 24, status: "Active LTS", exclusions: [], typesNode: "^24.12.0", latest: "24.21.0", end: "2028-04-30" },
         { major: 26, status: "Current", exclusions: [], typesNode: "^26.0.1", latest: "26.11.1", end: "2029-04-30" },
       ]);
+    });
+  });
+
+  describe("listLines and the status of a line", () => {
+    // 27.0.0 is added so that the line can be listed once it has started.
+    const data: NodeData = { ...DATA, releases: [...RELEASES, "27.0.0"] };
+
+    test.each([
+      ["2027-05-01", 27, "Current"],
+      ["2026-10-14", 24, "Active LTS"],
+      ["2026-10-14", 22, "Maintenance LTS"],
+      ["2026-05-01", 25, "Maintenance"],
+    ])("should on %s list %i as %s", (today, major, expected) => {
+      expect(listLines(data, [], today).find((row) => row.major === major)?.status).toBe(expected);
+    });
+
+    test.each([
+      ["2027-04-01", 27, "planned"],
+      ["2026-04-30", 20, "at its end of life"],
+    ])("should on %s leave out %i, which is %s", (today, major) => {
+      expect(listLines(data, [], today).map((row) => row.major)).not.toContain(major);
     });
   });
 

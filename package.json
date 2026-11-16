@@ -30,7 +30,7 @@
     "typecheck": "tsc --project tsconfig.scripts.json",
     "pretest": "npm run build && npm run typecheck",
     "test": "vitest run",
-    "lint": "concurrently --group --names eslint,jscpd \"eslint .\" \"jscpd\"",
+    "lint": "concurrently --group --names eslint,jscpd,fallow,fallow-production \"eslint .\" \"jscpd\" \"fallow dead-code --no-cache --fail-on-issues\" \"fallow dead-code --production --no-cache --fail-on-issues\"",
     "lint:fix": "eslint . --fix",
     "prepare": "npm run build",
     "node:check": "node scripts/node-version.ts check",
@@ -47,10 +47,9 @@
     "eslint": "^10.9.1",
     "eslint-plugin-jsdoc": "^65.4.5",
     "eslint-plugin-tsdoc": "^0.5.4",
+    "fallow": "^3.42.0",
     "globals": "^17.11.0",
     "jscpd": "^5.4.3",
-    "ts-node": "^10.0.0",
-    "tslib": "^2.8.1",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
   }
