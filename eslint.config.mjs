@@ -125,6 +125,11 @@ export default defineConfig([
         },
       ],
 
+      // Unlike the rule of ESLint, the one of typescript-eslint also finds
+      // unused members declared with TypeScript's private, not only #private ones.
+      "no-unused-private-class-members": "off",
+      "@typescript-eslint/no-unused-private-class-members": "error",
+
       // Numbers in messages are fine; other types, such as undefined, are not.
       // The options of the strict preset are repeated, because options given
       // here replace them.
@@ -142,7 +147,17 @@ export default defineConfig([
 
       "@typescript-eslint/explicit-function-return-type": "error",
 
-      "@typescript-eslint/switch-exhaustiveness-check": "error",
+      // A default branch counts as handling the other cases; a switch without
+      // one must list them all.
+      "@typescript-eslint/switch-exhaustiveness-check": [
+        "error",
+        { considerDefaultExhaustiveForUnions: true },
+      ],
+
+      // T[] for simple element types, Array<…> and ReadonlyArray<…> for
+      // complex ones, which would need parentheses otherwise, such as
+      // Array<keyof T> instead of (keyof T)[].
+      "@typescript-eslint/array-type": ["error", { default: "array-simple" }],
 
       // Leaves files with decorators alone while emitDecoratorMetadata is on,
       // so it does not break the metadata of the decorators.
@@ -212,19 +227,18 @@ export default defineConfig([
       "vitest/valid-title": ["error", { mustMatch: { test: "^should " } }],
       // Vitest provides its API as globals (globals: true in vitest.config.ts).
       "vitest/no-importing-vitest-globals": "error",
-      "vitest/expect-expect": [
-        "warn",
-        {
-          assertFunctionNames: [
-            "expect*",
-            "expectStringsOnConsecutiveLines",
-            "expectStringsOnSameLine",
-          ],
-        },
-      ],
+      // Assertion helpers start with expect (see "Utilities and resources" in docs/testing.md).
+      "vitest/expect-expect": ["warn", { assertFunctionNames: ["expect*"] }],
+      // Vitest takes a message as second argument of expect(); the other
+      // options of the recommended setting stay as they are.
+      "vitest/valid-expect": ["error", { maxArgs: 2 }],
+      // vitest/unbound-method replaces the rule of typescript-eslint in the
+      // tests; it accepts mock functions, which don't depend on this.
+      "@typescript-eslint/unbound-method": "off",
+      "vitest/unbound-method": "error",
     },
   },
-  // Size limits of test files (see "Code size" in
+  // Size limits and non-null assertions of test files (see "Code size" in
   // docs/development-guidelines.md). max-lines-per-function would count the
   // describe callbacks that hold the tests, so the local rule limits the single
   // tests instead. Helpers of the tests keep the limits of other code.
@@ -234,6 +248,10 @@ export default defineConfig([
       "max-lines": ["error", { max: 1000 }],
       "max-lines-per-function": "off",
       "tests/max-lines-per-test": "error",
+      // A test may assert with ! that a value exists: if it does not, the
+      // test fails (see "TypeScript" in docs/development-guidelines.md).
+      // Test helpers check their values like other code.
+      "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
   // Allow only .ts and .mjs files: the package is an ES module, so .js would

@@ -4,7 +4,7 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-16T14:40:00Z }
+generated: { by: human:neumaennl, at: 2026-11-16T19:25:47Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -58,7 +58,7 @@ Blank lines and comments count as well. ESLint checks the limits with the rules 
 # TypeScript
 
 - Follow the established best practices for TypeScript.
-- The TypeScript configuration is `strict` and sets `noUncheckedIndexedAccess`, so that indexed access, such as `array[i]`, includes `undefined`.[^tsconfig]
+- The TypeScript configuration is `strict` and sets `noUncheckedIndexedAccess`, so that indexed access, such as `array[i]`, includes `undefined`. Check the value, or avoid the index with `for…of`, `find()` or `at()`. In tests, a non-null assertion (`items[0]!`) is fine, because a wrong assumption makes the test fail.[^tsconfig]
 - Define interfaces or types for data structures.
 - Define a type in the module that owns the data it describes. Put types that several modules share in a `types.ts` of their folder; `src/types.ts` holds the metadata types.
 - Names: PascalCase for classes, interfaces, types and decorators; camelCase for functions, methods and variables; UPPER_CASE for module-level constants. Names say what something is or does.
@@ -86,7 +86,7 @@ Every function, method and class has an up-to-date TSDoc comment: what it does, 
 
 - `@throws` does not start with `{`: TypeScript, and so the hover of editors, reads a `{` right after `@throws` as the type of the error, and breaks `{@link Error}` there into two tags.
 - TSDoc has no dotted parameter names such as `@param options.name`. Describe the fields of a destructured parameter at its type, with a comment per field.
-- Package names that start with `@`, such as `@types/node`, are written as code, so that TSDoc does not read them as tags.
+- Code in comments is written as code: identifiers, expressions, XML, QNames such as `xs:string`, and file paths. This matters even more for package names that start with `@`, such as `@types/node`, and for text with `{`, `}` or `>`, because TSDoc would read them as tags or HTML.
 - ESLint checks the syntax with `eslint-plugin-tsdoc`, and with `eslint-plugin-jsdoc` that the comments and their tags exist (see [Build and release](build-and-release.md#eslint)).[^eslint]
 
 # Tests

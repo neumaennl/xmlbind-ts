@@ -154,7 +154,9 @@ export function satisfies(version: string, range: string): boolean {
  * @param major - The major version
  * @returns The highest version, if any
  * @example
+ * ```typescript
  * latestOfMajor(["24.12.0", "24.19.2", "26.6.5"], 24); // "24.19.2"
+ * ```
  */
 export function latestOfMajor(versions: string[], major: number): string | undefined {
   return versions

@@ -11,7 +11,7 @@ declare module "vitest" {
 }
 
 /**
- * The decorator mode of the current Vitest project (see vitest.config.ts).
+ * The decorator mode of the current Vitest project (see `vitest.config.ts`).
  */
 export const decoratorMode: DecoratorMode = inject("decoratorMode");
 

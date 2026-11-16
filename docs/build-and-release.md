@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-16T14:40:00Z }
+generated: { by: human:neumaennl, at: 2026-11-16T19:25:47Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -153,14 +153,22 @@ The project's own settings:
 
 - the rules of `typescript-eslint` need type information, which ESLint takes from the projects that `tsconfig.json` references; `vitest.config.ts`, which none of them includes, is checked without a project;
 - unused variables, imports and parameters are errors, except parameters and variables whose names start with `_`; ESLint checks them, not TypeScript, so that they are reported once;
+- unused private class members are errors; `@typescript-eslint/no-unused-private-class-members` replaces the rule of ESLint, because it also finds members declared with `private`, not only `#private` ones;
 - unreachable code is reported by TypeScript (`allowUnreachableCode: false`), not by ESLint: TypeScript knows types such as `never`, so `typescript-eslint` turns `no-unreachable` off;
 - `@typescript-eslint/restrict-template-expressions` allows numbers in template literals, but no other types that are not strings, such as `undefined`;
 - `@typescript-eslint/explicit-function-return-type` asks for the return type of every function;
-- `@typescript-eslint/switch-exhaustiveness-check` reports a `switch` on a union or enum that misses cases;
+- `@typescript-eslint/switch-exhaustiveness-check` reports a `switch` on a union or enum that misses cases; a `default` branch counts as handling the other cases (`considerDefaultExhaustiveForUnions`);
 - `@typescript-eslint/consistent-type-imports` asks for `import type` when only types are imported; it leaves files with decorators alone while `emitDecoratorMetadata` is on, because the metadata needs the values;
 - `unknown` is not allowed in type assertions (`x as unknown`) and in the types of variables (`const x: unknown`), because both bypass type checks;
-- in the tests, `@typescript-eslint/no-empty-function` allows empty arrow functions, such as empty mock implementations;
-- `vitest/expect-expect` accepts the assertion helpers of the tests;
+- some of the strict and stylistic rules change code in ways that are not obvious:
+  - `no-confusing-void-expression`: an arrow function whose body is a call that returns nothing gets braces, `() => { save(); }` instead of `() => save()`. Without braces, the arrow function returns the value of its body, so the short form looks as if it returned something; with braces, it is clear that nothing is returned;
+  - `prefer-regexp-exec`: a regular expression is applied with `re.exec(text)`, not `text.match(re)`. What `match` returns depends on the flag `g`: without it, the first match with its groups, like `exec`; with it, all matches without groups. `exec` always returns the same kind of result, so adding `g` later cannot change it silently;
+  - `array-type` with `array-simple`: `T[]` for simple element types, `Array<…>` and `ReadonlyArray<…>` for complex ones, which would need parentheses otherwise (`Array<keyof T>` instead of `(keyof T)[]`);
+  - `consistent-type-definitions`: object types are declared as `interface`; `type` stays for unions, mapped and conditional types. Both describe object shapes alike, but interfaces can be extended with `extends`, and two interfaces of the same name merge instead of failing;
+- in the tests, `@typescript-eslint/no-empty-function` allows empty arrow functions, such as empty mock implementations, and test files may use non-null assertions (`items[0]!`), as the [development guidelines](development-guidelines.md#typescript) say; the helpers of the tests check their values like other code;
+- `vitest/expect-expect` counts calls of functions whose names start with `expect` as assertions, so tests that only use assertion helpers are not reported;
+- `vitest/valid-expect` allows a message as second argument of `expect()`, which Vitest supports;
+- `vitest/unbound-method` replaces `@typescript-eslint/unbound-method` in the tests, because it accepts mock functions, which do not depend on `this`;
 - `vitest/consistent-test-it` asks for `test()` instead of `it()`, also inside `describe()`, as the [development guidelines](development-guidelines.md#tests) say;
 - `vitest/valid-title` asks for test titles that start with "should", as the [development guidelines](development-guidelines.md#tests) say; the titles of `describe()` are free;
 - `vitest/no-importing-vitest-globals` reports imports of `test`, `expect`, `vi` and the rest of Vitest's API, which the tests use as globals (`globals: true` in `vitest.config.ts`); types such as `Mock` are still imported;

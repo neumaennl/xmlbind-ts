@@ -35,7 +35,7 @@ const realIsTTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY") ?? { v
 
 let dir: string;
 
-/** What writeProject() changes in the files of the test folder. */
+/** What `writeProject()` changes in the files of the test folder. */
 interface ProjectChanges {
   /** Replaces fields of `package.json` */
   pkg?: object;

@@ -4,7 +4,7 @@ title: Testing
 description: How xmlbind-ts is tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-16T14:40:00Z }
+generated: { by: human:neumaennl, at: 2026-11-16T19:25:47Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -80,7 +80,7 @@ Further settings:
 | `expectStringsOnConsecutiveLines(text, strings)` | checks that strings occur on successive lines in this order |
 | `decoratorMode`, `emitsDecoratorMetadata`, `detectDecoratorMode()` | see [Two Vitest projects](#two-vitest-projects) |
 
-The two assertion helpers are registered with the ESLint rule `vitest/expect-expect`, so tests that use only them are not reported as tests without an assertion.[^eslint]
+The names of assertion helpers start with `expect`. The ESLint rule `vitest/expect-expect` counts calls of such functions as assertions, so tests that use only them are not reported as tests without an assertion.[^eslint]
 
 `scripts/__tests__/testHelpers.ts` stubs `fetch` and provides fixtures of the Node.js release schedule, the Node.js releases and the versions of `@types/node` for the tests of the scripts.[^scripts-helpers]
 
