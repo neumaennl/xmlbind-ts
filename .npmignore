@@ -20,3 +20,4 @@ tsconfig.eslint.json
 eslint.config.mjs
 .prettierrc.json
 .prettierignore
+.git-blame-ignore-revs

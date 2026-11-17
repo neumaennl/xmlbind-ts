@@ -7,17 +7,20 @@ Contributions are welcome. This file describes how to set up the project, which 
 1. Clone the repository.
 2. Use the Node.js major version in `.nvmrc`, for example with `nvm install`, which installs its latest release and switches to it. nvm-windows does not read `.nvmrc`; there, run `nvm install <version>` and `nvm use <version>` with the version from the file. CI uses the latest release of that major version as well.
 3. Run `npm install`. It also builds the library (`prepare`).
+4. In VS Code, install the recommended extensions, Prettier and ESLint. VS Code then formats the files on save.
+5. Run `git config blame.ignoreRevsFile .git-blame-ignore-revs`, so that `git blame` skips the commits that only reformat the code.
 
 No token is needed: all dependencies come from the npm registry.
 
 ## Everyday commands
 
-| Command                 | What it does                                                                                        |
-| ----------------------- | --------------------------------------------------------------------------------------------------- |
-| `npm test`              | builds the library, type-checks the scripts and runs all tests                                      |
-| `npx vitest run <file>` | runs one test file                                                                                  |
-| `npm run lint`          | runs ESLint and the checks for duplicated and unused code; `npm run lint:fix` fixes what ESLint can |
-| `npm run build`         | compiles `src/` to `dist/`                                                                          |
+| Command                 | What it does                                                                                                               |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `npm test`              | builds the library, type-checks the scripts and runs all tests                                                             |
+| `npx vitest run <file>` | runs one test file                                                                                                         |
+| `npm run lint`          | runs ESLint and the checks for duplicated and unused code and for the formatting; `npm run lint:fix` fixes what ESLint can |
+| `npm run format`        | formats all files with Prettier                                                                                            |
+| `npm run build`         | compiles `src/` to `dist/`                                                                                                 |
 
 [Build and release](docs/build-and-release.md#npm-scripts) lists all scripts, and [Testing](docs/testing.md) describes the tests, including the two Vitest projects that run every test with legacy and with Stage 3 decorators.
 

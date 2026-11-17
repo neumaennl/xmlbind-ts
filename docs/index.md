@@ -13,7 +13,7 @@ okf_version: "0.2"
 
 # Working on the library
 
-- [Development guidelines](development-guidelines.md) - Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
+- [Development guidelines](development-guidelines.md) - Rules for everyone who changes the library or the generator - code size, code quality, formatting and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 - [Testing](testing.md) - How xmlbind-ts is tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 - [Build and release](build-and-release.md) - How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 

@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-16T19:25:47Z }
+generated: { by: human:neumaennl, at: 2026-11-17T13:25:50Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -45,6 +45,12 @@ sources:
   - id: fallow
     resource: ../.fallowrc.jsonc
     title: fallow configuration
+  - id: prettier
+    resource: ../.prettierrc.json
+    title: Prettier configuration
+  - id: vscode
+    resource: ../.vscode/settings.json
+    title: VS Code settings of the workspace
   - id: ci
     resource: ../.github/workflows/ci.yml
     title: CI workflow
@@ -59,15 +65,16 @@ This document describes how the package is built, checked, packaged and publishe
 
 # npm scripts
 
-| Script                | What it does                                                             |
-| --------------------- | ------------------------------------------------------------------------ |
-| `npm run build`       | compiles `src/` to `dist/` with `tsconfig.build.json`                    |
-| `npm run typecheck`   | type-checks `scripts/` with `tsconfig.scripts.json`                      |
-| `npm test`            | runs `build` and `typecheck` (`pretest`), then Vitest                    |
-| `npm run lint`        | runs ESLint, jscpd and fallow on the whole repository, see [Lint](#lint) |
-| `npm run lint:fix`    | runs ESLint and fixes what it can fix                                    |
-| `npm run node:check`  | checks the Node.js version, see [Node.js version](#nodejs-version)       |
-| `npm run node:update` | changes the Node.js version, see [Node.js version](#nodejs-version)      |
+| Script                | What it does                                                                                          |
+| --------------------- | ----------------------------------------------------------------------------------------------------- |
+| `npm run build`       | compiles `src/` to `dist/` with `tsconfig.build.json`                                                 |
+| `npm run typecheck`   | type-checks `scripts/` with `tsconfig.scripts.json`                                                   |
+| `npm test`            | runs `build` and `typecheck` (`pretest`), then Vitest                                                 |
+| `npm run lint`        | runs ESLint, jscpd, fallow and the check of the formatting on the whole repository, see [Lint](#lint) |
+| `npm run lint:fix`    | runs ESLint and fixes what it can fix                                                                 |
+| `npm run format`      | formats all files with Prettier, see [Formatting](#formatting)                                        |
+| `npm run node:check`  | checks the Node.js version, see [Node.js version](#nodejs-version)                                    |
+| `npm run node:update` | changes the Node.js version, see [Node.js version](#nodejs-version)                                   |
 
 `prepare` runs `build`, so npm builds the package on `npm install` in a checkout and before `npm pack` and `npm publish`.[^manifest]
 
@@ -129,15 +136,16 @@ The scripts read the release schedule from the Node.js release repository on Git
 
 - ESLint;
 - the copy-paste detector jscpd (see [Duplicated code](#duplicated-code));
-- fallow, once for the whole project and once in production mode (see [Unused code](#unused-code)).
+- fallow, once for the whole project and once in production mode (see [Unused code](#unused-code));
+- Prettier, which checks the formatting (see [Formatting](#formatting)).
 
 How concurrently runs them:
 
 - all checks always run to the end, so one run reports all problems;
 - the run fails if one of them fails;
-- `--group` prints the output of each check as one block, labeled `[eslint]`, `[jscpd]`, `[fallow]` and `[fallow-production]`.
+- `--group` prints the output of each check as one block, labeled `[eslint]`, `[jscpd]`, `[fallow]`, `[fallow-production]` and `[prettier]`.
 
-To run one check alone, use `npx eslint .`, `npx jscpd`, `npx fallow dead-code --no-cache --fail-on-issues` or `npx fallow dead-code --production --no-cache --fail-on-issues`. They read the same configuration as `npm run lint`.
+To run one check alone, use `npx eslint .`, `npx jscpd`, `npx fallow dead-code --no-cache --fail-on-issues`, `npx fallow dead-code --production --no-cache --fail-on-issues` or `npx prettier --check .`. They read the same configuration as `npm run lint`.
 
 ## ESLint
 
@@ -232,14 +240,48 @@ Its limits:
 - Without type information, fallow does not see that a member is used when it is called by a computed name, such as `obj[name]()`. Such a member needs an ignore comment with the reason.
 - Members with decorators are not checked, because a decorator can use them.
 
+## Formatting
+
+Prettier formats TypeScript, `.mjs`, JSON, JSONC, YAML and Markdown.[^prettier]
+
+- `npm run format` formats all files.
+- `npm run lint` checks them with `prettier --check .`, so CI does too.
+- VS Code formats these files on save with the Prettier extension, which `.vscode/extensions.json` recommends.[^vscode] The settings name the languages one by one, so that VS Code does not format other files, such as XSD, with another formatter.
+
+The settings in `.prettierrc.json`:[^prettier]
+
+- Lines have at most 120 characters.
+- Trailing commas are written in arrays, objects, imports and exports, and type parameters (`"trailingComma": "es5"`). They are not written after the parameters of a function, because a comma there looks strange. Prettier cannot tell definitions from calls, so the arguments of a call get none either.
+- Everything else is Prettier's default: double quotes, semicolons, two spaces and LF line endings.
+
+Prettier skips what `.gitignore` excludes. `.prettierignore` adds two more:
+
+- `package-lock.json`, which npm writes;
+- `.drafts/`, for local drafts. It is excluded in `.git/info/exclude`, which Prettier does not read.
+
+The version of Prettier is pinned, without `^`, because a patch release can format differently. When Dependabot updates it and CI reports unformatted files, run `npm run format` on its branch.
+
+No ESLint rule clashes with Prettier. This was checked with the command-line check of `eslint-config-prettier`, `npx eslint-config-prettier <file>`, for a TypeScript file and for `eslint.config.mjs`; run it again when rules are added. It only names `no-unexpected-multiline`, which it cannot check automatically:
+
+- The rule reports statements that a missing semicolon joins with the next line. It stays on.
+- In rare cases, Prettier breaks a chain of calls before an index access such as `[i]`, and the rule reports that. Then split the expression into two statements.
+
+The size rules count lines, including the line breaks that Prettier adds (see [ESLint](#eslint)). Code that the formatting pushes past a limit is split like any other code that is too long.
+
+`.git-blame-ignore-revs` lists the commits that only reformat the code, such as the one that formatted the whole repository with Prettier:
+
+- GitHub skips them in its blame view.
+- Locally, `git blame` skips them after `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+- The file names the commits by their hashes, so these commits must not be rewritten: a branch with them is merged without squashing or rebasing.
+
 # CI
 
 The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch of version 3 ([ADR 001](architecture/001-reimplementation.md)), on pull requests into `main`, and weekly on Mondays at 06:00 UTC.[^ci] It has two jobs:
 
-| Job                     | Runs                  | Steps                                                                                                                                                                                                                                                              |
-| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Check Node versions     | always                | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life                                                                                                                                                |
-| Install, build and test | not on the weekly run | `npm ci`, `npm run lint` (ESLint, jscpd and fallow), `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
+| Job                     | Runs                  | Steps                                                                                                                                                                                                                                                                        |
+| ----------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Check Node versions     | always                | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life                                                                                                                                                          |
+| Install, build and test | not on the weekly run | `npm ci`, `npm run lint` (ESLint, jscpd, fallow and Prettier), `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
 
 Both jobs use the latest release of the major version in `.nvmrc` (`check-latest: true`), on Ubuntu only. A warning of `node:check` appears as an annotation of the run. GitHub pauses scheduled workflows of a public repository after 60 days without activity; the workflow then has to be enabled again in the Actions tab.
 
@@ -247,7 +289,7 @@ Both jobs use the latest release of the major version in `.nvmrc` (`check-latest
 
 # Dependabot
 
-Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot] It groups the updates of ESLint, of Vite and of Vitest, each into one pull request, and ignores major updates of `@types/node`, which follow `engines.node` (see [Node.js version](#nodejs-version)). CI checks its pull requests like any other.
+Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot] It groups the updates of ESLint, of Vite and of Vitest, each into one pull request, and ignores major updates of `@types/node`, which follow `engines.node` (see [Node.js version](#nodejs-version)). CI checks its pull requests like any other. An update of Prettier can change the formatting (see [Formatting](#formatting)).
 
 # Changelog and log
 
@@ -278,6 +320,10 @@ Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot
 [^jscpd]: jscpd configuration
 
 [^fallow]: fallow configuration
+
+[^prettier]: Prettier configuration
+
+[^vscode]: VS Code settings of the workspace
 
 [^ci]: CI workflow
 

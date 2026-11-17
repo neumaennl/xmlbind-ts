@@ -2,6 +2,7 @@
 
 ## 2026-11-17
 
+- **Update**: Prettier formats the code, the configuration files and the documentation, and `npm run lint` checks the formatting. [Build and release](build-and-release.md#formatting) describes the settings, why no ESLint rule clashes with Prettier, the setup of VS Code and `.git-blame-ignore-revs`. The [development guidelines](development-guidelines.md#code-quality) and their entry in [the index](index.md) mention the formatting, and the line breaks of Prettier count for the [size limits](development-guidelines.md#code-size).
 - **Update**: [Testing](testing.md#utilities-and-resources): the helpers of the tests of the scripts also make standard input look like a terminal or not.
 
 ## 2026-11-16

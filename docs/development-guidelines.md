@@ -1,10 +1,10 @@
 ---
 type: Guideline
 title: Development guidelines
-description: Rules for everyone who changes the library or the generator - code size, code quality and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
+description: Rules for everyone who changes the library or the generator - code size, code quality, formatting and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-16T19:25:47Z }
+generated: { by: human:neumaennl, at: 2026-11-17T13:25:50Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -18,6 +18,9 @@ sources:
   - id: fallow
     resource: ../.fallowrc.jsonc
     title: fallow configuration
+  - id: prettier
+    resource: ../.prettierrc.json
+    title: Prettier configuration
   - id: tsconfig
     resource: ../tsconfig.build.json
     title: TypeScript configuration of the library
@@ -41,7 +44,7 @@ Topics that have their own document are only linked here: the structure of the c
 - A function has at most 120 lines. Split longer functions into smaller helpers with one responsibility each.
 - A test file has at most 1000 lines, and a single test at most 50. The limit for functions does not apply to test files, because their `describe` callbacks hold many tests. Helpers of the tests have the limits of other code.
 
-Blank lines and comments count as well. ESLint checks the limits with the rules `max-lines` and `max-lines-per-function`, and the single tests with the local rule `tests/max-lines-per-test` (see [Build and release](build-and-release.md#eslint)).[^eslint]
+Blank lines and comments count as well, and so do the line breaks that Prettier adds. ESLint checks the limits with the rules `max-lines` and `max-lines-per-function`, and the single tests with the local rule `tests/max-lines-per-test` (see [Build and release](build-and-release.md#eslint)).[^eslint]
 
 # Code quality
 
@@ -49,6 +52,7 @@ Blank lines and comments count as well. ESLint checks the limits with the rules 
 - Remove code that nothing uses. `npm run lint` reports unused files, exports, class members and dependencies with fallow, also code that only tests use (see [Build and release](build-and-release.md#unused-code)).[^fallow]
 - Export only what other modules use. Tests use a module through its exports; do not export something only so that a test can call it.
 - A conditional expression (`a ? b : c`) spans at most three lines. Write a longer one, for example one with array or object literals in its branches or a nested one, as `if`/`else`. The local ESLint rule `style/max-ternary-lines` checks this.[^eslint]
+- Prettier formats the code, the configuration files and the documentation. `npm run format` formats all files, and VS Code formats them on save; `npm run lint` checks the formatting (see [Build and release](build-and-release.md#formatting)).[^prettier]
 - `npm run lint` must report no errors, and as few warnings as possible. `npm run lint:fix` fixes what ESLint can.[^manifest]
 - Disable an ESLint rule only as a last resort, with an `eslint-disable-next-line` comment that gives the reason.
 - Exclude duplicated code from jscpd only as a last resort. Put `// jscpd:ignore-start` and `// jscpd:ignore-end` around it, with a comment that gives the reason.
@@ -123,7 +127,7 @@ The documentation of the library and the generator is the knowledge bundle in `d
 
 # Before committing
 
-1. `npm run lint` passes.
+1. `npm run lint` passes; it also checks the formatting, which `npm run format` fixes.
 2. `npm test` passes; it first builds the library and type-checks the scripts (`pretest`).[^manifest]
 3. The changes follow these guidelines.
 4. The documentation is updated, and `CHANGELOG.md` for functional changes.
@@ -142,6 +146,8 @@ The documentation of the library and the generator is the knowledge bundle in `d
 [^jscpd]: jscpd configuration
 
 [^fallow]: fallow configuration
+
+[^prettier]: Prettier configuration
 
 [^tsconfig]: TypeScript configuration of the library
 
