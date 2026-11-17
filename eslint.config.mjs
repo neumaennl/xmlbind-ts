@@ -54,7 +54,9 @@ const MAX_TERNARY_LINES = 3;
 const maxTernaryLines = {
   meta: {
     type: "suggestion",
-    messages: { tooLong: "Conditional expression spans {{lines}} lines. Maximum allowed is {{max}}; use if/else instead." },
+    messages: {
+      tooLong: "Conditional expression spans {{lines}} lines. Maximum allowed is {{max}}; use if/else instead.",
+    },
     schema: [],
   },
   create(context) {
@@ -149,10 +151,7 @@ export default defineConfig([
 
       // A default branch counts as handling the other cases; a switch without
       // one must list them all.
-      "@typescript-eslint/switch-exhaustiveness-check": [
-        "error",
-        { considerDefaultExhaustiveForUnions: true },
-      ],
+      "@typescript-eslint/switch-exhaustiveness-check": ["error", { considerDefaultExhaustiveForUnions: true }],
 
       // T[] for simple element types, Array<…> and ReadonlyArray<…> for
       // complex ones, which would need parentheses otherwise, such as
@@ -169,7 +168,8 @@ export default defineConfig([
         {
           selector:
             'TSAsExpression[typeAnnotation.type="TSUnknownKeyword"], VariableDeclarator[id.typeAnnotation.typeAnnotation.type="TSUnknownKeyword"]',
-          message: "Avoid `unknown` in type assertions and variable-type annotations. If unavoidable, add eslint-disable-next-line with a justification.",
+          message:
+            "Avoid `unknown` in type assertions and variable-type annotations. If unavoidable, add eslint-disable-next-line with a justification.",
         },
       ],
 
@@ -258,16 +258,17 @@ export default defineConfig([
   // be ambiguous, and .cjs, .mts and .cts are not needed. Without this block,
   // ESLint would skip .mts and .cts files, because no other block matches them.
   {
-    files: ['**/*.js', '**/*.cjs', '**/*.mts', '**/*.cts'],
+    files: ["**/*.js", "**/*.cjs", "**/*.mts", "**/*.cts"],
     languageOptions: {
       parser: tsParser,
     },
     rules: {
-      'no-restricted-syntax': [
-        'error',
+      "no-restricted-syntax": [
+        "error",
         {
-          selector: 'Program',
-          message: 'Only TypeScript (.ts) and ES module (.mjs) files are allowed; .js, .cjs, .mts and .cts files are not.',
+          selector: "Program",
+          message:
+            "Only TypeScript (.ts) and ES module (.mjs) files are allowed; .js, .cjs, .mts and .cts files are not.",
         },
       ],
     },

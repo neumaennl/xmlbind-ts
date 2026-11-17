@@ -8,9 +8,9 @@ permissions:
 on:
   push:
     # reimplementation: version 3 is developed there (docs/architecture/001-reimplementation.md).
-    branches: [ main, reimplementation ]
+    branches: [main, reimplementation]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
     # Weekly, so that the end of life of a Node version is noticed without a push.
     - cron: "0 6 * * 1"

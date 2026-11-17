@@ -39,7 +39,7 @@ describe("update-steps", () => {
 
       await expect(offerSteps(asker, "24.21.0")).resolves.toBe(0);
       expect(asker.question).toHaveBeenCalledWith(
-        "Install Node 24.21.0 and run npm install, npm run lint, npm test now? [Y/n] ",
+        "Install Node 24.21.0 and run npm install, npm run lint, npm test now? [Y/n] "
       );
       expect(console.log).toHaveBeenCalledWith(PRINTED);
       expect(installNode).not.toHaveBeenCalled();

@@ -23,7 +23,11 @@ vi.mock("../lib/update-steps.ts", () => ({ offerSteps: vi.fn() }));
 const TODAY = "2026-10-14";
 const DATA = { schedule: SCHEDULE, releases: RELEASES, typesNode: TYPES_NODE };
 const CONSTRAINTS = [{ name: "commander 15.0.0", range: ">=22.12.0" }];
-const EDITIONS = new Map([[22, "ES2022"], [24, "ES2024"], [26, "ES2025"]]);
+const EDITIONS = new Map([
+  [22, "ES2022"],
+  [24, "ES2024"],
+  [26, "ES2025"],
+]);
 const ES2022 = { target: "ES2022", lib: ["ES2022"] };
 const ES2024 = { target: "ES2024", lib: ["ES2024"] };
 
@@ -69,7 +73,10 @@ function writeProject({
   lock = PACKAGE_LOCK,
   target = ES2024,
 }: ProjectChanges = {}): void {
-  writeFileSync(join(dir, "package.json"), `${JSON.stringify({ ...PACKAGE_JSON, ...pkg }, null, 2)}\n`.replace(/\n/g, eol));
+  writeFileSync(
+    join(dir, "package.json"),
+    `${JSON.stringify({ ...PACKAGE_JSON, ...pkg }, null, 2)}\n`.replace(/\n/g, eol)
+  );
   writeFileSync(join(dir, "package-lock.json"), JSON.stringify(lock));
   if (nvmrc !== null) {
     writeFileSync(join(dir, ".nvmrc"), `${nvmrc}${eol}`);
@@ -118,7 +125,9 @@ describe("node-version", () => {
       ["fewer", ["xyz"]],
       ["more", ["xyz", "1", "2"]],
     ])("should throw if a row has %s cells than the header", (_, row) => {
-      expect(() => formatTable(["A", "Long"], [row])).toThrow(`Table row has ${row.length} cells, but the header has 2`);
+      expect(() => formatTable(["A", "Long"], [row])).toThrow(
+        `Table row has ${row.length} cells, but the header has 2`
+      );
     });
   });
 
@@ -129,7 +138,7 @@ describe("node-version", () => {
 
       await expect(check(dir, TODAY)).resolves.toBe(0);
       expect(console.log).toHaveBeenCalledWith(
-        "engines.node, @types/node, .nvmrc, the ECMAScript edition and the runtime dependencies match; Node 24 does not end within 90 days.",
+        "engines.node, @types/node, .nvmrc, the ECMAScript edition and the runtime dependencies match; Node 24 does not end within 90 days."
       );
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
@@ -138,7 +147,9 @@ describe("node-version", () => {
       writeProject({ pkg: { engines: { node: ">=24.0.0" } } });
 
       await expect(check(dir, TODAY)).resolves.toBe(1);
-      expect(console.error).toHaveBeenCalledWith('engines.node: is ">=24.0.0", expected ">=" and a major version, for example ">=24".');
+      expect(console.error).toHaveBeenCalledWith(
+        'engines.node: is ">=24.0.0", expected ">=" and a major version, for example ">=24".'
+      );
     });
 
     test("should return 1 and name each value that does not match", async () => {
@@ -183,7 +194,7 @@ describe("node-version", () => {
 
       await expect(check(dir, TODAY)).resolves.toBe(1);
       expect(console.error).toHaveBeenCalledWith(
-        "engines.node >=24 includes versions that runtime dependencies exclude: Node 24.0.0 by commander 16.0.0 (>=24.3.0).",
+        "engines.node >=24 includes versions that runtime dependencies exclude: Node 24.0.0 by commander 16.0.0 (>=24.3.0)."
       );
     });
 
@@ -194,12 +205,14 @@ describe("node-version", () => {
 
       await expect(check(dir, TODAY)).resolves.toBe(1);
       expect(console.error).toHaveBeenCalledWith(
-        "engines.node >=24 includes versions that runtime dependencies exclude: Node 26.0.0 by foo 1.0.0 (>=24 <26).",
+        "engines.node >=24 includes versions that runtime dependencies exclude: Node 26.0.0 by foo 1.0.0 (>=24 <26)."
       );
     });
 
     test("should ignore newer lines past their end of life that a runtime dependency excludes", async () => {
-      const lock = { packages: { "node_modules/foo": { version: "1.0.0", engines: { node: "^22.12.0 || ^24.0.0 || >=26" } } } };
+      const lock = {
+        packages: { "node_modules/foo": { version: "1.0.0", engines: { node: "^22.12.0 || ^24.0.0 || >=26" } } },
+      };
       writeProject({ lock });
       stubNodeData();
 
@@ -212,7 +225,9 @@ describe("node-version", () => {
 
       await expect(check(dir, "2028-02-01")).resolves.toBe(0);
       expect(console.warn).toHaveBeenCalledWith("Warning: Node 24 reaches its end of life on 2028-04-30, in 89 days.");
-      expect(console.log).toHaveBeenCalledWith("Raise the Node version with `npm run node:update` before the end of life.");
+      expect(console.log).toHaveBeenCalledWith(
+        "Raise the Node version with `npm run node:update` before the end of life."
+      );
     });
 
     test("should return 1 in the 90 days before the end of life if strict", async () => {
@@ -239,17 +254,24 @@ describe("node-version", () => {
       [24, undefined],
       [23, "Node 23 has no release."],
       [25, "Node 25 has reached its end of life or is not in the Node release schedule."],
-      [22, ">=22 would include versions that runtime dependencies exclude: Node 22.0.0 by commander 15.0.0 (>=22.12.0)."],
+      [
+        22,
+        ">=22 would include versions that runtime dependencies exclude: Node 22.0.0 by commander 15.0.0 (>=22.12.0).",
+      ],
     ])("should for %s return %s", (major, expected) => {
       expect(rejectMajor(major, DATA, CONSTRAINTS, TODAY, EDITIONS)).toBe(expected);
     });
 
     test("should reject a major version without @types/node", () => {
-      expect(rejectMajor(24, { ...DATA, typesNode: [] }, CONSTRAINTS, TODAY, EDITIONS)).toBe("There is no @types/node 24.x.");
+      expect(rejectMajor(24, { ...DATA, typesNode: [] }, CONSTRAINTS, TODAY, EDITIONS)).toBe(
+        "There is no @types/node 24.x."
+      );
     });
 
     test("should reject a major version without an ECMAScript edition", () => {
-      expect(rejectMajor(24, DATA, CONSTRAINTS, TODAY, new Map())).toBe("There is no @tsconfig/bases configuration for Node 24.");
+      expect(rejectMajor(24, DATA, CONSTRAINTS, TODAY, new Map())).toBe(
+        "There is no @tsconfig/bases configuration for Node 24."
+      );
     });
   });
 
@@ -288,7 +310,7 @@ describe("node-version", () => {
       expect(read(".nvmrc")).toBe("24\n");
       expect(JSON.parse(read("tsconfig.target.json"))).toEqual({ compilerOptions: ES2024 });
       expect(console.log).toHaveBeenCalledWith(
-        "Set engines.node >=24, @types/node ^24.12.0, .nvmrc 24 and the ECMAScript edition ES2024.",
+        "Set engines.node >=24, @types/node ^24.12.0, .nvmrc 24 and the ECMAScript edition ES2024."
       );
       expect(offerSteps).toHaveBeenCalledWith(asker, "24.21.0");
     });
@@ -328,8 +350,13 @@ describe("node-version", () => {
 
       await expect(update(undefined, dir, TODAY)).resolves.toBe(0);
 
-      const output = vi.mocked(console.log).mock.calls.map((args) => String(args[0])).join("\n");
-      expect(output).toMatch(/^22 +Maintenance LTS +no: 22\.0\.0 by commander 15\.0\.0, require\(\) of ES modules +\^22\.13\.17 +ES2022 +22\.23\.3 +2027-04-30$/m);
+      const output = vi
+        .mocked(console.log)
+        .mock.calls.map((args) => String(args[0]))
+        .join("\n");
+      expect(output).toMatch(
+        /^22 +Maintenance LTS +no: 22\.0\.0 by commander 15\.0\.0, require\(\) of ES modules +\^22\.13\.17 +ES2022 +22\.23\.3 +2027-04-30$/m
+      );
       expect(output).toMatch(/^24 +Active LTS +yes +\^24\.12\.0 +ES2024 +24\.21\.0 +2028-04-30$/m);
       expect(output).toContain("Currently: engines.node >=22, @types/node ^24.12.0, .nvmrc 22.");
       expect(output).toContain("Node 22.0.0 by commander 15.0.0 (>=22.12.0), require() of ES modules");
@@ -351,9 +378,14 @@ describe("node-version", () => {
   });
 
   describe("main", () => {
-    test.each([[["unknown"]], [["check", "--bogus"]], [["update", "24", "26"]]])("should print the usage and return 2 for %j", async (args) => {
-      await expect(main(args)).resolves.toBe(2);
-      expect(console.error).toHaveBeenCalledWith("Usage: node scripts/node-version.ts check [--strict] | update [major]");
-    });
+    test.each([[["unknown"]], [["check", "--bogus"]], [["update", "24", "26"]]])(
+      "should print the usage and return 2 for %j",
+      async (args) => {
+        await expect(main(args)).resolves.toBe(2);
+        expect(console.error).toHaveBeenCalledWith(
+          "Usage: node scripts/node-version.ts check [--strict] | update [major]"
+        );
+      }
+    );
   });
 });

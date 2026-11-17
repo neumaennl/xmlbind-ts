@@ -18,23 +18,20 @@
  * expectStringsOnSameLine(line, ['id="2"', 'title="Fix bug"', 'status="approved"']); // passes
  * ```
  */
-export function expectStringsOnSameLine(
-  line: string,
-  expectedStrings: string[]
-): void {
+export function expectStringsOnSameLine(line: string, expectedStrings: string[]): void {
   let searchStartIndex = 0;
-  
+
   for (const [i, expectedStr] of expectedStrings.entries()) {
     const index = line.indexOf(expectedStr, searchStartIndex);
-    
+
     if (index === -1) {
       const previous = expectedStrings[i - 1] ?? "(start of line)";
       throw new Error(
         `Expected string "${expectedStr}" not found after "${previous}" on the same line. ` +
-        `Searched from position ${searchStartIndex} in line of length ${line.length}.`
+          `Searched from position ${searchStartIndex} in line of length ${line.length}.`
       );
     }
-    
+
     // Update search position for next string to ensure consecutive order
     searchStartIndex = index + expectedStr.length;
   }
@@ -54,11 +51,8 @@ export function expectStringsOnSameLine(
  * expectStringsOnConsecutiveLines(code, ['export enum Colors', 'red = "red"', 'blue = "blue"']); // passes
  * ```
  */
-export function expectStringsOnConsecutiveLines(
-  text: string,
-  expectedStrings: string[]
-): void {
-  const lines = text.split('\n');
+export function expectStringsOnConsecutiveLines(text: string, expectedStrings: string[]): void {
+  const lines = text.split("\n");
   let currentLineIndex = 0;
 
   for (const [i, expectedStr] of expectedStrings.entries()) {
@@ -67,11 +61,11 @@ export function expectStringsOnConsecutiveLines(
 
     if (lineIdx === -1) {
       const previous = expectedStrings[i - 1] ?? "(start of text)";
-      const searchContext = lines.slice(Math.max(0, currentLineIndex - 2), currentLineIndex + 3).join('\n');
+      const searchContext = lines.slice(Math.max(0, currentLineIndex - 2), currentLineIndex + 3).join("\n");
       throw new Error(
         `Expected string "${expectedStr}" not found on consecutive lines after "${previous}".\n` +
-        `Searched from line ${currentLineIndex + 1}.\n` +
-        `Context:\n${searchContext}`
+          `Searched from line ${currentLineIndex + 1}.\n` +
+          `Context:\n${searchContext}`
       );
     }
     currentLineIndex = lineIdx + 1; // Move to next line for next search

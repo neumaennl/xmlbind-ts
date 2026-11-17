@@ -101,7 +101,9 @@ export function editionProblems(dir: string, major: number, edition: string | un
   }
   let options: { target?: unknown; lib?: unknown };
   try {
-    options = (JSON.parse(readFileSync(join(dir, TARGET_FILE), "utf8")) as { compilerOptions?: typeof options }).compilerOptions ?? {};
+    options =
+      (JSON.parse(readFileSync(join(dir, TARGET_FILE), "utf8")) as { compilerOptions?: typeof options })
+        .compilerOptions ?? {};
   } catch {
     return [`${TARGET_FILE}: missing or not valid JSON, expected target and lib ${edition}`];
   }

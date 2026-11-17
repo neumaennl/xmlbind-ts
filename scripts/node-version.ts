@@ -90,7 +90,11 @@ export function formatTable(header: string[], rows: string[][]): string {
   }
   // The check above makes the fallbacks after ?? unreachable; TypeScript cannot see that.
   const widths = header.map((h, i) => Math.max(h.length, ...rows.map((r) => (r[i] ?? "").length)));
-  const line = (cells: string[]): string => cells.map((c, i) => c.padEnd(widths[i] ?? 0)).join("  ").trimEnd();
+  const line = (cells: string[]): string =>
+    cells
+      .map((c, i) => c.padEnd(widths[i] ?? 0))
+      .join("  ")
+      .trimEnd();
   return [line(header), line(widths.map((w) => "-".repeat(w))), ...rows.map(line)].join("\n");
 }
 
@@ -145,7 +149,11 @@ function todayUtc(): string {
  * @param today - The day as `YYYY-MM-DD`
  * @returns The level and the message, or undefined if the end of life is far away
  */
-function endOfLifeMessage(major: number, schedule: Schedule, today: string): { level: "warning" | "error"; text: string } | undefined {
+function endOfLifeMessage(
+  major: number,
+  schedule: Schedule,
+  today: string
+): { level: "warning" | "error"; text: string } | undefined {
   const eol = endOfLife(major, schedule, today);
   if (eol.level === "ok") {
     return undefined;
@@ -189,7 +197,10 @@ export async function check(dir = ".", today = todayUtc(), strict = false): Prom
   const current = readCurrent(dir);
   const major = enginesMajor(current.engines);
   if (major === undefined) {
-    report("error", `engines.node: is "${current.engines ?? ""}", expected ">=" and a major version, for example ">=24".`);
+    report(
+      "error",
+      `engines.node: is "${current.engines ?? ""}", expected ">=" and a major version, for example ">=24".`
+    );
     console.error("Run `npm run node:update` to fix this.");
     return 1;
   }
@@ -205,7 +216,9 @@ export async function check(dir = ".", today = todayUtc(), strict = false): Prom
   problems.push(...editionProblems(dir, major, edition));
   const excluded = exclusions(major, schedule, current.constraints, today);
   if (excluded.length > 0) {
-    problems.push(`engines.node >=${major} includes versions that runtime dependencies exclude: ${describeExclusions(excluded)}.`);
+    problems.push(
+      `engines.node >=${major} includes versions that runtime dependencies exclude: ${describeExclusions(excluded)}.`
+    );
   }
   const message = endOfLifeMessage(major, schedule, today);
   if (message) {
@@ -225,7 +238,9 @@ export async function check(dir = ".", today = todayUtc(), strict = false): Prom
   if (warnings.length > 0) {
     console.log("Raise the Node version with `npm run node:update` before the end of life.");
   } else {
-    console.log(`engines.node, @types/node, .nvmrc, the ECMAScript edition and the runtime dependencies match; Node ${major} does not end within ${WARN_DAYS} days.`);
+    console.log(
+      `engines.node, @types/node, .nvmrc, the ECMAScript edition and the runtime dependencies match; Node ${major} does not end within ${WARN_DAYS} days.`
+    );
   }
   return 0;
 }
@@ -240,7 +255,13 @@ export async function check(dir = ".", today = todayUtc(), strict = false): Prom
  * @param editions - The ECMAScript edition per major version
  * @returns Why it cannot, or undefined if it can
  */
-export function rejectMajor(major: number, data: NodeData, constraints: Constraint[], today: string, editions: Editions): string | undefined {
+export function rejectMajor(
+  major: number,
+  data: NodeData,
+  constraints: Constraint[],
+  today: string,
+  editions: Editions
+): string | undefined {
   if (!latestOfMajor(data.releases, major)) {
     return `Node ${major} has no release.`;
   }
@@ -294,7 +315,9 @@ function printOverview(rows: LineRow[], current: Current, editions: Editions): v
   console.log("Accepted by dependencies tells whether all of the above accept every version that >=x includes:");
   console.log("the first version of the line (x.0.0) and of every newer line before its end of life.");
   console.log("ECMAScript shows the target of the @tsconfig/bases configuration for the line.");
-  console.log(`Currently: engines.node ${current.engines ?? "-"}, @types/node ${current.typesNode ?? "-"}, .nvmrc ${current.nvmrc ?? "-"}.\n`);
+  console.log(
+    `Currently: engines.node ${current.engines ?? "-"}, @types/node ${current.typesNode ?? "-"}, .nvmrc ${current.nvmrc ?? "-"}.\n`
+  );
 }
 
 /**
@@ -307,13 +330,22 @@ function printOverview(rows: LineRow[], current: Current, editions: Editions): v
  * @param rl - The terminal interface
  * @returns The major version
  */
-export async function choose(data: NodeData, current: Current, today: string, editions: Editions, rl: Asker): Promise<number> {
+export async function choose(
+  data: NodeData,
+  current: Current,
+  today: string,
+  editions: Editions,
+  rl: Asker
+): Promise<number> {
   const suggested = newestLts(data, today);
   const prompt = `Node major version${suggested === undefined ? "" : ` [${suggested}]`}: `;
   for (;;) {
     const answer = (await rl.question(prompt)).trim();
     const major = answer ? parseMajor(answer) : suggested;
-    const error = major === undefined ? "Enter a major version, for example 24." : rejectMajor(major, data, current.constraints, today, editions);
+    const error =
+      major === undefined
+        ? "Enter a major version, for example 24."
+        : rejectMajor(major, data, current.constraints, today, editions);
     if (major !== undefined && !error) {
       return major;
     }
@@ -361,7 +393,10 @@ export async function update(requested: string | undefined, dir = ".", today = t
     let major: number;
     if (requested) {
       const parsed = parseMajor(requested);
-      const error = parsed === undefined ? `Not a major version: "${requested}"` : rejectMajor(parsed, data, current.constraints, today, editions);
+      const error =
+        parsed === undefined
+          ? `Not a major version: "${requested}"`
+          : rejectMajor(parsed, data, current.constraints, today, editions);
       if (parsed === undefined || error) {
         throw new Error(error);
       }
@@ -376,7 +411,9 @@ export async function update(requested: string | undefined, dir = ".", today = t
     }
     const values: Values = { major, typesNode: typesNodeRange(major, data.typesNode) ?? "", edition };
     writeValues(current, values, dir);
-    console.log(`Set engines.node >=${major}, @types/node ${values.typesNode}, .nvmrc ${major} and the ECMAScript edition ${edition}.`);
+    console.log(
+      `Set engines.node >=${major}, @types/node ${values.typesNode}, .nvmrc ${major} and the ECMAScript edition ${edition}.`
+    );
     const message = endOfLifeMessage(major, data.schedule, today);
     if (message) {
       report(message.level, message.text);
@@ -413,6 +450,6 @@ if (script !== undefined && import.meta.url === pathToFileURL(script).href) {
     (error: unknown) => {
       console.error(error instanceof Error ? error.message : String(error));
       process.exit(1);
-    },
+    }
   );
 }

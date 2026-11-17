@@ -14,7 +14,12 @@ export function stubFetch(bodies: Record<string, object>): Mock {
       return Promise.resolve({ ok: false, status: 404 });
     }
     const body = bodies[url];
-    return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body), text: () => Promise.resolve(JSON.stringify(body)) });
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(body),
+      text: () => Promise.resolve(JSON.stringify(body)),
+    });
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
@@ -51,7 +56,10 @@ export const URLS = {
  */
 const BASE_OPTIONS = {
   22: { target: "es2022", lib: ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"] },
-  24: { target: "es2024", lib: ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Error", "ESNext.Iterator", "ESNext.Promise"] },
+  24: {
+    target: "es2024",
+    lib: ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Error", "ESNext.Iterator", "ESNext.Promise"],
+  },
   26: { target: "es2025", lib: ["es2025", "ESNext.Collection", "ESNext.Temporal"] },
 };
 
@@ -76,7 +84,18 @@ export const SCHEDULE = {
 };
 
 /** Released Node versions, oldest first. */
-export const RELEASES = ["20.19.0", "20.20.2", "22.11.0", "22.12.0", "22.23.3", "24.0.0", "24.21.0", "25.9.0", "26.0.0", "26.11.1"];
+export const RELEASES = [
+  "20.19.0",
+  "20.20.2",
+  "22.11.0",
+  "22.12.0",
+  "22.23.3",
+  "24.0.0",
+  "24.21.0",
+  "25.9.0",
+  "26.0.0",
+  "26.11.1",
+];
 
 /** Published versions of `@types/node`. */
 export const TYPES_NODE = ["20.19.1", "22.10.10", "22.12.0", "22.13.17", "24.0.4", "24.12.0", "25.5.0", "26.0.1"];

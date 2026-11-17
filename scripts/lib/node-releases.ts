@@ -151,7 +151,9 @@ function violated(major: number, constraints: Constraint[]): Constraint[] {
     try {
       return !satisfies(`${major}.0.0`, c.range);
     } catch (error) {
-      throw new Error(`${c.name}: cannot read the Node range "${c.range}" (${(error as Error).message})`, { cause: error });
+      throw new Error(`${c.name}: cannot read the Node range "${c.range}" (${(error as Error).message})`, {
+        cause: error,
+      });
     }
   });
 }
@@ -194,7 +196,9 @@ export function exclusions(major: number, schedule: Schedule, constraints: Const
  * @returns For example `Node 26.0.0 by foo 1.0.0 (>=24 <26)`
  */
 export function describeExclusions(list: Exclusion[]): string {
-  return list.map((e) => `Node ${e.version} by ${e.excludedBy.map((c) => `${c.name} (${c.range})`).join(", ")}`).join("; ");
+  return list
+    .map((e) => `Node ${e.version} by ${e.excludedBy.map((c) => `${c.name} (${c.range})`).join(", ")}`)
+    .join("; ");
 }
 
 /**

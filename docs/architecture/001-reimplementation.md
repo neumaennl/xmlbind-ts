@@ -83,27 +83,28 @@ These are the requirements of [#299](https://github.com/neumaennl/xmlbind-ts/iss
   - accepted with a reason.
 
   Entries about parts that are not reimplemented, such as the scripts, the build or CI, are lessons: version 3 must not repeat the mistake. Entries that version 3 makes obsolete are deleted after its release.
+
 - **Real documents.** Round trips are tested with real documents ([#294](https://github.com/neumaennl/xmlbind-ts/issues/294)). Problems found are recorded in the known issues.
 
 ### Parts and their order
 
 The work is done in parts. Each part is a sub-issue of #299 and records its decisions as ADRs in this folder.
 
-| Part | Issue | Decides |
-|---|---|---|
-| 1. Overall design | [#300](https://github.com/neumaennl/xmlbind-ts/issues/300) | this ADR |
-| 2. XML library | [#301](https://github.com/neumaennl/xmlbind-ts/issues/301) | which library; how the source ranges are obtained |
-| 3. Checks for the new code | [#295](https://github.com/neumaennl/xmlbind-ts/issues/295), [#297](https://github.com/neumaennl/xmlbind-ts/issues/297) | – |
-| 4. Round trips of real documents | [#294](https://github.com/neumaennl/xmlbind-ts/issues/294) | – |
-| 5. Decorators and metadata | [#302](https://github.com/neumaennl/xmlbind-ts/issues/302) | whether the runtime reads `design:type`; which decorators and options |
-| 6. Binder | [#303](https://github.com/neumaennl/xmlbind-ts/issues/303) | how `marshal()` finds the source; matching; comments of removed elements; the form of the text edits and of the report |
-| 7. Value conversion | [#304](https://github.com/neumaennl/xmlbind-ts/issues/304) | – |
-| 8. Ordered content and polymorphism | [#305](https://github.com/neumaennl/xmlbind-ts/issues/305) | the shape of the items |
-| 9a. Generator: component model | [#306](https://github.com/neumaennl/xmlbind-ts/issues/306) | – |
-| 9b. Generator: writing the classes | [#307](https://github.com/neumaennl/xmlbind-ts/issues/307) | [#282](https://github.com/neumaennl/xmlbind-ts/issues/282) |
-| 10. Packaging | [#308](https://github.com/neumaennl/xmlbind-ts/issues/308) | – |
-| 11. Documentation and known issues | [#309](https://github.com/neumaennl/xmlbind-ts/issues/309) | – |
-| 12. Release 3.0.0 | [#310](https://github.com/neumaennl/xmlbind-ts/issues/310) | – |
+| Part                                | Issue                                                                                                                  | Decides                                                                                                                |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 1. Overall design                   | [#300](https://github.com/neumaennl/xmlbind-ts/issues/300)                                                             | this ADR                                                                                                               |
+| 2. XML library                      | [#301](https://github.com/neumaennl/xmlbind-ts/issues/301)                                                             | which library; how the source ranges are obtained                                                                      |
+| 3. Checks for the new code          | [#295](https://github.com/neumaennl/xmlbind-ts/issues/295), [#297](https://github.com/neumaennl/xmlbind-ts/issues/297) | –                                                                                                                      |
+| 4. Round trips of real documents    | [#294](https://github.com/neumaennl/xmlbind-ts/issues/294)                                                             | –                                                                                                                      |
+| 5. Decorators and metadata          | [#302](https://github.com/neumaennl/xmlbind-ts/issues/302)                                                             | whether the runtime reads `design:type`; which decorators and options                                                  |
+| 6. Binder                           | [#303](https://github.com/neumaennl/xmlbind-ts/issues/303)                                                             | how `marshal()` finds the source; matching; comments of removed elements; the form of the text edits and of the report |
+| 7. Value conversion                 | [#304](https://github.com/neumaennl/xmlbind-ts/issues/304)                                                             | –                                                                                                                      |
+| 8. Ordered content and polymorphism | [#305](https://github.com/neumaennl/xmlbind-ts/issues/305)                                                             | the shape of the items                                                                                                 |
+| 9a. Generator: component model      | [#306](https://github.com/neumaennl/xmlbind-ts/issues/306)                                                             | –                                                                                                                      |
+| 9b. Generator: writing the classes  | [#307](https://github.com/neumaennl/xmlbind-ts/issues/307)                                                             | [#282](https://github.com/neumaennl/xmlbind-ts/issues/282)                                                             |
+| 10. Packaging                       | [#308](https://github.com/neumaennl/xmlbind-ts/issues/308)                                                             | –                                                                                                                      |
+| 11. Documentation and known issues  | [#309](https://github.com/neumaennl/xmlbind-ts/issues/309)                                                             | –                                                                                                                      |
+| 12. Release 3.0.0                   | [#310](https://github.com/neumaennl/xmlbind-ts/issues/310)                                                             | –                                                                                                                      |
 
 A part starts when the parts it is blocked by are done. Parts without a path between them can run at the same time. Part 3 is blocked by no other part. Part 11 is blocked by parts 1 to 10 and checks that every known issue of 2.4.0 is handled.
 

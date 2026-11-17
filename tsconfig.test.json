@@ -1,13 +1,10 @@
 {
-    "extends": "./tsconfig.build.json",
-    "include": [
-        "src",
-        "__tests__"
-    ],
-    "compilerOptions": {
-        "rootDir": ".",
-        "composite": true,
-        "noEmit": true,
-        "types": [ "node", "vitest/globals" ]
-    }
+  "extends": "./tsconfig.build.json",
+  "include": ["src", "__tests__"],
+  "compilerOptions": {
+    "rootDir": ".",
+    "composite": true,
+    "noEmit": true,
+    "types": ["node", "vitest/globals"]
+  }
 }

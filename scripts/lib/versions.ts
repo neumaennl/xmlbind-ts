@@ -56,7 +56,9 @@ interface Comparator {
  * @throws An {@link Error} if the text is not a partial version
  */
 function parsePartial(text: string): { parts: number[]; pre: boolean } {
-  const match = /^v?(\d+|[xX*])?(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*])(-[0-9A-Za-z.-]+)?)?(?:\+[0-9A-Za-z.-]+)?$/.exec(text);
+  const match = /^v?(\d+|[xX*])?(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*])(-[0-9A-Za-z.-]+)?)?(?:\+[0-9A-Za-z.-]+)?$/.exec(
+    text
+  );
   if (!match) {
     throw new Error(`Not a version: "${text}"`);
   }
@@ -100,16 +102,25 @@ function toComparators(token: string): Comparator[] {
     case "<=":
       return [parts.length === 3 ? { op: pre ? "<" : "<=", version: lower } : { op: "<", version: next }];
     case "~":
-      return [{ op: ">=", version: lower }, { op: "<", version: nextOf(Math.min(parts.length, 2)) }];
+      return [
+        { op: ">=", version: lower },
+        { op: "<", version: nextOf(Math.min(parts.length, 2)) },
+      ];
     case "^": {
       const significant = a > 0 ? 1 : b > 0 ? 2 : parts.length;
-      return [{ op: ">=", version: lower }, { op: "<", version: nextOf(significant) }];
+      return [
+        { op: ">=", version: lower },
+        { op: "<", version: nextOf(significant) },
+      ];
     }
     default:
       if (pre) {
         return none;
       }
-      return [{ op: ">=", version: lower }, { op: "<", version: next }];
+      return [
+        { op: ">=", version: lower },
+        { op: "<", version: next },
+      ];
   }
 }
 
@@ -121,7 +132,10 @@ function toComparators(token: string): Comparator[] {
  * @returns The simple comparators, which all have to match
  */
 function parseSet(set: string): Comparator[] {
-  const tokens = set.replace(/(>=|<=|>|<|=|\^|~)\s+/g, "$1").split(/\s+/).filter(Boolean);
+  const tokens = set
+    .replace(/(>=|<=|>|<|=|\^|~)\s+/g, "$1")
+    .split(/\s+/)
+    .filter(Boolean);
   const [from, dash, to] = tokens;
   if (tokens.length === 3 && from !== undefined && dash === "-" && to !== undefined) {
     const full = parsePartial(to).parts.length === 3;
@@ -162,9 +176,9 @@ function fulfills(op: Operator, diff: number): boolean {
  */
 export function satisfies(version: string, range: string): boolean {
   const v = parseVersion(version);
-  return range.split("||").some((set) =>
-    parseSet(set.trim()).every(({ op, version: bound }) => fulfills(op, compareVersions(v, bound))),
-  );
+  return range
+    .split("||")
+    .some((set) => parseSet(set.trim()).every(({ op, version: bound }) => fulfills(op, compareVersions(v, bound))));
 }
 
 /**

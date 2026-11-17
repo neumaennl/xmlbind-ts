@@ -30,7 +30,13 @@ describe("compiler-target", () => {
       const fetchMock = stubFetch({ [URLS.base(24)]: base(24), [URLS.base(26)]: base(26) });
 
       await expect(loadEdition(24)).resolves.toBe("ES2024");
-      await expect(loadEditions([24, 25, 26, 24])).resolves.toEqual(new Map([[24, "ES2024"], [25, undefined], [26, "ES2025"]]));
+      await expect(loadEditions([24, 25, 26, 24])).resolves.toEqual(
+        new Map([
+          [24, "ES2024"],
+          [25, undefined],
+          [26, "ES2025"],
+        ])
+      );
       expect(fetchMock).toHaveBeenCalledTimes(4);
     });
 
@@ -45,13 +51,19 @@ describe("compiler-target", () => {
       ['{ "compilerOptions": { "target": "esnext" } }', 'expected a target ESxxxx, found "esnext".'],
       ['{ "compilerOptions": {} }', "expected a target ESxxxx, found undefined."],
     ])("should reject the configuration %s", async (text, message) => {
-      vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(text) })));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(text) }))
+      );
 
       await expect(loadEdition(24)).rejects.toThrow(`${URLS.base(24)}: ${message}`);
     });
 
     test("should fail if the request fails for another reason", async () => {
-      vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false, status: 500 })));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.resolve({ ok: false, status: 500 }))
+      );
 
       await expect(loadEdition(24)).rejects.toThrow(`${URLS.base(24)}: HTTP 500`);
     });
@@ -81,7 +93,9 @@ describe("compiler-target", () => {
       ]);
 
       rmSync(join(dir, "tsconfig.target.json"));
-      expect(editionProblems(dir, 24, "ES2024")).toEqual(["tsconfig.target.json: missing or not valid JSON, expected target and lib ES2024"]);
+      expect(editionProblems(dir, 24, "ES2024")).toEqual([
+        "tsconfig.target.json: missing or not valid JSON, expected target and lib ES2024",
+      ]);
     });
 
     test("should report a major version without a configuration", () => {
@@ -95,7 +109,9 @@ describe("compiler-target", () => {
       writeEdition(dir, "ES2024", true);
 
       const text = readFileSync(join(dir, "tsconfig.target.json"), "utf8");
-      expect(text).toBe('{\r\n  "compilerOptions": {\r\n    "target": "ES2024",\r\n    "lib": [\r\n      "ES2024"\r\n    ]\r\n  }\r\n}\r\n');
+      expect(text).toBe(
+        '{\r\n  "compilerOptions": {\r\n    "target": "ES2024",\r\n    "lib": [\r\n      "ES2024"\r\n    ]\r\n  }\r\n}\r\n'
+      );
       expect(editionProblems(dir, 24, "ES2024")).toEqual([]);
     });
   });

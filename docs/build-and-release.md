@@ -59,27 +59,27 @@ This document describes how the package is built, checked, packaged and publishe
 
 # npm scripts
 
-| Script | What it does |
-|---|---|
-| `npm run build` | compiles `src/` to `dist/` with `tsconfig.build.json` |
-| `npm run typecheck` | type-checks `scripts/` with `tsconfig.scripts.json` |
-| `npm test` | runs `build` and `typecheck` (`pretest`), then Vitest |
-| `npm run lint` | runs ESLint, jscpd and fallow on the whole repository, see [Lint](#lint) |
-| `npm run lint:fix` | runs ESLint and fixes what it can fix |
-| `npm run node:check` | checks the Node.js version, see [Node.js version](#nodejs-version) |
-| `npm run node:update` | changes the Node.js version, see [Node.js version](#nodejs-version) |
+| Script                | What it does                                                             |
+| --------------------- | ------------------------------------------------------------------------ |
+| `npm run build`       | compiles `src/` to `dist/` with `tsconfig.build.json`                    |
+| `npm run typecheck`   | type-checks `scripts/` with `tsconfig.scripts.json`                      |
+| `npm test`            | runs `build` and `typecheck` (`pretest`), then Vitest                    |
+| `npm run lint`        | runs ESLint, jscpd and fallow on the whole repository, see [Lint](#lint) |
+| `npm run lint:fix`    | runs ESLint and fixes what it can fix                                    |
+| `npm run node:check`  | checks the Node.js version, see [Node.js version](#nodejs-version)       |
+| `npm run node:update` | changes the Node.js version, see [Node.js version](#nodejs-version)      |
 
 `prepare` runs `build`, so npm builds the package on `npm install` in a checkout and before `npm pack` and `npm publish`.[^manifest]
 
 # TypeScript configurations
 
-| File | Covers | Purpose |
-|---|---|---|
-| `tsconfig.target.json` | — | the ECMAScript edition of the supported Node.js version as `target` and `lib`; the build and the scripts extend it |
-| `tsconfig.build.json` | `src/` | the build: `NodeNext` modules, `strict`, `noUncheckedIndexedAccess`, unreachable code as an error, declarations, output in `dist/` |
-| `tsconfig.test.json` | `src/`, `__tests__/` | type-checking the tests in an editor; extends the build configuration and emits nothing |
-| `tsconfig.scripts.json` | `scripts/` | type-checking the scripts, which Node.js runs directly as TypeScript; `strict`, `noUncheckedIndexedAccess`, unreachable code as an error, and only erasable syntax is allowed |
-| `tsconfig.json` | — | references the build, test and scripts configurations, for editors and `tsc --build` |
+| File                    | Covers               | Purpose                                                                                                                                                                       |
+| ----------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tsconfig.target.json`  | —                    | the ECMAScript edition of the supported Node.js version as `target` and `lib`; the build and the scripts extend it                                                            |
+| `tsconfig.build.json`   | `src/`               | the build: `NodeNext` modules, `strict`, `noUncheckedIndexedAccess`, unreachable code as an error, declarations, output in `dist/`                                            |
+| `tsconfig.test.json`    | `src/`, `__tests__/` | type-checking the tests in an editor; extends the build configuration and emits nothing                                                                                       |
+| `tsconfig.scripts.json` | `scripts/`           | type-checking the scripts, which Node.js runs directly as TypeScript; `strict`, `noUncheckedIndexedAccess`, unreachable code as an error, and only erasable syntax is allowed |
+| `tsconfig.json`         | —                    | references the build, test and scripts configurations, for editors and `tsc --build`                                                                                          |
 
 The build configuration enables `experimentalDecorators` and `emitDecoratorMetadata`, but the library itself declares no decorated classes, so these options do not affect the output.[^tsconfig-build] Which decorators an application uses depends on its own configuration; both kinds are supported ([ADR 001](architecture/001-reimplementation.md#principles)). No script or CI step uses `tsconfig.test.json` (see [Tests are not type-checked](known-issues.md#tests-are-not-type-checked)).[^tsconfig-test]
 
@@ -108,12 +108,12 @@ Installing the package needs a token as well, even though the repository is publ
 
 The package supports one Node.js major version and all newer ones, declared in `engines.node`. Four values must agree, and `npm run node:check` checks that they do:[^node-version]
 
-| Value | Rule |
-|---|---|
-| `engines.node` | `>=` and the major version, for example `>=24`. All runtime dependencies must accept every version it includes: its first release, such as 24.0.0, and the first release of every newer line before its end of life. |
-| `@types/node` | `^` and a version with the same major version, so that the types offer no API of a newer Node.js version. Dependabot ignores its major updates. |
-| `.nvmrc` | the major version, for example `24`. Development and CI use the latest release of that major version. |
-| `tsconfig.target.json` | `target` and the only entry of `lib` are the edition of the `@tsconfig/bases` configuration for the major version, for example `ES2024` from `node24.json`; the case does not matter.[^compiler-target] |
+| Value                  | Rule                                                                                                                                                                                                                 |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `engines.node`         | `>=` and the major version, for example `>=24`. All runtime dependencies must accept every version it includes: its first release, such as 24.0.0, and the first release of every newer line before its end of life. |
+| `@types/node`          | `^` and a version with the same major version, so that the types offer no API of a newer Node.js version. Dependabot ignores its major updates.                                                                      |
+| `.nvmrc`               | the major version, for example `24`. Development and CI use the latest release of that major version.                                                                                                                |
+| `tsconfig.target.json` | `target` and the only entry of `lib` are the edition of the `@tsconfig/bases` configuration for the major version, for example `ES2024` from `node24.json`; the case does not matter.[^compiler-target]              |
 
 `engines.node` is a declaration, not a lock: Node.js itself ignores it, and npm and pnpm only warn about an unsupported version unless `engine-strict` is set. Besides the runtime dependencies, `node:check` checks the range in which Node.js can `require()` ES modules, because generated classes compiled as CommonJS load the package that way.[^node-releases]
 
@@ -143,11 +143,11 @@ To run one check alone, use `npx eslint .`, `npx jscpd`, `npx fallow dead-code -
 
 ESLint gives each kind of file the rules that fit it:[^eslint]
 
-| Files | Rules |
-|---|---|
-| `.ts` | the recommended rules of ESLint, and the strict and stylistic rules of `typescript-eslint` with type information (see below) |
-| `.ts` in `__tests__` folders | in addition, the recommended rules of the Vitest plugin |
-| `.mjs`, such as `eslint.config.mjs` | the recommended rules of ESLint |
+| Files                               | Rules                                                                                                                        |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `.ts`                               | the recommended rules of ESLint, and the strict and stylistic rules of `typescript-eslint` with type information (see below) |
+| `.ts` in `__tests__` folders        | in addition, the recommended rules of the Vitest plugin                                                                      |
+| `.mjs`, such as `eslint.config.mjs` | the recommended rules of ESLint                                                                                              |
 
 The project's own settings:
 
@@ -236,9 +236,9 @@ Its limits:
 
 The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch of version 3 ([ADR 001](architecture/001-reimplementation.md)), on pull requests into `main`, and weekly on Mondays at 06:00 UTC.[^ci] It has two jobs:
 
-| Job | Runs | Steps |
-|---|---|---|
-| Check Node versions | always | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life |
+| Job                     | Runs                  | Steps                                                                                                                                                                                                                                                              |
+| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Check Node versions     | always                | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life                                                                                                                                                |
 | Install, build and test | not on the weekly run | `npm ci`, `npm run lint` (ESLint, jscpd and fallow), `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
 
 Both jobs use the latest release of the major version in `.nvmrc` (`check-latest: true`), on Ubuntu only. A warning of `node:check` appears as an annotation of the run. GitHub pauses scheduled workflows of a public repository after 60 days without activity; the workflow then has to be enabled again in the Actions tab.

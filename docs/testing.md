@@ -38,12 +38,12 @@ This document describes how xmlbind-ts and its scripts are tested, and what the 
 
 # Running the tests
 
-| Command | What it does |
-|---|---|
-| `npm test` | builds the library and type-checks the scripts (`pretest`), then runs all tests once |
-| `npm test -- --coverage` | the same, with a coverage report; fails if the coverage is below the thresholds |
-| `npx vitest run scripts/__tests__/node-version.test.ts` | runs one test file, without `pretest` |
-| `npx vitest` | runs the tests in watch mode |
+| Command                                                 | What it does                                                                         |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `npm test`                                              | builds the library and type-checks the scripts (`pretest`), then runs all tests once |
+| `npm test -- --coverage`                                | the same, with a coverage report; fails if the coverage is below the thresholds      |
+| `npx vitest run scripts/__tests__/node-version.test.ts` | runs one test file, without `pretest`                                                |
+| `npx vitest`                                            | runs the tests in watch mode                                                         |
 
 The scripts are defined in `package.json`.[^manifest] The tests import the library from `src/`, not from `dist/`.
 
@@ -51,10 +51,10 @@ The scripts are defined in `package.json`.[^manifest] The tests import the libra
 
 The configuration defines two projects, which run the same test files:[^vitest-config]
 
-| Project | Decorators |
-|---|---|
+| Project             | Decorators                                                        |
+| ------------------- | ----------------------------------------------------------------- |
 | `legacy-decorators` | legacy, with `experimentalDecorators` and `emitDecoratorMetadata` |
-| `stage3-decorators` | Stage 3 |
+| `stage3-decorators` | Stage 3                                                           |
 
 Every behavior that depends on decorators is therefore tested in both modes, because both kinds stay supported ([ADR 001](architecture/001-reimplementation.md#principles)). The `stage3-decorators` project leaves out the tests of the scripts, which use no decorators.
 
@@ -72,13 +72,13 @@ Further settings:
 
 `__tests__/test-utils/index.ts` exports the helpers for the tests of the library. No test of version 3 uses them yet; until one does, fallow is told not to report them (see [Unused code](build-and-release.md#unused-code)).[^test-utils]
 
-| Helper | Purpose |
-|---|---|
-| `withTmpDir(callback)` | runs the callback with a new temporary folder and deletes it afterwards; returns a promise, which the test must await; ESLint reports a call without `await` (see [Lint](build-and-release.md#lint)) |
-| `compilerTarget()` | returns `target` and `lib` of `tsconfig.target.json`, for the projects that tests compile with `tsc` |
-| `expectStringsOnSameLine(line, strings)` | checks that strings occur on one line in this order |
-| `expectStringsOnConsecutiveLines(text, strings)` | checks that strings occur on successive lines in this order |
-| `decoratorMode`, `emitsDecoratorMetadata`, `detectDecoratorMode()` | see [Two Vitest projects](#two-vitest-projects) |
+| Helper                                                             | Purpose                                                                                                                                                                                              |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `withTmpDir(callback)`                                             | runs the callback with a new temporary folder and deletes it afterwards; returns a promise, which the test must await; ESLint reports a call without `await` (see [Lint](build-and-release.md#lint)) |
+| `compilerTarget()`                                                 | returns `target` and `lib` of `tsconfig.target.json`, for the projects that tests compile with `tsc`                                                                                                 |
+| `expectStringsOnSameLine(line, strings)`                           | checks that strings occur on one line in this order                                                                                                                                                  |
+| `expectStringsOnConsecutiveLines(text, strings)`                   | checks that strings occur on successive lines in this order                                                                                                                                          |
+| `decoratorMode`, `emitsDecoratorMetadata`, `detectDecoratorMode()` | see [Two Vitest projects](#two-vitest-projects)                                                                                                                                                      |
 
 The names of assertion helpers start with `expect`. The ESLint rule `vitest/expect-expect` counts calls of such functions as assertions, so tests that use only them are not reported as tests without an assertion.[^eslint]
 
@@ -90,11 +90,11 @@ The names of assertion helpers start with `expect`. The ESLint rule `vitest/expe
 
 Larger XSD and XML snippets are kept in `__tests__/test-resources/`:
 
-| File | Content |
-|---|---|
-| `XMLSchema.xsd` | the XSD schema for schemas, the largest real-world schema in the tests |
-| `compositor-occurrences.xsd` | compositors and groups with `minOccurs` and `maxOccurs` |
-| `example.xsd` | a small example schema |
+| File                         | Content                                                                |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| `XMLSchema.xsd`              | the XSD schema for schemas, the largest real-world schema in the tests |
+| `compositor-occurrences.xsd` | compositors and groups with `minOccurs` and `maxOccurs`                |
+| `example.xsd`                | a small example schema                                                 |
 
 # Kinds of tests
 

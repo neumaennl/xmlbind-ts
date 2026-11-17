@@ -7,6 +7,6 @@
     // An ignore comment must give its reason after "--".
     "require-suppression-reason": "error",
     // An ignore comment that no longer suppresses anything fails the run.
-    "stale-suppressions": "error"
-  }
+    "stale-suppressions": "error",
+  },
 }

@@ -6,7 +6,7 @@ import { tmpdir } from "os";
 
 /**
  * Creates a temporary directory, runs the callback, and cleans up afterwards.
- * 
+ *
  * @param callback - Function to run with the temporary directory path
  * @param prefix - Optional prefix for the temp directory name (default: `"xmlbind-test-"`)
  */

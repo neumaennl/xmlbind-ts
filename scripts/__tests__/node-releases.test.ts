@@ -113,13 +113,19 @@ describe("node-releases", () => {
 
     test("should name the constraint whose range it cannot read", () => {
       expect(() => exclusions(24, SCHEDULE, [{ name: "some-dep 1.0.0", range: "node >= 22" }], "2026-10-14")).toThrow(
-        'some-dep 1.0.0: cannot read the Node range "node >= 22" (Not a version: "node")',
+        'some-dep 1.0.0: cannot read the Node range "node >= 22" (Not a version: "node")'
       );
     });
 
     test("should describe exclusions for a message", () => {
       const excluded = [
-        { version: "22.0.0", excludedBy: [{ name: "a 1.0.0", range: ">=22.12.0" }, { name: "b", range: ">=24" }] },
+        {
+          version: "22.0.0",
+          excludedBy: [
+            { name: "a 1.0.0", range: ">=22.12.0" },
+            { name: "b", range: ">=24" },
+          ],
+        },
         { version: "26.0.0", excludedBy: [{ name: "c", range: "<26" }] },
       ];
 
@@ -148,8 +154,22 @@ describe("node-releases", () => {
       const commander = { name: "commander 15.0.0", range: ">=22.12.0" };
 
       expect(listLines(DATA, [commander], "2026-10-14")).toEqual([
-        { major: 22, status: "Maintenance LTS", exclusions: [{ version: "22.0.0", excludedBy: [commander] }], typesNode: "^22.13.17", latest: "22.23.3", end: "2027-04-30" },
-        { major: 24, status: "Active LTS", exclusions: [], typesNode: "^24.12.0", latest: "24.21.0", end: "2028-04-30" },
+        {
+          major: 22,
+          status: "Maintenance LTS",
+          exclusions: [{ version: "22.0.0", excludedBy: [commander] }],
+          typesNode: "^22.13.17",
+          latest: "22.23.3",
+          end: "2027-04-30",
+        },
+        {
+          major: 24,
+          status: "Active LTS",
+          exclusions: [],
+          typesNode: "^24.12.0",
+          latest: "24.21.0",
+          end: "2028-04-30",
+        },
         { major: 26, status: "Current", exclusions: [], typesNode: "^26.0.1", latest: "26.11.1", end: "2029-04-30" },
       ]);
     });
