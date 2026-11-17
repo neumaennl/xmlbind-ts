@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-17T14:03:24Z }
+generated: { by: human:neumaennl, at: 2026-11-17T20:03:39Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -194,6 +194,7 @@ jscpd checks the TypeScript and JavaScript files of the whole repository. It ski
 - **Size.** A clone is a block of at least 50 tokens and 5 lines that appears more than once. Tokens are keywords, names, operators, punctuation and literals; whitespace and comments do not count. 50 tokens are about 5 to 7 lines of code. Below that, jscpd mostly finds repetition that is fine, such as the setup of tests.
 - **Names.** Names are ignored, so a copy with renamed variables is found. Each name must stand for one name in the other block: `a = b + c` matches `x = y + z`, but not `x = x + x`.
 - **Literals.** Strings and numbers are compared. Code that differs only in them is not a clone, such as the cases of a `switch` or tests with different data.
+- **Imports.** Import statements are skipped (`ignorePattern`). [Prettier](#formatting) puts each name of a long import on its own line, and since names are ignored, any two long imports would match.
 - **Failing.** Every clone fails the run. There is no threshold of duplicated lines, because a percentage changes as the code grows.
 - **No files.** A run that finds no files fails, so that a broken configuration does not pass unnoticed.
 

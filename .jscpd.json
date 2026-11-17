@@ -1,6 +1,7 @@
 {
   "path": ["."],
   "format": ["typescript", "javascript"],
+  "ignorePattern": ["import (type )?\\{[^}]*\\} from \"[^\"]*\";"],
   "minTokens": 50,
   "minLines": 5,
   "ignoreIdentifiers": true,
