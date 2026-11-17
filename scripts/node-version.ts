@@ -17,10 +17,9 @@
 //     warns in the 90 days before. With --strict, a warning fails as well.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createInterface, type Interface } from "node:readline/promises";
+import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 import { editionProblems, loadEdition, loadEditions, missingEdition, writeEdition } from "./lib/compiler-target.ts";
-import { installNode, runWith } from "./lib/node-setup.ts";
 import {
   describeExclusions,
   endOfLife,
@@ -41,13 +40,11 @@ import {
   type PackageLock,
   type Schedule,
 } from "./lib/node-releases.ts";
+import { offerSteps, type Asker } from "./lib/update-steps.ts";
 import { latestOfMajor } from "./lib/versions.ts";
 
 /** The ECMAScript edition per Node major version, undefined for those without a `@tsconfig/bases` configuration. */
 type Editions = Map<number, string | undefined>;
-
-/** The terminal interface; only `question()` is used. */
-type Asker = Pick<Interface, "question">;
 
 /** The parts of `package.json` that the script reads and writes. */
 export interface PackageJson {
@@ -76,8 +73,6 @@ interface Current extends Manifest {
   nvmrc?: string;
   constraints: Constraint[];
 }
-
-const STEPS = ["npm install", "npm run lint", "npm test"];
 
 /**
  * Formats rows as a text table with aligned columns.
@@ -345,48 +340,6 @@ export function writeValues({ pkg, crlf }: Manifest, values: Values, dir = "."):
 }
 
 /**
- * Prints the steps to run after the update.
- *
- * @param version - The Node version to run them with
- */
-function printSteps(version: string): void {
-  console.log(`Install and use Node ${version}, then run:\n${STEPS.map((s) => `  ${s}`).join("\n")}`);
-}
-
-/**
- * Asks whether to install the Node version and run the steps. Without a
- * terminal, it does not ask.
- *
- * @param rl - The terminal interface
- * @param version - The Node version
- * @returns Whether to run the steps
- */
-async function confirmSteps(rl: Asker, version: string): Promise<boolean> {
-  if (!process.stdin.isTTY) {
-    return false;
-  }
-  const answer = await rl.question(`Install Node ${version} and run ${STEPS.join(", ")} now? [Y/n] `);
-  return !/^n/i.test(answer.trim());
-}
-
-/**
- * Installs the Node version and runs the steps, or prints them if the Node
- * version could not be installed.
- *
- * @param version - The Node version
- * @returns The exit code
- */
-function runSteps(version: string): number {
-  const folder = installNode(version);
-  if (!folder) {
-    console.error(`Could not install Node ${version} with nvm, nvm-windows or fnm.`);
-    printSteps(version);
-    return 1;
-  }
-  return runWith(folder, STEPS);
-}
-
-/**
  * Updates the supported Node major version in `engines.node`, `@types/node`,
  * `.nvmrc` and `tsconfig.target.json`.
  *
@@ -429,11 +382,7 @@ export async function update(requested: string | undefined, dir = ".", today = t
       report(message.level, message.text);
     }
     const latest = latestOfMajor(data.releases, major) ?? String(major);
-    if (!(await confirmSteps(rl, latest))) {
-      printSteps(latest);
-      return 0;
-    }
-    return runSteps(latest);
+    return await offerSteps(rl, latest);
   } finally {
     rl.close();
   }

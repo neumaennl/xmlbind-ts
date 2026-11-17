@@ -18,3 +18,5 @@ tsx.config.*
 tsconfig.json
 tsconfig.eslint.json
 eslint.config.mjs
+.prettierrc.json
+.prettierignore

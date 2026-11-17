@@ -1,0 +1,4 @@
+# Written by npm.
+package-lock.json
+# Local drafts, excluded in .git/info/exclude, which Prettier does not read.
+.drafts/

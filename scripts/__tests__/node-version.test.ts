@@ -1,14 +1,24 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { installNode, runWith } from "../lib/node-setup.ts";
+import { offerSteps } from "../lib/update-steps.ts";
 import { check, formatTable, main, rejectMajor, update, writeValues } from "../node-version.ts";
-import { base, RELEASES, SCHEDULE, stubFetch, stubNodeData, TYPES_NODE, URLS } from "./testHelpers.ts";
+import {
+  base,
+  RELEASES,
+  restoreTerminal,
+  SCHEDULE,
+  stubFetch,
+  stubNodeData,
+  stubTerminal,
+  TYPES_NODE,
+  URLS,
+} from "./testHelpers.ts";
 
 const asker = { question: vi.fn<(query: string) => Promise<string>>(), close: vi.fn() };
 
 vi.mock("node:readline/promises", () => ({ createInterface: vi.fn(() => asker) }));
-vi.mock("../lib/node-setup.ts", () => ({ installNode: vi.fn(), runWith: vi.fn() }));
+vi.mock("../lib/update-steps.ts", () => ({ offerSteps: vi.fn() }));
 
 const TODAY = "2026-10-14";
 const DATA = { schedule: SCHEDULE, releases: RELEASES, typesNode: TYPES_NODE };
@@ -30,8 +40,6 @@ const PACKAGE_LOCK = {
     "node_modules/eslint": { version: "10.0.0", dev: true, engines: { node: "^22.13.0 || >=24" } },
   },
 };
-
-const realIsTTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY") ?? { value: undefined, configurable: true };
 
 let dir: string;
 
@@ -81,29 +89,19 @@ function read(name: string): string {
   return readFileSync(join(dir, name), "utf8");
 }
 
-/**
- * Makes `process.stdin` look like a terminal or not, until the end of the test.
- *
- * @param isTTY - Whether standard input is a terminal
- */
-function stubTerminal(isTTY: boolean): void {
-  Object.defineProperty(process.stdin, "isTTY", { value: isTTY, configurable: true });
-}
-
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "node-version-"));
   stubTerminal(false);
   vi.stubEnv("GITHUB_ACTIONS", undefined);
   asker.question.mockReset();
-  vi.mocked(installNode).mockReset();
-  vi.mocked(runWith).mockReset();
+  vi.mocked(offerSteps).mockReset().mockResolvedValue(0);
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 afterEach(() => {
-  Object.defineProperty(process.stdin, "isTTY", realIsTTY);
+  restoreTerminal();
   rmSync(dir, { recursive: true, force: true });
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
@@ -277,7 +275,7 @@ describe("node-version", () => {
       await expect(update(undefined, dir, TODAY)).rejects.toThrow("Not running in a terminal");
     });
 
-    test("should write the given major version and print the steps without a terminal", async () => {
+    test("should write the given major version and offer the steps with the latest release", async () => {
       writeProject({ pkg: { engines: {}, devDependencies: { "@types/node": "^26.4.0" } }, nvmrc: null, target: null });
       stubNodeData();
 
@@ -292,8 +290,7 @@ describe("node-version", () => {
       expect(console.log).toHaveBeenCalledWith(
         "Set engines.node >=24, @types/node ^24.12.0, .nvmrc 24 and the ECMAScript edition ES2024.",
       );
-      expect(console.log).toHaveBeenCalledWith("Install and use Node 24.21.0, then run:\n  npm install\n  npm run lint\n  npm test");
-      expect(installNode).not.toHaveBeenCalled();
+      expect(offerSteps).toHaveBeenCalledWith(asker, "24.21.0");
     });
 
     test.each([
@@ -323,13 +320,11 @@ describe("node-version", () => {
       expect(console.warn).toHaveBeenCalledWith("Warning: Node 24 reaches its end of life on 2028-04-30, in 60 days.");
     });
 
-    test("should show the release lines, ask until the answer is accepted, and run the steps with the latest release", async () => {
+    test("should show the release lines and ask until the answer is accepted", async () => {
       stubTerminal(true);
       writeProject({ pkg: { engines: { node: ">=22" } }, nvmrc: "22", target: ES2022 });
       stubNodeData();
-      asker.question.mockResolvedValueOnce("22").mockResolvedValueOnce("x").mockResolvedValueOnce("").mockResolvedValueOnce("y");
-      vi.mocked(installNode).mockReturnValue("/node/24.21.0/bin");
-      vi.mocked(runWith).mockReturnValue(0);
+      asker.question.mockResolvedValueOnce("22").mockResolvedValueOnce("x").mockResolvedValueOnce("");
 
       await expect(update(undefined, dir, TODAY)).resolves.toBe(0);
 
@@ -343,29 +338,13 @@ describe("node-version", () => {
       expect((JSON.parse(read("package.json")) as typeof PACKAGE_JSON).engines.node).toBe(">=24");
       expect(read(".nvmrc")).toBe("24\n");
       expect(JSON.parse(read("tsconfig.target.json"))).toEqual({ compilerOptions: ES2024 });
-      expect(installNode).toHaveBeenCalledWith("24.21.0");
-      expect(runWith).toHaveBeenCalledWith("/node/24.21.0/bin", ["npm install", "npm run lint", "npm test"]);
+      expect(offerSteps).toHaveBeenCalledWith(asker, "24.21.0");
     });
 
-    test("should stop with exit code 1 if the Node version cannot be installed", async () => {
-      stubTerminal(true);
+    test("should return the exit code of the steps", async () => {
       writeProject();
       stubNodeData();
-      asker.question.mockResolvedValue("");
-      vi.mocked(installNode).mockReturnValue(undefined);
-
-      await expect(update("24", dir, TODAY)).resolves.toBe(1);
-      expect(console.error).toHaveBeenCalledWith("Could not install Node 24.21.0 with nvm, nvm-windows or fnm.");
-      expect(runWith).not.toHaveBeenCalled();
-    });
-
-    test("should return the exit code of a failed step", async () => {
-      stubTerminal(true);
-      writeProject();
-      stubNodeData();
-      asker.question.mockResolvedValue("");
-      vi.mocked(installNode).mockReturnValue("/node/24.21.0/bin");
-      vi.mocked(runWith).mockReturnValue(3);
+      vi.mocked(offerSteps).mockResolvedValue(3);
 
       await expect(update("24", dir, TODAY)).resolves.toBe(3);
     });

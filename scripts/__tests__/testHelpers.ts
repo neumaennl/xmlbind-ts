@@ -20,6 +20,23 @@ export function stubFetch(bodies: Record<string, object>): Mock {
   return fetchMock;
 }
 
+/** How `process.stdin.isTTY` was defined before the tests changed it. */
+const realIsTTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY") ?? { value: undefined, configurable: true };
+
+/**
+ * Makes `process.stdin` look like a terminal or not. Undo it with {@link restoreTerminal}.
+ *
+ * @param isTTY - Whether standard input is a terminal
+ */
+export function stubTerminal(isTTY: boolean): void {
+  Object.defineProperty(process.stdin, "isTTY", { value: isTTY, configurable: true });
+}
+
+/** Undoes {@link stubTerminal}. */
+export function restoreTerminal(): void {
+  Object.defineProperty(process.stdin, "isTTY", realIsTTY);
+}
+
 /** The URLs that the scripts read. */
 export const URLS = {
   schedule: "https://raw.githubusercontent.com/nodejs/Release/main/schedule.json",

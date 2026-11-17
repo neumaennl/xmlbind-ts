@@ -40,7 +40,7 @@ export function compareVersions(a: Version, b: Version): number {
   return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
 }
 
-type Operator = ">=" | ">" | "<=" | "<" | "=";
+type Operator = ">=" | ">" | "<=" | "<";
 
 interface Comparator {
   op: Operator;
@@ -106,7 +106,10 @@ function toComparators(token: string): Comparator[] {
       return [{ op: ">=", version: lower }, { op: "<", version: nextOf(significant) }];
     }
     default:
-      return pre ? none : [{ op: ">=", version: lower }, { op: "<", version: next }];
+      if (pre) {
+        return none;
+      }
+      return [{ op: ">=", version: lower }, { op: "<", version: next }];
   }
 }
 
@@ -129,6 +132,26 @@ function parseSet(set: string): Comparator[] {
 }
 
 /**
+ * Tells whether the result of a comparison fulfills an operator.
+ *
+ * @param op - The operator
+ * @param diff - The result of {@link compareVersions}: negative, 0 or positive
+ * @returns Whether the compared version fulfills the operator
+ */
+function fulfills(op: Operator, diff: number): boolean {
+  switch (op) {
+    case ">=":
+      return diff >= 0;
+    case ">":
+      return diff > 0;
+    case "<=":
+      return diff <= 0;
+    case "<":
+      return diff < 0;
+  }
+}
+
+/**
  * Tells whether a released version is in a range of the form that `engines.node`
  * uses, for example `^20.19.0 || >=22.12.0`.
  *
@@ -140,10 +163,7 @@ function parseSet(set: string): Comparator[] {
 export function satisfies(version: string, range: string): boolean {
   const v = parseVersion(version);
   return range.split("||").some((set) =>
-    parseSet(set.trim()).every(({ op, version: bound }) => {
-      const diff = compareVersions(v, bound);
-      return op === ">=" ? diff >= 0 : op === ">" ? diff > 0 : op === "<=" ? diff <= 0 : op === "<" ? diff < 0 : diff === 0;
-    }),
+    parseSet(set.trim()).every(({ op, version: bound }) => fulfills(op, compareVersions(v, bound))),
   );
 }
 

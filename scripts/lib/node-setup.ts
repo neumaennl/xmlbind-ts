@@ -1,5 +1,5 @@
 // Installs a Node version with a version manager and runs commands with it.
-// Used by node-version.ts.
+// Used by update-steps.ts.
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { delimiter, dirname, join } from "node:path";
