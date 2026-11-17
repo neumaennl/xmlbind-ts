@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-16T14:40:00Z }
+generated: { by: human:neumaennl, at: 2026-11-17T14:03:24Z }
 sources:
   - id: registry
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
@@ -572,7 +572,7 @@ Effort:
 - **Location:** `src/`, `scripts/`, `.fallowrc.jsonc`
 - **Severity:** Low
 - **Effort:** S
-- **Description:** fallow finds unused public and static class members, but it skips protected members on purpose (see [Unused code](build-and-release.md#unused-code)). ESLint only finds unused private members. So a protected member that nothing uses goes unnoticed. [fallow-rs/fallow#4624](https://github.com/fallow-rs/fallow/issues/4624) asks fallow to report them. When a released version does, update fallow, remove the findings, and remove this entry.[^fallow]
+- **Description:** fallow finds unused public and static class members, but the installed version skips protected members (see [Unused code](build-and-release.md#unused-code)). ESLint only finds unused private members. So a protected member that nothing uses goes unnoticed. fallow has a rule for them, `unused-protected-class-members` ([fallow-rs/fallow#4624](https://github.com/fallow-rs/fallow/issues/4624)), but no released version contains it yet. When one does, update fallow, set the rule to `error` in `.fallowrc.jsonc`, remove the findings, and remove this entry.[^fallow]
 - **GitHub issue:** none
 
 ## Source files are longer than 500 lines

@@ -2,6 +2,7 @@
 
 ## 2026-11-17
 
+- **Update**: [Build and release](build-and-release.md#unused-code): fallow does not find unused branches within a function, so compare the coverage report before and after removing code. `.npmignore` leaves out `.fallowrc.jsonc`, `.jscpd.json` and the local drafts in `.drafts/`. [Unused protected class members are not detected](known-issues.md#unused-protected-class-members-are-not-detected): fallow has the rule `unused-protected-class-members`, but no released version contains it yet.
 - **Update**: Prettier formats the code, the configuration files and the documentation, and `npm run lint` checks the formatting. [Build and release](build-and-release.md#formatting) describes the settings, why no ESLint rule clashes with Prettier, the setup of VS Code and `.git-blame-ignore-revs`. The [development guidelines](development-guidelines.md#code-quality) and their entry in [the index](index.md) mention the formatting, and the line breaks of Prettier count for the [size limits](development-guidelines.md#code-size).
 - **Update**: [Testing](testing.md#utilities-and-resources): the helpers of the tests of the scripts also make standard input look like a terminal or not.
 
