@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-17T14:03:24Z }
+generated: { by: human:neumaennl, at: 2026-11-20T07:27:54Z }
 sources:
   - id: registry
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
@@ -93,6 +93,9 @@ sources:
   - id: gen-restriction
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/xsd/tsgen/restriction-helpers.ts
     title: Attributes of restricted types
+  - id: gen-attributes
+    resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/xsd/tsgen/attributes.ts
+    title: Attributes
 ---
 
 # Purpose
@@ -251,6 +254,16 @@ Effort:
 - **Severity:** High
 - **Effort:** M
 - **Description:** `unmarshal()` records the position of a comment as the number of child elements before it, and `marshal()` writes the comment after the same number of mapped elements, or after the last one if it writes fewer. When `marshal()` writes the elements in a different order or leaves some out, the comment keeps its count but gets other neighbours: in `<a>1</a><b>x</b><!--c--><a>2</a>`, the occurrences of `a` are written together and `c` ends up between the second `a` and `b`. Wildcard and unmapped elements count as well, but wildcard elements are written after the mapped ones and unmapped ones not at all, so a comment after them moves forward: in `<a/><u/><!--c--><b/>` with an unmapped `u`, `c` is written after `b`. Occurrences that an application adds to a field from the source count as well, so a comment after them moves back: with `<a>1</a><!--c--><b/>`, adding a second `a` writes `c` between the two.[^comments] The fix belongs together with [Elements are reordered when occurrences are not contiguous](#elements-are-reordered-when-occurrences-are-not-contiguous).
+- **GitHub issue:** none
+
+## Inline simple types of attributes are ignored
+
+- **Location:** `src/xsd/tsgen/attributes.ts` (`emitAttrs()`), `src/xsd/tsgen/attribute-emission.ts` (`emitSingleAttribute()`)
+- **Severity:** High
+- **Effort:** M
+- **Description:** The generator takes the type of an attribute only from its `type` attribute. An attribute without `type` is typed `string`, even if it defines its type with a nested `xs:simpleType`.[^gen-attributes] Elements with a nested simple type are not affected.
+  - An enumeration gets no enum. For example, the attribute `value` of `xs:whiteSpace` in `XMLSchema.xsd` allows only `preserve`, `replace` and `collapse`, but is typed `string`.
+  - A restriction of a number or a boolean is bound as a string. `unmarshal()` does not convert the value, and the property has the wrong type.
 - **GitHub issue:** none
 
 ## Elements are reordered when occurrences are not contiguous
@@ -684,3 +697,5 @@ Effort:
 [^gen-base-attributes]: Attributes of base types
 
 [^gen-restriction]: Attributes of restricted types
+
+[^gen-attributes]: Attributes

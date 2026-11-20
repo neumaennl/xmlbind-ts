@@ -1,5 +1,9 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-20
+
+- **Update**: [Known issues](known-issues.md#inline-simple-types-of-attributes-are-ignored): new entry "Inline simple types of attributes are ignored".
+
 ## 2026-11-17
 
 - **Update**: [Build and release](build-and-release.md#duplicated-code): jscpd skips import statements, because Prettier puts each name of a long import on its own line, and any two long imports would match.
