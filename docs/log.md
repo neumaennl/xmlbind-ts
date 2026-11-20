@@ -2,6 +2,7 @@
 
 ## 2026-11-20
 
+- **Update**: [Known issues](known-issues.md#xml-that-is-not-well-formed-is-read-without-an-error): new entry "XML that is not well-formed is read without an error".
 - **Update**: [Known issues](known-issues.md#inline-simple-types-of-attributes-are-ignored): new entry "Inline simple types of attributes are ignored".
 
 ## 2026-11-17

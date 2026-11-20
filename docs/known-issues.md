@@ -4,7 +4,7 @@ title: Known issues
 description: Problems found in the library, the generator and the project setup that are not fixed yet, with links to GitHub issues where they exist.
 tags: [known-issues, maintenance, technical-debt]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-20T07:27:54Z }
+generated: { by: human:neumaennl, at: 2026-11-20T10:27:38Z }
 sources:
   - id: registry
     resource: https://github.com/neumaennl/xmlbind-ts/blob/2.4.0/src/metadata/MetadataRegistry.ts
@@ -264,6 +264,19 @@ Effort:
 - **Description:** The generator takes the type of an attribute only from its `type` attribute. An attribute without `type` is typed `string`, even if it defines its type with a nested `xs:simpleType`.[^gen-attributes] Elements with a nested simple type are not affected.
   - An enumeration gets no enum. For example, the attribute `value` of `xs:whiteSpace` in `XMLSchema.xsd` allows only `preserve`, `replace` and `collapse`, but is typed `string`.
   - A restriction of a number or a boolean is bound as a string. `unmarshal()` does not convert the value, and the property has the wrong type.
+- **GitHub issue:** none
+
+## XML that is not well-formed is read without an error
+
+- **Location:** `src/marshalling/unmarshal.ts` (`unmarshal()`)
+- **Severity:** High
+- **Effort:** S
+- **Description:** `unmarshal()` parses with `fast-xml-parser`, which does not check whether the XML is well-formed unless it is asked to.[^unmarshal] `unmarshal()` does not ask for it. So it reads broken XML without an error, and data is lost without notice.
+  - A missing end tag is accepted. `<r><a>1</a>` is read like `<r><a>1</a></r>`.
+  - An end tag closes the innermost open element, whatever its name. In `<r><s><a/></t><b/></s></r>`, `</t>` closes `s`, so `b` becomes a child of `r`. In `<r><a/></t><b/></r>`, `</t>` closes `r`, so `b` is outside the root element and is dropped.
+  - A start tag without its `<` becomes text, and its end tag then closes the parent. `<r>s name="x"><a/></s><b/></r>` gives `r` the text `s name="x">` and the child `a`; `</s>` closes `r`, and `b` is dropped.
+  - Only some errors throw, such as a missing root element, or a stray quote in a start tag.
+  - The fix is to reject XML that is not well-formed, with the line and column of the error. `fast-xml-parser` can check the XML before it parses it (`parse(xml, true)`), and the package `fast-xml-validator` can check it on its own.
 - **GitHub issue:** none
 
 ## Elements are reordered when occurrences are not contiguous
