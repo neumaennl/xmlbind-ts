@@ -22,5 +22,4 @@ eslint.config.mjs
 .prettierignore
 .git-blame-ignore-revs
 .fallowrc.jsonc
-.jscpd.json
 .drafts/

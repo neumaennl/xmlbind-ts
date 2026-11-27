@@ -4,7 +4,7 @@ title: Testing
 description: How xmlbind-ts is tested - running the tests, the two Vitest projects for legacy and Stage 3 decorators, the test utilities and resources, the kinds of tests, coverage, CI, and what the tests do not cover.
 tags: [testing, vitest, decorators, coverage, ci]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-27T10:21:18Z }
+generated: { by: human:neumaennl, at: 2026-11-27T11:04:48Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -63,6 +63,7 @@ Both projects compile TypeScript with their own plugin, which calls `ts.transpil
 Further settings:
 
 - `include` is `**/__tests__/**/*.test.ts`, which covers `__tests__/` and `scripts/__tests__/`.
+- `exclude` adds the local drafts in `.drafts/` to Vitest's defaults, because Vitest does not read `.git/info/exclude`, where Git excludes them.
 - `globals: true` makes `describe`, `test`, `expect` and `vi` available without imports, and `restoreMocks: true` restores mocks after each test.
 - Besides the console output, the results are written to `test-results/vitest-junit.xml` and `test-results/vitest-results.json`.
 

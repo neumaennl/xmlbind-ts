@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-27T10:21:18Z }
+generated: { by: human:neumaennl, at: 2026-11-27T11:50:04Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -39,9 +39,6 @@ sources:
   - id: eslint
     resource: ../eslint.config.mjs
     title: ESLint configuration
-  - id: jscpd
-    resource: ../.jscpd.json
-    title: jscpd configuration
   - id: fallow
     resource: ../.fallowrc.jsonc
     title: fallow configuration
@@ -60,6 +57,9 @@ sources:
   - id: dependabot
     resource: ../.github/dependabot.yml
     title: Dependabot configuration
+  - id: fallow-stale-dupes
+    resource: https://github.com/fallow-rs/fallow/issues/5406
+    title: "fallow: report stale code-duplication suppressions"
 ---
 
 # Purpose
@@ -68,16 +68,16 @@ This document describes how the package is built, checked, packaged and publishe
 
 # npm scripts
 
-| Script                | What it does                                                                                                |
-| --------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `npm run build`       | compiles `src/` to `dist/` with `tsconfig.build.json`                                                       |
-| `npm run typecheck`   | type-checks `scripts/` with `tsconfig.scripts.json`                                                         |
-| `npm test`            | runs `build` and `typecheck` (`pretest`), then Vitest                                                       |
-| `npm run lint`        | runs ESLint, jscpd, fallow, the check of anonymous types and the check of the formatting, see [Lint](#lint) |
-| `npm run lint:fix`    | runs ESLint and fixes what it can fix                                                                       |
-| `npm run format`      | formats all files with Prettier, see [Formatting](#formatting)                                              |
-| `npm run node:check`  | checks the Node.js version, see [Node.js version](#nodejs-version)                                          |
-| `npm run node:update` | changes the Node.js version, see [Node.js version](#nodejs-version)                                         |
+| Script                | What it does                                                                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------- |
+| `npm run build`       | compiles `src/` to `dist/` with `tsconfig.build.json`                                                |
+| `npm run typecheck`   | type-checks `scripts/` with `tsconfig.scripts.json`                                                  |
+| `npm test`            | runs `build` and `typecheck` (`pretest`), then Vitest                                                |
+| `npm run lint`        | runs ESLint, fallow, the check of anonymous types and the check of the formatting, see [Lint](#lint) |
+| `npm run lint:fix`    | runs ESLint and fixes what it can fix                                                                |
+| `npm run format`      | formats all files with Prettier, see [Formatting](#formatting)                                       |
+| `npm run node:check`  | checks the Node.js version, see [Node.js version](#nodejs-version)                                   |
+| `npm run node:update` | changes the Node.js version, see [Node.js version](#nodejs-version)                                  |
 
 `prepare` runs `build`, so npm builds the package on `npm install` in a checkout and before `npm pack` and `npm publish`.[^manifest]
 
@@ -138,8 +138,7 @@ The scripts read the release schedule from the Node.js release repository on Git
 `npm run lint` runs these checks in parallel, with concurrently:[^manifest]
 
 - ESLint;
-- the copy-paste detector jscpd (see [Duplicated code](#duplicated-code));
-- fallow, once for the whole project and once in production mode (see [Unused code](#unused-code));
+- fallow, once for duplicated code (see [Duplicated code](#duplicated-code)), and for unused code once for the whole project and once in production mode (see [Unused code](#unused-code));
 - the check of anonymous types (see [Anonymous types](#anonymous-types));
 - Prettier, which checks the formatting (see [Formatting](#formatting)).
 
@@ -147,9 +146,9 @@ How concurrently runs them:
 
 - all checks always run to the end, so one run reports all problems;
 - the run fails if one of them fails;
-- `--group` prints the output of each check as one block, labeled `[eslint]`, `[jscpd]`, `[fallow]`, `[fallow-production]`, `[anonymous-types]` and `[prettier]`.
+- `--group` prints the output of each check as one block, labeled `[eslint]`, `[fallow-dupes]`, `[fallow]`, `[fallow-production]`, `[anonymous-types]` and `[prettier]`.
 
-To run one check alone, use `npx eslint .`, `npx jscpd`, `npx fallow dead-code --no-cache --fail-on-issues`, `npx fallow dead-code --production --no-cache --fail-on-issues`, `node scripts/check-anonymous-types.ts` or `npx prettier --check .`. They read the same configuration as `npm run lint`.
+To run one check alone, use `npx eslint .`, `npx fallow dupes --no-cache --fail-on-issues`, `npx fallow dead-code --no-cache --fail-on-issues`, `npx fallow dead-code --production --no-cache --fail-on-issues`, `node scripts/check-anonymous-types.ts` or `npx prettier --check .`. They read the same configuration as `npm run lint`.
 
 ## ESLint
 
@@ -189,30 +188,30 @@ The project's own settings:
 - TSDoc, as the [development guidelines](development-guidelines.md#tsdoc) ask: `tsdoc/syntax` of `eslint-plugin-tsdoc` checks the syntax of the comments; the rules of `eslint-plugin-jsdoc` check that function declarations, methods and classes have a comment, and that it describes every parameter, the return value and the errors thrown; `tsdoc/syntax` also reports a missing hyphen between the name and the description of a parameter. Arrow functions and function expressions, mostly small local helpers and callbacks, need no comment. Destructured parameters are not checked, because TSDoc describes their fields at their type;
 - the size limits of the [development guidelines](development-guidelines.md#code-size): `max-lines` allows 500 lines per file and `max-lines-per-function` 120 lines per function; test files may have 1000 lines, and instead of the limit for functions, the local rule `tests/max-lines-per-test`, defined in `eslint.config.mjs`, allows 50 lines per test, because `max-lines-per-function` would also count the `describe` callbacks that hold the tests;
 - `.js`, `.cjs`, `.mts` and `.cts` files are not allowed at all, because the package is an ES module and needs no other kinds of files;
-- `dist/`, `coverage/`, `test-results/` and folders named `generated/` are ignored.
+- `dist/`, `coverage/`, `test-results/` and folders named `generated/` are ignored, and so are the local drafts in `.drafts/`, because ESLint does not read `.git/info/exclude`.
 
 ## Duplicated code
 
-jscpd checks the TypeScript and JavaScript files of the whole repository. It skips what `.gitignore` excludes, such as `dist/`, `coverage/` and `node_modules/`. Its settings:[^jscpd]
+`fallow dupes` checks the TypeScript and JavaScript files of the whole repository, the tests included. It skips what `.gitignore` excludes, such as `dist/`, `coverage/` and `node_modules/`, and the local drafts in `.drafts/`. Its settings are in the `duplicates` section of `.fallowrc.jsonc`:[^fallow]
 
-- **Size.** A clone is a block of at least 50 tokens and 5 lines that appears more than once. Tokens are keywords, names, operators, punctuation and literals; whitespace and comments do not count. 50 tokens are about 5 to 7 lines of code. Below that, jscpd mostly finds repetition that is fine, such as the setup of tests.
-- **Names.** Names are ignored, so a copy with renamed variables is found. Each name must stand for one name in the other block: `a = b + c` matches `x = y + z`, but not `x = x + x`.
-- **Literals.** Strings and numbers are compared. Code that differs only in them is not a clone, such as the cases of a `switch` or tests with different data.
-- **Imports.** Import statements are skipped (`ignorePattern`). [Prettier](#formatting) puts each name of a long import on its own line, and since names are ignored, any two long imports would match.
-- **Failing.** Every clone fails the run. There is no threshold of duplicated lines, because a percentage changes as the code grows.
-- **No files.** A run that finds no files fails, so that a broken configuration does not pass unnoticed.
+- **Size.** A clone is a block of at least 50 tokens and 5 lines that appears more than once. Tokens are keywords, names, operators, punctuation and literals; whitespace and comments do not count. 50 tokens are about 5 to 7 lines of code. Below that, the check mostly finds repetition that is fine, such as the setup of tests.
+- **Names.** Names are ignored, so a copy with renamed variables is found (`ignoreIdentifiers`). Each name must stand for one name in the other block (`consistentIdentifiers`): `a = b + c` matches `x = y + z`, but not `x = x + x`.
+- **Literals.** Strings, numbers and the text of template literals are compared. Code that differs only in them is not a clone, such as the cases of a `switch` or tests with different data.
+- **Imports.** Imports and re-exports are skipped (`ignoreImports`). [Prettier](#formatting) puts each name of a long import on its own line, and since names are ignored, any two long imports or re-exports would match.
+- **Tests.** `ignoreDefaults` is off. Otherwise fallow would leave out test files and folders such as `__tests__/`, and the output folders of some frameworks, which this repository does not have.
+- **Failing.** `--fail-on-issues` makes every clone fail the run; without it, `fallow dupes` only reports them. There is no threshold of duplicated lines, because a percentage changes as the code grows. `--no-cache` keeps fallow from writing a cache into the checkout.
+- **No files.** A run that finds no files does not fail. fallow finds its files the same way for duplicated and for [unused code](#unused-code): from the root of the project, following `.gitignore`. So there is no list of paths or formats that could be wrong. Only a far too broad ignore pattern could leave no files, and that would be a visible change to `.fallowrc.jsonc`.
 
 The tests are checked with the same settings. Whether they need settings of their own is decided again with the first tests of version 3.
 
-Code that has to stay duplicated is put between `// jscpd:ignore-start` and `// jscpd:ignore-end`, with a comment that gives the reason (see [Development guidelines](development-guidelines.md#code-quality)).
+Code that has to stay duplicated is put between two comments, each on its own line, with the reason after `--` (see [Development guidelines](development-guidelines.md#code-quality)):
 
-fallow, which checks for [unused code](#unused-code), can find duplicates as well. None of its settings matches the settings above, though:
+```typescript
+// fallow-ignore-start code-duplication -- <reason>
+// fallow-ignore-end code-duplication
+```
 
-- it either misses copies with renamed variables, or also reports code that differs only in literals;
-- it does not check that the renaming is consistent;
-- it does not fail a run that finds no files.
-
-So jscpd stays until fallow can do the same.
+`fallow dead-code` fails if the reason is missing (`require-suppression-reason`, see [Unused code](#unused-code)). Unlike the other kinds of ignore comments, fallow never reports a `code-duplication` comment as stale. This holds for the range, `fallow-ignore-next-line` and `fallow-ignore-file`. So when the code is no longer duplicated, nothing fails. Check the comments when you change the code they cover.[^fallow-stale-dupes]
 
 ## Unused code
 
@@ -220,7 +219,7 @@ ESLint and TypeScript only find unused code within one file (see [ESLint](#eslin
 
 - files that nothing imports;
 - exports and types that no other module imports, also when the same file uses them;
-- public and static class members and enum members that nothing uses;
+- public, protected and static class members and enum members that nothing uses;
 - dependencies in `package.json` that no code uses, and packages that code uses but `package.json` does not list.
 
 fallow finds the entry points itself, in `package.json` and in the configurations of the tools, such as Vitest. It reads the code without type information.
@@ -232,18 +231,21 @@ fallow finds the entry points itself, in `package.json` and in the configuration
 
 Both runs use `--fail-on-issues`, so every finding fails the run, also the kinds that fallow only reports as warnings by default, such as an unused devDependency. There is no baseline. `--no-cache` keeps fallow from writing a cache into the checkout.
 
-`.fallowrc.jsonc` adds two rules:[^fallow]
+`.fallowrc.jsonc` adds three rules:[^fallow]
 
-- `require-suppression-reason`: an ignore comment must give its reason after `--`, as in `// fallow-ignore-next-line unused-export -- <reason>`;
+- `require-suppression-reason`: an ignore comment must give its reason after `--`, as in `// fallow-ignore-next-line unused-export -- <reason>`.
 - `stale-suppressions` as an error: an ignore comment that no longer suppresses anything fails the run, so it is removed when it is no longer needed.
+- `unused-protected-class-members` as an error: a protected member that neither its class nor a subclass uses is a finding. fallow does not report it by default.
 
 The test helpers in `__tests__/test-utils/` are not used yet. The tests of version 3 will use them, so they have the comment `// fallow-ignore-file unused-file` with this reason. Once a test imports a helper, the comment becomes stale and has to be removed.
 
 Its limits:
 
-- fallow does not check protected class members (see [Unused protected class members are not detected](known-issues.md#unused-protected-class-members-are-not-detected)). ESLint checks private members.
 - Without type information, fallow does not see that a member is used when it is called by a computed name, such as `obj[name]()`. Such a member needs an ignore comment with the reason.
+- fallow does not check private members. ESLint does.
 - Members with decorators are not checked, because a decorator can use them.
+- Protected members are not checked in the classes of the public API, because a user of the package can subclass them. fallow also counts every class in an entry point of `package.json` as public API, whether it is exported or not.
+- Protected members that are declared as constructor parameters, as in `constructor(protected readonly x: X)`, are not checked. A protected member that is used by a string key, as in `this["name"]()`, needs an ignore comment with the reason.
 - fallow finds unused files, exports and members, not unused branches within a function, such as the cases of a `switch` that no caller reaches. The coverage report shows them (see [Testing](testing.md#coverage)), so compare it before and after a change that removes code.
 
 ## Anonymous types
@@ -294,10 +296,10 @@ The size rules count lines, including the line breaks that Prettier adds (see [E
 
 The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch of version 3 ([ADR 001](architecture/001-reimplementation.md)), on pull requests into `main` and into `reimplementation`, and weekly on Mondays at 06:00 UTC.[^ci] It has two jobs:
 
-| Job                     | Runs                  | Steps                                                                                                                                                                                                                                                                                                      |
-| ----------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Check Node versions     | always                | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life                                                                                                                                                                                        |
-| Install, build and test | not on the weekly run | `npm ci`, `npm run lint` (ESLint, jscpd, fallow, the check of anonymous types and Prettier), `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
+| Job                     | Runs                  | Steps                                                                                                                                                                                                                                                                                               |
+| ----------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Check Node versions     | always                | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life                                                                                                                                                                                 |
+| Install, build and test | not on the weekly run | `npm ci`, `npm run lint` (ESLint, fallow, the check of anonymous types and Prettier), `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
 
 Both jobs use the latest release of the major version in `.nvmrc` (`check-latest: true`), on Ubuntu only. A warning of `node:check` appears as an annotation of the run. GitHub pauses scheduled workflows of a public repository after 60 days without activity; the workflow then has to be enabled again in the Actions tab.
 
@@ -333,8 +335,6 @@ Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot
 
 [^eslint]: ESLint configuration
 
-[^jscpd]: jscpd configuration
-
 [^fallow]: fallow configuration
 
 [^check-anonymous-types]: Check of anonymous types
@@ -346,3 +346,5 @@ Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot
 [^ci]: CI workflow
 
 [^dependabot]: Dependabot configuration
+
+[^fallow-stale-dupes]: fallow: report stale code-duplication suppressions

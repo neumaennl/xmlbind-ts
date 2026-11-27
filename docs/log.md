@@ -2,6 +2,8 @@
 
 ## 2026-11-27
 
+- **Update**: [Duplicated code](build-and-release.md#duplicated-code): fallow never reports a `code-duplication` ignore comment as stale, in any of its forms, not only the range.
+- **Update**: `npm run lint` checks for duplicated code with fallow instead of jscpd, with the same settings, as [Duplicated code](build-and-release.md#duplicated-code) describes; a run that finds no files no longer fails. The [development guidelines](development-guidelines.md#code-quality) name the comments of fallow that exclude duplicated code. fallow also reports unused protected class members ([Unused code](build-and-release.md#unused-code)), so "Unused protected class members are not detected" is removed from [Known issues](known-issues.md). ESLint ([ESLint](build-and-release.md#eslint)) and Vitest ([Testing](testing.md#two-vitest-projects)) skip the local drafts in `.drafts/`.
 - **Update**: `npm run lint` reports an anonymous type that occurs more than once in `src/` and `scripts/`, as [Build and release](build-and-release.md#anonymous-types) describes. The [development guidelines](development-guidelines.md#typescript) ask to name a type where it stands for a concept, and to use an existing type where there is one. [Testing](testing.md#kinds-of-tests) lists the tests of the check among the script tests.
 - **Update**: [Build and release](build-and-release.md#ci): CI also checks pull requests into `reimplementation`, where Dependabot sends its version updates; [Dependabot](build-and-release.md#dependabot) says where its updates go.
 

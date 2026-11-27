@@ -65,12 +65,19 @@ const githubActionsReporter: ["github-actions", { jobSummary: { enabled: boolean
   { jobSummary: { enabled: false } },
 ];
 
+/**
+ * Files that are never tests: Vitest's defaults, and the local drafts in `.drafts/`. Git
+ * excludes them in `.git/info/exclude`, which Vitest does not read.
+ */
+const excluded = [...configDefaults.exclude, ".drafts/**"];
+
 export default defineConfig({
   // TypeScript is compiled by the typescript-transpile plugin of each project.
   oxc: false,
   test: {
     environment: "node",
     include: ["**/__tests__/**/*.test.ts"],
+    exclude: excluded,
     globals: true,
     restoreMocks: true,
     projects: [
@@ -89,7 +96,7 @@ export default defineConfig({
           name: "stage3-decorators",
           provide: { decoratorMode: "stage3" },
           // The scripts use no decorators.
-          exclude: [...configDefaults.exclude, "scripts/**"],
+          exclude: [...excluded, "scripts/**"],
         },
       },
     ],

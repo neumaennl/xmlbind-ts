@@ -286,5 +286,7 @@ export default defineConfig([
     "**/.vscode/",
     "**/.test-results/",
     "**/test-results/",
+    // Local drafts. Git excludes them in `.git/info/exclude`, which ESLint does not read.
+    ".drafts/",
   ]),
 ]);
