@@ -4,7 +4,7 @@ title: Development guidelines
 description: Rules for everyone who changes the library or the generator - code size, code quality, formatting and ESLint, TypeScript, the Node version, TSDoc, tests, documentation and the knowledge bundle, what to check before committing, and commits.
 tags: [guidelines, conventions, code-quality, typescript, documentation, workflow]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-17T13:25:50Z }
+generated: { by: human:neumaennl, at: 2026-11-27T10:21:18Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -65,6 +65,7 @@ Blank lines and comments count as well, and so do the line breaks that Prettier 
 - The TypeScript configuration is `strict` and sets `noUncheckedIndexedAccess`, so that indexed access, such as `array[i]`, includes `undefined`. Check the value, or avoid the index with `for…of`, `find()` or `at()`. In tests, a non-null assertion (`items[0]!`) is fine, because a wrong assumption makes the test fail.[^tsconfig]
 - Define interfaces or types for data structures.
 - Define a type in the module that owns the data it describes. Put types that several modules share in a `types.ts` of their folder; `src/types.ts` holds the metadata types.
+- Name a type where it stands for a concept, for example in an exported signature or where it is used more than once. Do not write the same anonymous type, such as `{ name?: string }`, in several places. Before you define a new type, look for an existing one, and use it or a part of it (`Pick`). A one-off shape of a local value needs no name. `npm run lint` reports an anonymous type that occurs more than once (see [Build and release](build-and-release.md#anonymous-types)).
 - Names: PascalCase for classes, interfaces, types and decorators; camelCase for functions, methods and variables; UPPER_CASE for module-level constants. Names say what something is or does.
 - Length of names: clarity comes first, but keep them short. Aim for less than 15 characters; 25 to 30 is the upper limit. `createElement` is better than `createElementWithChildren`; `createElementNodeWithProcessingOfAnonymousTypes` is too long, `cen` too cryptic.
 - Do not use `any`; use a specific type or `unknown` instead. ESLint reports `any`, and `unknown` in type assertions and in the types of variables.[^eslint]

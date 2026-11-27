@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-27T08:23:37Z }
+generated: { by: human:neumaennl, at: 2026-11-27T10:21:18Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -45,6 +45,9 @@ sources:
   - id: fallow
     resource: ../.fallowrc.jsonc
     title: fallow configuration
+  - id: check-anonymous-types
+    resource: ../scripts/check-anonymous-types.ts
+    title: Check of anonymous types
   - id: prettier
     resource: ../.prettierrc.json
     title: Prettier configuration
@@ -65,16 +68,16 @@ This document describes how the package is built, checked, packaged and publishe
 
 # npm scripts
 
-| Script                | What it does                                                                                          |
-| --------------------- | ----------------------------------------------------------------------------------------------------- |
-| `npm run build`       | compiles `src/` to `dist/` with `tsconfig.build.json`                                                 |
-| `npm run typecheck`   | type-checks `scripts/` with `tsconfig.scripts.json`                                                   |
-| `npm test`            | runs `build` and `typecheck` (`pretest`), then Vitest                                                 |
-| `npm run lint`        | runs ESLint, jscpd, fallow and the check of the formatting on the whole repository, see [Lint](#lint) |
-| `npm run lint:fix`    | runs ESLint and fixes what it can fix                                                                 |
-| `npm run format`      | formats all files with Prettier, see [Formatting](#formatting)                                        |
-| `npm run node:check`  | checks the Node.js version, see [Node.js version](#nodejs-version)                                    |
-| `npm run node:update` | changes the Node.js version, see [Node.js version](#nodejs-version)                                   |
+| Script                | What it does                                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `npm run build`       | compiles `src/` to `dist/` with `tsconfig.build.json`                                                       |
+| `npm run typecheck`   | type-checks `scripts/` with `tsconfig.scripts.json`                                                         |
+| `npm test`            | runs `build` and `typecheck` (`pretest`), then Vitest                                                       |
+| `npm run lint`        | runs ESLint, jscpd, fallow, the check of anonymous types and the check of the formatting, see [Lint](#lint) |
+| `npm run lint:fix`    | runs ESLint and fixes what it can fix                                                                       |
+| `npm run format`      | formats all files with Prettier, see [Formatting](#formatting)                                              |
+| `npm run node:check`  | checks the Node.js version, see [Node.js version](#nodejs-version)                                          |
+| `npm run node:update` | changes the Node.js version, see [Node.js version](#nodejs-version)                                         |
 
 `prepare` runs `build`, so npm builds the package on `npm install` in a checkout and before `npm pack` and `npm publish`.[^manifest]
 
@@ -137,15 +140,16 @@ The scripts read the release schedule from the Node.js release repository on Git
 - ESLint;
 - the copy-paste detector jscpd (see [Duplicated code](#duplicated-code));
 - fallow, once for the whole project and once in production mode (see [Unused code](#unused-code));
+- the check of anonymous types (see [Anonymous types](#anonymous-types));
 - Prettier, which checks the formatting (see [Formatting](#formatting)).
 
 How concurrently runs them:
 
 - all checks always run to the end, so one run reports all problems;
 - the run fails if one of them fails;
-- `--group` prints the output of each check as one block, labeled `[eslint]`, `[jscpd]`, `[fallow]`, `[fallow-production]` and `[prettier]`.
+- `--group` prints the output of each check as one block, labeled `[eslint]`, `[jscpd]`, `[fallow]`, `[fallow-production]`, `[anonymous-types]` and `[prettier]`.
 
-To run one check alone, use `npx eslint .`, `npx jscpd`, `npx fallow dead-code --no-cache --fail-on-issues`, `npx fallow dead-code --production --no-cache --fail-on-issues` or `npx prettier --check .`. They read the same configuration as `npm run lint`.
+To run one check alone, use `npx eslint .`, `npx jscpd`, `npx fallow dead-code --no-cache --fail-on-issues`, `npx fallow dead-code --production --no-cache --fail-on-issues`, `node scripts/check-anonymous-types.ts` or `npx prettier --check .`. They read the same configuration as `npm run lint`.
 
 ## ESLint
 
@@ -242,6 +246,16 @@ Its limits:
 - Members with decorators are not checked, because a decorator can use them.
 - fallow finds unused files, exports and members, not unused branches within a function, such as the cases of a `switch` that no caller reaches. The coverage report shows them (see [Testing](testing.md#coverage)), so compare it before and after a change that removes code.
 
+## Anonymous types
+
+`scripts/check-anonymous-types.ts` checks the rule on named types of the [development guidelines](development-guidelines.md#typescript).[^check-anonymous-types] It parses the production code with the TypeScript API: the TypeScript files in `src/` and `scripts/`, without `__tests__/` folders and test files. It fails if the same anonymous type occurs more than once, and lists the places of each one.
+
+- **Counted:** object types, unions, tuples and function types written where a type is expected. The definition of a named type (`type X = …`) is not an anonymous type.
+- **Not counted:** types that a name would not explain. These are `X | undefined` and `X | null`, unions of primitive types such as `number | string`, functions without parameters that return such a type, such as `() => void`, and the empty object type.
+- **Same type:** whitespace, comments and the order of the members of a union do not matter. The names of parameters do, because `(next: string) => void` and `(message: string) => void` stand for different things.
+
+ESLint has no rule for this, because a rule sees one file at a time.
+
 ## Formatting
 
 Prettier formats TypeScript, `.mjs`, JSON, JSONC, YAML and Markdown.[^prettier]
@@ -280,10 +294,10 @@ The size rules count lines, including the line breaks that Prettier adds (see [E
 
 The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch of version 3 ([ADR 001](architecture/001-reimplementation.md)), on pull requests into `main` and into `reimplementation`, and weekly on Mondays at 06:00 UTC.[^ci] It has two jobs:
 
-| Job                     | Runs                  | Steps                                                                                                                                                                                                                                                                        |
-| ----------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Check Node versions     | always                | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life                                                                                                                                                          |
-| Install, build and test | not on the weekly run | `npm ci`, `npm run lint` (ESLint, jscpd, fallow and Prettier), `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
+| Job                     | Runs                  | Steps                                                                                                                                                                                                                                                                                                      |
+| ----------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Check Node versions     | always                | `npm run node:check`; on the weekly run with `--strict`, so that GitHub sends a notification before the end of life                                                                                                                                                                                        |
+| Install, build and test | not on the weekly run | `npm ci`, `npm run lint` (ESLint, jscpd, fallow, the check of anonymous types and Prettier), `npm run build`, `npm test -- --coverage`, which fails below the coverage thresholds, and the test and coverage reports in the job summary and, on pull requests, as a comment (see [Testing](testing.md#ci)) |
 
 Both jobs use the latest release of the major version in `.nvmrc` (`check-latest: true`), on Ubuntu only. A warning of `node:check` appears as an annotation of the run. GitHub pauses scheduled workflows of a public repository after 60 days without activity; the workflow then has to be enabled again in the Actions tab.
 
@@ -322,6 +336,8 @@ Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot
 [^jscpd]: jscpd configuration
 
 [^fallow]: fallow configuration
+
+[^check-anonymous-types]: Check of anonymous types
 
 [^prettier]: Prettier configuration
 

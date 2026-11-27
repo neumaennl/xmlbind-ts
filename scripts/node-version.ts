@@ -39,6 +39,7 @@ import {
   type NodeData,
   type PackageLock,
   type Schedule,
+  type Severity,
 } from "./lib/node-releases.ts";
 import { offerSteps, type Asker } from "./lib/update-steps.ts";
 import { latestOfMajor } from "./lib/versions.ts";
@@ -153,7 +154,7 @@ function endOfLifeMessage(
   major: number,
   schedule: Schedule,
   today: string
-): { level: "warning" | "error"; text: string } | undefined {
+): { level: Severity; text: string } | undefined {
   const eol = endOfLife(major, schedule, today);
   if (eol.level === "ok") {
     return undefined;
@@ -172,7 +173,7 @@ function endOfLifeMessage(
  * @param level - `error` or `warning`
  * @param text - The message
  */
-function report(level: "warning" | "error", text: string): void {
+function report(level: Severity, text: string): void {
   if (process.env.GITHUB_ACTIONS === "true") {
     console.log(`::${level}::${text}`);
   } else if (level === "error") {

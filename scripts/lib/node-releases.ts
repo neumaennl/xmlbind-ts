@@ -30,11 +30,14 @@ export interface NodeData {
   typesNode: string[];
 }
 
+/** How serious a problem is: a warning, or an error that fails the check. */
+export type Severity = "warning" | "error";
+
 /** How close a release line is to its end of life. */
 export interface EndOfLife {
   end?: string;
   days?: number;
-  level: "ok" | "warning" | "error";
+  level: "ok" | Severity;
 }
 
 /** A version that `>=major` includes but runtime dependencies exclude. */

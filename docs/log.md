@@ -2,6 +2,7 @@
 
 ## 2026-11-27
 
+- **Update**: `npm run lint` reports an anonymous type that occurs more than once in `src/` and `scripts/`, as [Build and release](build-and-release.md#anonymous-types) describes. The [development guidelines](development-guidelines.md#typescript) ask to name a type where it stands for a concept, and to use an existing type where there is one. [Testing](testing.md#kinds-of-tests) lists the tests of the check among the script tests.
 - **Update**: [Build and release](build-and-release.md#ci): CI also checks pull requests into `reimplementation`, where Dependabot sends its version updates; [Dependabot](build-and-release.md#dependabot) says where its updates go.
 
 ## 2026-11-20
