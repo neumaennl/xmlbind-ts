@@ -4,7 +4,7 @@ title: Build and release
 description: How the package is built, linted, packaged and published - the npm scripts, the TypeScript configurations, the module format and the package contents, GitHub Packages, the Node.js version and its scripts, CI, Dependabot, and the changelog.
 tags: [build, npm, packaging, github-packages, node-version, ci, dependabot]
 status: draft
-generated: { by: human:neumaennl, at: 2026-11-17T20:03:39Z }
+generated: { by: human:neumaennl, at: 2026-11-27T08:23:37Z }
 sources:
   - id: manifest
     resource: ../package.json
@@ -278,7 +278,7 @@ The size rules count lines, including the line breaks that Prettier adds (see [E
 
 # CI
 
-The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch of version 3 ([ADR 001](architecture/001-reimplementation.md)), on pull requests into `main`, and weekly on Mondays at 06:00 UTC.[^ci] It has two jobs:
+The workflow `CI` runs on pushes to `main` and to `reimplementation`, the branch of version 3 ([ADR 001](architecture/001-reimplementation.md)), on pull requests into `main` and into `reimplementation`, and weekly on Mondays at 06:00 UTC.[^ci] It has two jobs:
 
 | Job                     | Runs                  | Steps                                                                                                                                                                                                                                                                        |
 | ----------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -291,7 +291,7 @@ Both jobs use the latest release of the major version in `.nvmrc` (`check-latest
 
 # Dependabot
 
-Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot] It groups the updates of ESLint, of Vite and of Vitest, each into one pull request, and ignores major updates of `@types/node`, which follow `engines.node` (see [Node.js version](#nodejs-version)). CI checks its pull requests like any other. An update of Prettier can change the formatting (see [Formatting](#formatting)).
+Dependabot checks the npm dependencies and the GitHub Actions daily.[^dependabot] It groups the updates of ESLint, of Vite and of Vitest, each into one pull request, and ignores major updates of `@types/node`, which follow `engines.node` (see [Node.js version](#nodejs-version)). Its version updates go to `reimplementation`, where version 3 is developed; security updates always go to `main`. CI checks its pull requests like any other. An update of Prettier can change the formatting (see [Formatting](#formatting)).
 
 # Changelog and log
 

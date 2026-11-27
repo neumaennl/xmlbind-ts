@@ -1,5 +1,9 @@
 # Knowledge Bundle Update Log
 
+## 2026-11-27
+
+- **Update**: [Build and release](build-and-release.md#ci): CI also checks pull requests into `reimplementation`, where Dependabot sends its version updates; [Dependabot](build-and-release.md#dependabot) says where its updates go.
+
 ## 2026-11-20
 
 - **Update**: [Known issues](known-issues.md#xml-that-is-not-well-formed-is-read-without-an-error): new entry "XML that is not well-formed is read without an error".

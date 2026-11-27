@@ -10,7 +10,8 @@ on:
     # reimplementation: version 3 is developed there (docs/architecture/001-reimplementation.md).
     branches: [main, reimplementation]
   pull_request:
-    branches: [main]
+    # reimplementation: also the pull requests of Dependabot, which target it.
+    branches: [main, reimplementation]
   schedule:
     # Weekly, so that the end of life of a Node version is noticed without a push.
     - cron: "0 6 * * 1"
